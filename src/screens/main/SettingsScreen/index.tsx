@@ -1,44 +1,29 @@
 import React from 'react';
-import {View, Text, TouchableOpacity, ImageBackground} from 'react-native';
-import {Header} from '../../../components';
-import {images} from '../../../constants';
-import {styles} from './styles';
-import LinearGradient from 'react-native-linear-gradient';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import SettingsMenu from './SettingsMenu';
+import ProfileSettings from './ProfileSettings';
+import PasswordSettings from './PasswordSettings';
+import SubscriptionSettings from './SubscriptionSettings';
+import { Text } from 'react-native';
+
+const Stack = createNativeStackNavigator();
 
 type Props = {
   onOpenDrawer?: () => void;
 };
 
-const SettingsScreen = ({onOpenDrawer}: Props) => (
-  <LinearGradient
-       colors={['#05070A', '#0B1220', '#1A0F08']}
-       start={{x: 0, y: 0}}
-       end={{x: 1, y: 1}}
-       style={styles.container}
-     >
-    <Header
-      title="Settings"
-      subtitle="Customize your FireRelay experience."
-      onMenuPress={onOpenDrawer}
-    />
-    <Text style={styles.subtitle}>Customize your FireRelay experience.</Text>
+const SettingsStack = ({ onOpenDrawer }: Props) => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SettingsMenu">
+        {(props) => <SettingsMenu {...props} onOpenDrawer={onOpenDrawer} />}
+      </Stack.Screen>
 
-    <TouchableOpacity style={styles.option} onPress={() => null}>
-      <Text style={styles.optionText}>Privacy</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.option} onPress={() => null}>
-      <Text style={styles.optionText}>Security</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.option} onPress={() => null}>
-      <Text style={styles.optionText}>Notifications</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.option} onPress={() => null}>
-      <Text style={styles.optionText}>Help Center</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.option} onPress={() => null}>
-      <Text style={[styles.optionText, styles.logout]}>Logout</Text>
-    </TouchableOpacity>
-  </LinearGradient>
-);
+      <Stack.Screen name="ProfileSettings" component={ProfileSettings} />
+      <Stack.Screen name="PasswordSettings" component={PasswordSettings} />
+      <Stack.Screen name="SubscriptionSettings" component={SubscriptionSettings} />
+    </Stack.Navigator>
+  );
+};
 
-export default SettingsScreen;
+export default SettingsStack;
