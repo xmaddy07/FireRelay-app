@@ -1,16 +1,16 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 import { fonts } from '../../constants';
 
 export const styles = StyleSheet.create({
   container: {
-    backgroundColor:'#05070A',
+    backgroundColor: '#05070A',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
   },
   menuButton: {
     position: 'absolute',
-    left:10,
+    left: 10,
     width: 44,
     height: 44,
     alignItems: 'center',
@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
     height: 24,
   },
   title: {
-    fontSize: 28,
+    fontSize: 18,
     fontFamily: fonts.semibold,
     color: '#ffffff',
   },
