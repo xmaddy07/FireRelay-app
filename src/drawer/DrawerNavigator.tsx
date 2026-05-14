@@ -271,6 +271,7 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: '#000',
+    zIndex: 90,
   },
   drawer: {
     position: 'absolute',
@@ -282,6 +283,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 24,
     elevation: 10,
+    zIndex: 100,
   },
   drawerGradient: {
     flex: 1,

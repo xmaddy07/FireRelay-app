@@ -11,12 +11,48 @@ export const styles = StyleSheet.create({
   menuButton: {
     position: 'absolute',
     left: 10,
+    top: 10,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  menuIcon: {
+    width: 24,
+    height: 24,
+  },
+  titleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 50,
+  },
+  rightButtonsContainer: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 10,
+  },
+  filterButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIcon: {
+  filterIcon: {
+    width: 20,
+    height: 20,
+  },
+  notificationButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationIcon: {
     width: 24,
     height: 24,
   },

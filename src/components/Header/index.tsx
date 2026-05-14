@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
+import Icon from 'react-native-vector-icons/AntDesign';
 import { styles } from './styles';
 import { images } from '../../constants';
-import Icon from 'react-native-vector-icons/AntDesign';
 
 type Props = {
   title: string;
@@ -10,9 +10,19 @@ type Props = {
   onMenuPress?: () => void;
   showBack?: boolean;
   onBackPress?: () => void;
+  showFilter?: boolean;
+  onFilterPress?: () => void;
 };
 
-const Header = ({ title, onMenuPress, showBack, onBackPress }: Props) => (
+const Header = ({
+  title,
+  subtitle,
+  onMenuPress,
+  showBack,
+  onBackPress,
+  showFilter,
+  onFilterPress,
+}: Props) => (
   <View style={styles.container}>
     <TouchableOpacity
       style={styles.menuButton}
@@ -25,7 +35,32 @@ const Header = ({ title, onMenuPress, showBack, onBackPress }: Props) => (
         <Image source={images.menu} style={styles.menuIcon} resizeMode="contain" />
       )}
     </TouchableOpacity>
-    <Text style={styles.title}>{title}</Text>
+    <View style={styles.titleContainer}>
+      <Text style={styles.title}>{title}</Text>
+      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+    </View>
+    <View style={styles.rightButtonsContainer}>
+      {showFilter && (
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={onFilterPress}
+          activeOpacity={0.7}
+        >
+          <Image
+            source={images.filter}
+            style={styles.filterIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+        <Image
+          source={images.notification}
+          style={styles.notificationIcon}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    </View>
   </View>
 );
 

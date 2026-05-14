@@ -21,7 +21,7 @@ type Props = {
 const Button = ({title, onPress, disabled, style, textStyle}: Props) => (
   <TouchableOpacity style={[styles.button, style, disabled && styles.disabled]} onPress={onPress} disabled={disabled}>
     <LinearGradient
-      colors={['#3B82F6', '#F97316']}
+      colors={['#2F5597', '#9B5427']}
       start={{x: 0, y: 0}}
       end={{x: 1, y: 0}}
       style={styles.gradient}
