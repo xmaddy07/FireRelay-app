@@ -1,5 +1,6 @@
 export {default as DashboardScreen} from './DashboardScreen';
 export {default as CountiesScreen} from './CountiesScreen';
+export {default as CountyDetailScreen} from './CountyDetailScreen';
 export {default as UsersScreen} from './UsersScreen';
 export {default as KeywordsScreen} from './KeywordsScreen';
 export {default as SendersScreen} from './SendersScreen';

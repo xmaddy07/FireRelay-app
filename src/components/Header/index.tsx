@@ -1,7 +1,7 @@
 import React from 'react';
-import {View, Text, Image, TouchableOpacity} from 'react-native';
-import {styles} from './styles';
-import {images} from '../../constants';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { styles } from './styles';
+import { images } from '../../constants';
 
 type Props = {
   title: string;
@@ -9,7 +9,7 @@ type Props = {
   onMenuPress?: () => void;
 };
 
-const Header = ({title, subtitle, onMenuPress}: Props) => (
+const Header = ({ title, subtitle, onMenuPress, }: Props) => (
   <View style={styles.container}>
     <TouchableOpacity
       style={styles.menuButton}
@@ -18,7 +18,19 @@ const Header = ({title, subtitle, onMenuPress}: Props) => (
     >
       <Image source={images.menu} style={styles.menuIcon} resizeMode="contain" />
     </TouchableOpacity>
-    <Text style={styles.title}>{title}</Text>
+    <View style={styles.titleContainer}>
+      <Text style={styles.title}>{title}</Text>
+      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+    </View>
+    <View style={styles.rightButtonsContainer}>
+      <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+        <Image
+          source={images.notification}
+          style={styles.notificationIcon}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    </View>
   </View>
 );
 
