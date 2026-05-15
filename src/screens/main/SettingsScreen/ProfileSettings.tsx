@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { View, Text, ScrollView } from 'react-native';
 import { Header, Input, Button } from '../../../components';
 import { styles } from './styles';
@@ -10,8 +12,23 @@ type Props = {
   navigation: any;
 };
 
+const validationSchema = Yup.object().shape({
+  newEmail: Yup.string()
+    .email('Please enter a valid email address')
+    .required('New email address is required'),
+});
+
 const ProfileSettings = ({ navigation }: Props) => {
-  const [newEmail, setNewEmail] = useState('');
+  const formik = useFormik({
+    initialValues: {
+      newEmail: '',
+    },
+    validationSchema,
+    onSubmit: (values) => {
+      console.log('Email change values:', values);
+      // Handle email change logic here
+    },
+  });
 
   return (
     <LinearGradient
@@ -50,8 +67,10 @@ const ProfileSettings = ({ navigation }: Props) => {
           <Animated.View entering={FadeInDown.duration(400).delay(400)}>
             <Input
               label="New Email Address"
-              value={newEmail}
-              onChangeText={setNewEmail}
+              value={formik.values.newEmail}
+              onChangeText={formik.handleChange('newEmail')}
+              onBlur={formik.handleBlur('newEmail')}
+              error={formik.touched.newEmail && formik.errors.newEmail ? formik.errors.newEmail : undefined}
               placeholder="Enter new email address"
               keyboardType="email-address"
               style={styles.inputGap}
@@ -68,7 +87,7 @@ const ProfileSettings = ({ navigation }: Props) => {
             <Button
               title="Request Email Change"
               style={styles.requestButton}
-              onPress={() => null}
+              onPress={formik.handleSubmit as any}
             />
           </Animated.View>
         </View>

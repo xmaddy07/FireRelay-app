@@ -41,4 +41,13 @@ export const styles = StyleSheet.create({
   inputWithIcon: {
     paddingVertical: hp(1.6),
   },
+  errorText: {
+    color: '#ff4d4d',
+    fontSize: responsiveSize(12),
+    marginTop: hp(0.5),
+    marginLeft: wp(1),
+  },
+  inputError: {
+    borderColor: '#ff4d4d',
+  },
 });
