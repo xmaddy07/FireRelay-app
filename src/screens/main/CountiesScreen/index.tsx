@@ -5,7 +5,7 @@ import Header from '../../../components/Header';
 import CountyDetailScreen from '../CountyDetailScreen';
 import LinearGradient from 'react-native-linear-gradient';
 import { images } from '../../../constants';
-
+import AntDesign from 'react-native-vector-icons/AntDesign';
 type County = { name: string; code: string; est: string };
 
 type Props = {
@@ -154,7 +154,7 @@ const CountiesScreen = ({ onOpenDrawer }: Props) => {
                     <Text style={styles.cardMeta}>CODE: {county.code} | EST. {county.est}</Text>
                   </View>
                   <View style={styles.cardEnd}>
-                    <Text style={styles.chevron}>›</Text>
+                    <AntDesign name="right" size={14} color="#fff" />
                   </View>
                 </View>
               </Animated.View>
