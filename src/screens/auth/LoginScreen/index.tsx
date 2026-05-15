@@ -1,4 +1,6 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import {
   Animated,
   Easing,
@@ -8,18 +10,36 @@ import {
   Text,
   View,
 } from 'react-native';
-import {styles} from './styles';
-import {Button, Input} from '../../../components';
-import {images} from '../../../constants';
+import { styles } from './styles';
+import { Button, Input } from '../../../components';
+import { images } from '../../../constants';
 import LinearGradient from 'react-native-linear-gradient';
 
 type LoginScreenProps = {
   onSignIn: () => void;
 };
 
-const LoginScreen = ({onSignIn}: LoginScreenProps) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const validationSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('Please enter a valid email address')
+    .required('Email is required'),
+  password: Yup.string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
+});
+
+const LoginScreen = ({ onSignIn }: LoginScreenProps) => {
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+      password: '',
+    },
+    validationSchema,
+    onSubmit: (values) => {
+      console.log('Form values:', values);
+      onSignIn();
+    },
+  });
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(36)).current;
   const logoScale = useRef(new Animated.Value(0.92)).current;
@@ -50,8 +70,8 @@ const LoginScreen = ({onSignIn}: LoginScreenProps) => {
   return (
     <LinearGradient
       colors={['#05070A', '#0B1220', '#1A0F08']}
-      start={{x: 0, y: 0}}
-      end={{x: 1, y: 1}}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
       style={styles.container}
     >
       <KeyboardAvoidingView
@@ -68,7 +88,7 @@ const LoginScreen = ({onSignIn}: LoginScreenProps) => {
               styles.card,
               {
                 opacity: cardOpacity,
-                transform: [{translateY: cardTranslateY}],
+                transform: [{ translateY: cardTranslateY }],
               },
             ]}
           >
@@ -77,7 +97,7 @@ const LoginScreen = ({onSignIn}: LoginScreenProps) => {
                 source={images.logoname}
                 style={[
                   styles.brandTitleImage,
-                  {transform: [{scale: logoScale}]},
+                  { transform: [{ scale: logoScale }] },
                 ]}
                 resizeMode="contain"
               />
@@ -89,21 +109,25 @@ const LoginScreen = ({onSignIn}: LoginScreenProps) => {
             <View style={styles.form}>
               <Input
                 label="Email*"
-                value={email}
-                onChangeText={setEmail}
+                value={formik.values.email}
+                onChangeText={formik.handleChange('email')}
+                onBlur={formik.handleBlur('email')}
+                error={formik.touched.email && formik.errors.email ? formik.errors.email : undefined}
                 autoCapitalize="none"
                 keyboardType="email-address"
               />
               <Input
                 label="Password*"
-                value={password}
-                onChangeText={setPassword}
+                value={formik.values.password}
+                onChangeText={formik.handleChange('password')}
+                onBlur={formik.handleBlur('password')}
+                error={formik.touched.password && formik.errors.password ? formik.errors.password : undefined}
                 secureTextEntry
               />
 
               <Button
                 title="Sign In"
-                onPress={onSignIn}
+                onPress={formik.handleSubmit as any}
                 style={styles.primaryButton}
                 textStyle={styles.primaryButtonText}
               />
