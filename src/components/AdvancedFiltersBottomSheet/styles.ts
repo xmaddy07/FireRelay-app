@@ -236,4 +236,34 @@ export const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
   },
+  dropdownOptionsContainer: {
+    marginTop: hp(0.5),
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: wp(2),
+    overflow: 'hidden',
+    zIndex: 1000,
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.5),
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  dropdownOptionText: {
+    fontSize: responsiveSize(14),
+    color: '#94a3b8',
+  },
+  dropdownOptionTextActive: {
+    color: '#6366f1',
+    fontWeight: '600',
+  },
+  checkIcon: {
+    fontSize: responsiveSize(14),
+    color: '#6366f1',
+  },
 });
