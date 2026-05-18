@@ -1,11 +1,30 @@
-import type {SocketState} from '../rootReducer';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 
-export const initialSocketState: SocketState = {
+export type SocketState = {
+  connected: boolean;
+  lastEvent?: string;
+};
+
+const initialState: SocketState = {
   connected: false,
   lastEvent: undefined,
 };
 
-export const socketActions = {
-  connect: () => ({type: 'socket/connect'}),
-  disconnect: () => ({type: 'socket/disconnect'}),
-};
+const socketSlice = createSlice({
+  name: 'socket',
+  initialState,
+  reducers: {
+    connect: (state) => {
+      state.connected = true;
+    },
+    disconnect: (state) => {
+      state.connected = false;
+    },
+    setLastEvent: (state, action: PayloadAction<string>) => {
+      state.lastEvent = action.payload;
+    }
+  },
+});
+
+export const socketActions = socketSlice.actions;
+export default socketSlice.reducer;

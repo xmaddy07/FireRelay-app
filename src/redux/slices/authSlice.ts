@@ -1,11 +1,29 @@
-import type {AuthState} from '../rootReducer';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 
-export const initialAuthState: AuthState = {
+export type AuthState = {
+  token?: string;
+  isAuthenticated: boolean;
+};
+
+const initialState: AuthState = {
   token: undefined,
   isAuthenticated: false,
 };
 
-export const authActions = {
-  login: (token: string) => ({type: 'auth/login', payload: token}),
-  logout: () => ({type: 'auth/logout'}),
-};
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    login: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+      state.isAuthenticated = true;
+    },
+    logout: (state) => {
+      state.token = undefined;
+      state.isAuthenticated = false;
+    },
+  },
+});
+
+export const authActions = authSlice.actions;
+export default authSlice.reducer;

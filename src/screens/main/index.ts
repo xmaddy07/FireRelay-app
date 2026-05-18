@@ -9,3 +9,4 @@ export {default as SettingsScreen} from './SettingsScreen';
 export {default as WaitingRoomScreen} from './WaitingRoomScreen';
 export {default as RelaySessionScreen} from './RelaySessionScreen';
 export {default as AudioPlayerScreen} from './AudioPlayerScreen';
+export {default as NotificationsScreen} from './NotificationsScreen';
