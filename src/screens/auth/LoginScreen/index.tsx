@@ -14,10 +14,11 @@ import { styles } from './styles';
 import { Button, Input } from '../../../components';
 import { images } from '../../../constants';
 import LinearGradient from 'react-native-linear-gradient';
+import { useAppDispatch } from '../../../redux/hooks';
+import { userActions } from '../../../redux/slices/userSlice';
+import { authActions } from '../../../redux/slices/authSlice';
 
-type LoginScreenProps = {
-  onSignIn: () => void;
-};
+// LoginScreenProps is no longer needed as we use Redux for state management
 
 const validationSchema = Yup.object().shape({
   email: Yup.string()
@@ -28,16 +29,34 @@ const validationSchema = Yup.object().shape({
     .required('Password is required'),
 });
 
-const LoginScreen = ({ onSignIn }: LoginScreenProps) => {
+const LoginScreen = () => {
+  const dispatch = useAppDispatch();
+
   const formik = useFormik({
     initialValues: {
       email: '',
       password: '',
     },
     validationSchema,
-    onSubmit: (values) => {
+    onSubmit: (values, { setSubmitting }) => {
       console.log('Form values:', values);
-      onSignIn();
+      const email = values.email.toLowerCase();
+      const role = (email === 'admin@firerelay.com' || email === 'steve@firerelay.com') ? 'admin' : 'user';
+      
+      // Simulate network request delay for a premium loader feel
+      setTimeout(() => {
+        // Save credentials in Redux
+        dispatch(
+          userActions.setUser({
+            id: role === 'admin' ? 'admin-id' : 'user-id',
+            name: role === 'admin' ? 'Steve' : 'User',
+            email: email,
+            role: role,
+          })
+        );
+        dispatch(authActions.login('mock-jwt-token'));
+        setSubmitting(false);
+      }, 1500);
     },
   });
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -101,14 +120,23 @@ const LoginScreen = ({ onSignIn }: LoginScreenProps) => {
                 ]}
                 resizeMode="contain"
               />
-              <Text style={styles.brandSubtitle}>
-                Sign in to access your Fire Relay.
+              <Text style={[styles.brandSubtitle, { fontStyle: 'italic' }]}>
+                Real Referrals, Real Time.
               </Text>
+              <Animated.Text
+                style={[
+                  styles.brandTitle,
+                  { transform: [{ scale: logoScale }] },
+                ]}
+              >
+                Fire Relay
+              </Animated.Text>
             </View>
 
             <View style={styles.form}>
               <Input
                 label="Email*"
+                placeholder="Enter your email address"
                 value={formik.values.email}
                 onChangeText={formik.handleChange('email')}
                 onBlur={formik.handleBlur('email')}
@@ -118,6 +146,7 @@ const LoginScreen = ({ onSignIn }: LoginScreenProps) => {
               />
               <Input
                 label="Password*"
+                placeholder="Enter your password"
                 value={formik.values.password}
                 onChangeText={formik.handleChange('password')}
                 onBlur={formik.handleBlur('password')}
@@ -126,8 +155,9 @@ const LoginScreen = ({ onSignIn }: LoginScreenProps) => {
               />
 
               <Button
-                title="Sign In"
+                title="Sell"
                 onPress={formik.handleSubmit as any}
+                loading={formik.isSubmitting}
                 style={styles.primaryButton}
                 textStyle={styles.primaryButtonText}
               />

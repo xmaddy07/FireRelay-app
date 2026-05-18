@@ -1,12 +1,22 @@
-import type {AuthState, UserState, SessionState, SocketState} from './rootReducer';
+import {configureStore} from '@reduxjs/toolkit';
+import authReducer from './slices/authSlice';
+import sessionReducer from './slices/sessionSlice';
+import socketReducer from './slices/socketSlice';
+import userReducer from './slices/userSlice';
 
-export type AppState = {
-  auth: AuthState;
-  user: UserState;
-  session: SessionState;
-  socket: SocketState;
-};
+export const store = configureStore({
+  reducer: {
+    auth: authReducer,
+    session: sessionReducer,
+    socket: socketReducer,
+    user: userReducer,
+  },
+});
 
-export const store = {} as AppState;
+export type AppState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
-export type {AuthState, UserState, SessionState, SocketState} from './rootReducer';
+export type {AuthState} from './slices/authSlice';
+export type {SessionState} from './slices/sessionSlice';
+export type {SocketState} from './slices/socketSlice';
+export type {UserState} from './slices/userSlice';

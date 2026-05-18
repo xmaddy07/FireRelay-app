@@ -1,11 +1,32 @@
-import type {SessionState} from '../rootReducer';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 
-export const initialSessionState: SessionState = {
+export type SessionState = {
+  activeSessionId?: string;
+  status: 'idle' | 'waiting' | 'active' | 'ended';
+};
+
+const initialState: SessionState = {
   activeSessionId: undefined,
   status: 'idle',
 };
 
-export const sessionActions = {
-  startSession: (id: string) => ({type: 'session/start', payload: id}),
-  endSession: () => ({type: 'session/end'}),
-};
+const sessionSlice = createSlice({
+  name: 'session',
+  initialState,
+  reducers: {
+    startSession: (state, action: PayloadAction<string>) => {
+      state.activeSessionId = action.payload;
+      state.status = 'active';
+    },
+    endSession: (state) => {
+      state.activeSessionId = undefined;
+      state.status = 'ended';
+    },
+    setStatus: (state, action: PayloadAction<SessionState['status']>) => {
+      state.status = action.payload;
+    }
+  },
+});
+
+export const sessionActions = sessionSlice.actions;
+export default sessionSlice.reducer;

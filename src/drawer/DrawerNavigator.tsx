@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Pressable,
@@ -9,34 +9,88 @@ import {
   StyleSheet,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {hp, wp, responsiveSize} from '../utils/responsive';
+import { hp, wp, responsiveSize } from '../utils/responsive';
 import CountiesScreen from '../screens/main/CountiesScreen';
 import UsersScreen from '../screens/main/UsersScreen';
 import KeywordsScreen from '../screens/main/KeywordsScreen';
 import SendersScreen from '../screens/main/SendersScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
-import {fonts, images} from '../constants';
+import DashboardScreen from '../screens/main/DashboardScreen';
+import NotificationsScreen from '../screens/main/NotificationsScreen';
+import { fonts, images } from '../constants';
+import { useAppSelector, useAppDispatch } from '../redux/hooks';
+import { userActions } from '../redux/slices/userSlice';
+import { authActions } from '../redux/slices/authSlice';
 
-const menuItems = [
-  {key: 'Counties', label: 'Counties', icon: images.home},
-  {key: 'Users', label: 'Users', icon: images.users},
-  {key: 'Keywords', label: 'Keywords', icon: images.keyword},
-  {key: 'Senders', label: 'Senders', icon: images.senders},
-  {key: 'Settings', label: 'Settings', icon: images.setting},
+const commonMenuItems = [
+  { key: 'LiveFeed', label: 'Home', icon: images.home },
+  { key: 'LeadLog', label: 'Lead Log', icon: images.users },
+  { key: 'KeywordRequest', label: 'Keyword Request', icon: images.keyword },
+  { key: 'Settings', label: 'Settings', icon: images.senders },
 ] as const;
 
-type MenuItem = typeof menuItems[number]['key'];
+const adminMenuItems = [
+  { key: 'AdminConsole', label: 'Admin Console', icon: images.setting },
+  { key: 'SystemStatus', label: 'System Status', icon: images.home },
+  { key: 'Keywords', label: 'Keywords', icon: images.keyword },
+  { key: 'Users', label: 'Users', icon: images.users },
+] as const;
+
+type MenuItem =
+  | typeof commonMenuItems[number]['key']
+  | typeof adminMenuItems[number]['key'];
 
 const screenMap: Record<MenuItem, React.ComponentType<any>> = {
-  Counties: CountiesScreen,
-  Users: UsersScreen,
-  Keywords: KeywordsScreen,
-  Senders: SendersScreen,
+  LiveFeed: CountiesScreen,
+  LeadLog: UsersScreen,
+  KeywordRequest: KeywordsScreen,
   Settings: SettingsScreen,
+  AdminConsole: DashboardScreen,
+  SystemStatus: SendersScreen,
+  Keywords: KeywordsScreen,
+  Users: UsersScreen,
 };
 
 const DrawerNavigator = () => {
-  const [activeScreen, setActiveScreen] = useState<MenuItem>('Counties');
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.user);
+
+  const role = user.role || 'user';
+  const email = user.email || 'user@firerelay.com';
+
+  const currentMenuItems = role === 'admin' ? adminMenuItems : commonMenuItems;
+  const [activeScreen, setActiveScreen] = useState<MenuItem>(role === 'admin' ? 'AdminConsole' : 'LiveFeed');
+
+  useEffect(() => {
+    setActiveScreen(role === 'admin' ? 'AdminConsole' : 'LiveFeed');
+  }, [role]);
+
+  // ── Notifications overlay ──────────────────────────────────────────────────
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifMounted, setNotifMounted] = useState(false);
+  const notifSlide = useRef(new Animated.Value(1)).current; // 1 = off-screen right
+
+  const openNotifications = () => {
+    setNotifMounted(true);
+    setShowNotifications(true);
+    Animated.spring(notifSlide, {
+      toValue: 0,
+      friction: 9,
+      tension: 60,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeNotifications = () => {
+    setShowNotifications(false);
+    Animated.timing(notifSlide, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start(() => setNotifMounted(false));
+  };
+  // ──────────────────────────────────────────────────────────────────────────
+
   const [isOpen, setIsOpen] = useState(false);
   const [shouldRenderDrawer, setShouldRenderDrawer] = useState(false);
   const drawerWidth = wp(76);
@@ -45,7 +99,7 @@ const DrawerNavigator = () => {
   const drawerOpacity = useRef(new Animated.Value(0)).current;
   const drawerScale = useRef(new Animated.Value(0.96)).current;
   const itemAnimations = useRef(
-    menuItems.map(() => new Animated.Value(0)),
+    Array.from({ length: 12 }, () => new Animated.Value(0))
   ).current;
 
   useEffect(() => {
@@ -71,7 +125,7 @@ const DrawerNavigator = () => {
         tension: 70,
         useNativeDriver: true,
       }),
-    ]).start(({finished}) => {
+    ]).start(({ finished }) => {
       if (finished && !isOpen) {
         setShouldRenderDrawer(false);
         itemAnimations.forEach(animation => animation.setValue(0));
@@ -134,18 +188,43 @@ const DrawerNavigator = () => {
     <LinearGradient
       colors={['#05070A', '#0B1220', '#1A0F08']}
       locations={[0, 0.5, 1]}
-      start={{x: 0, y: 0}}
-      end={{x: 1, y: 1}}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
       style={styles.container}
     >
       <View style={styles.screenContainer}>
-        <ActiveScreen onOpenDrawer={openDrawer} />
+        <ActiveScreen
+          onOpenDrawer={openDrawer}
+          onNotificationPress={openNotifications}
+        />
       </View>
+
+      {/* Notifications overlay */}
+      {notifMounted && (
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              zIndex: 50,
+              transform: [
+                {
+                  translateX: notifSlide.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 500],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <NotificationsScreen onBack={closeNotifications} />
+        </Animated.View>
+      )}
 
       {shouldRenderDrawer && (
         <Animated.View
           pointerEvents={isOpen ? 'auto' : 'none'}
-          style={[styles.overlay, {opacity: overlayOpacity}]}
+          style={[styles.overlay, { opacity: overlayOpacity }]}
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={closeDrawer} />
         </Animated.View>
@@ -162,29 +241,28 @@ const DrawerNavigator = () => {
             styles.drawer,
             {
               opacity: drawerOpacity,
-              transform: [{translateX}, {scale: drawerScale}],
+              transform: [{ translateX }, { scale: drawerScale }],
             },
           ]}
         >
           <LinearGradient
             colors={['#05070A', '#0B1220', '#1A0F08']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.drawerGradient}
           >
             <View style={styles.drawerProfile}>
               <View style={styles.drawerAvatar}>
-                <Text style={styles.drawerAvatarText}>S</Text>
+                <Text style={styles.drawerAvatarText}>{user.name ? user.name[0].toUpperCase() : 'U'}</Text>
               </View>
               <View style={styles.drawerProfileText}>
-                <Text style={styles.drawerEmail}>steve@firerelay.com</Text>
-                <View style={styles.roleBadge}>
-                  <Text style={styles.roleBadgeText}>Admin</Text>
-                </View>
+                <Text style={styles.drawerWelcomeText}>
+                  Welcome back {user.name || 'Steve'}!
+                </Text>
               </View>
             </View>
 
-            {menuItems.map((item, index) => {
+            {currentMenuItems.map((item, index) => {
               const isActive = item.key === activeScreen;
               const itemTranslateX = itemAnimations[index].interpolate({
                 inputRange: [0, 1],
@@ -197,7 +275,7 @@ const DrawerNavigator = () => {
                     styles.drawerItemWrapper,
                     {
                       opacity: itemAnimations[index],
-                      transform: [{translateX: itemTranslateX}],
+                      transform: [{ translateX: itemTranslateX }],
                     },
                   ]}
                 >
@@ -209,8 +287,8 @@ const DrawerNavigator = () => {
                       <LinearGradient
                         colors={['#2F5597', '#9B5427']}
                         locations={[0, 1]}
-                        start={{x: 0, y: 0}}
-                        end={{x: 1, y: 0}}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
                         style={styles.drawerItem}
                       >
                         <Image
@@ -236,6 +314,40 @@ const DrawerNavigator = () => {
                 </Animated.View>
               );
             })}
+
+            {/* Log Out Button */}
+            {(() => {
+              const totalItems = currentMenuItems.length;
+              return (
+                <Animated.View
+                  style={[
+                    styles.drawerItemWrapper,
+                    {
+                      marginTop: 'auto',
+                      marginBottom: 24,
+                      opacity: itemAnimations[totalItems] || 1, // Fallback if out of bounds
+                    },
+                  ]}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    onPress={() => {
+                      dispatch(authActions.logout());
+                      dispatch(userActions.clearUser());
+                    }}
+                  >
+                    <View style={styles.drawerItem}>
+                      <Image
+                        source={images.setting}
+                        style={[styles.drawerItemIcon, { tintColor: '#FF6B6B' }]}
+                        resizeMode="contain"
+                      />
+                      <Text style={[styles.drawerItemText, { color: '#FF6B6B' }]}>Log Out</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })()}
           </LinearGradient>
         </Animated.View>
       )}
@@ -321,16 +433,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: hp(0.4),
   },
-  roleBadge: {
-    backgroundColor: '#fde8ef',
-    borderRadius: wp(3),
-    paddingVertical: hp(0.6),
-    paddingHorizontal: wp(3),
+  drawerWelcomeText: {
+    fontSize: responsiveSize(14),
+    fontWeight: '500',
+    color: '#38bdf8',
+    marginBottom: hp(0.2),
   },
-  roleBadgeText: {
-    color: '#dc2626',
-    fontSize: responsiveSize(12),
+  sectionHeader: {
+    fontSize: responsiveSize(14),
     fontWeight: '700',
+    color: '#10b981',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginTop: hp(2.5),
+    marginBottom: hp(1.5),
+    paddingHorizontal: wp(5),
   },
   drawerItemWrapper: {
     marginBottom: hp(1),

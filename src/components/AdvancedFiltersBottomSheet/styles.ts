@@ -266,4 +266,45 @@ export const styles = StyleSheet.create({
     fontSize: responsiveSize(14),
     color: '#6366f1',
   },
+  presetButtonActive: {
+    borderColor: '#3b82f6',
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+  },
+  presetButtonTextActive: {
+    color: '#3b82f6',
+    fontWeight: '700',
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp(2.5),
+    gap: wp(1.5),
+  },
+  priorityOption: {
+    flex: 1,
+    paddingVertical: hp(0.8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: wp(5),
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+  },
+  priorityOptionActive: {
+    borderColor: '#3b82f6',
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+  },
+  priorityOptionText: {
+    fontSize: responsiveSize(13),
+    color: '#cbd5e1',
+    fontWeight: '500',
+  },
+  priorityOptionTextActive: {
+    color: '#3b82f6',
+    fontWeight: '700',
+  },
+  searchIconLeft: {
+    marginRight: wp(2),
+  },
 });

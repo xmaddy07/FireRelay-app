@@ -12,6 +12,7 @@ type Props = {
   onBackPress?: () => void;
   showFilter?: boolean;
   onFilterPress?: () => void;
+  onNotificationPress?: () => void;
 };
 
 const Header = ({
@@ -22,6 +23,7 @@ const Header = ({
   onBackPress,
   showFilter,
   onFilterPress,
+  onNotificationPress,
 }: Props) => (
   <View style={styles.container}>
     <TouchableOpacity
@@ -53,7 +55,11 @@ const Header = ({
           />
         </TouchableOpacity>
       )}
-      <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.notificationButton}
+        activeOpacity={0.7}
+        onPress={onNotificationPress}
+      >
         <Image
           source={images.notification}
           style={styles.notificationIcon}
