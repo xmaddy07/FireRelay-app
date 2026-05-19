@@ -17,7 +17,7 @@ import SendersScreen from '../screens/main/SendersScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 import DashboardScreen from '../screens/main/DashboardScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
-import { fonts, images } from '../constants';
+import { colors, fonts, glass, images } from '../constants';
 import { useAppSelector, useAppDispatch } from '../redux/hooks';
 import { userActions } from '../redux/slices/userSlice';
 import { authActions } from '../redux/slices/authSlice';
@@ -186,7 +186,7 @@ const DrawerNavigator = () => {
 
   return (
     <LinearGradient
-      colors={['#05070A', '#0B1220', '#1A0F08']}
+      colors={[...glass.screenGradient]}
       locations={[0, 0.5, 1]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -246,7 +246,7 @@ const DrawerNavigator = () => {
           ]}
         >
           <LinearGradient
-            colors={['#05070A', '#0B1220', '#1A0F08']}
+            colors={[...glass.screenGradient]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.drawerGradient}
@@ -285,7 +285,7 @@ const DrawerNavigator = () => {
                   >
                     {isActive ? (
                       <LinearGradient
-                        colors={['#2F5597', '#9B5427']}
+                        colors={[...colors.buttonGradient]}
                         locations={[0, 1]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
@@ -339,10 +339,10 @@ const DrawerNavigator = () => {
                     <View style={styles.drawerItem}>
                       <Image
                         source={images.setting}
-                        style={[styles.drawerItemIcon, { tintColor: '#FF6B6B' }]}
+                        style={[styles.drawerItemIcon, { tintColor: colors.primary }]}
                         resizeMode="contain"
                       />
-                      <Text style={[styles.drawerItemText, { color: '#FF6B6B' }]}>Log Out</Text>
+                      <Text style={[styles.drawerItemText, { color: colors.primary }]}>Log Out</Text>
                     </View>
                   </TouchableOpacity>
                 </Animated.View>
@@ -369,10 +369,10 @@ const styles = StyleSheet.create({
     width: wp(12),
     height: wp(12),
     borderRadius: wp(4),
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 4,
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     zIndex: 90,
   },
   drawer: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: wp(76),
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.22,
     shadowRadius: 24,
     elevation: 10,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   drawerProfile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#11151f',
+    backgroundColor: colors.surface,
     borderRadius: wp(5),
     padding: wp(4),
     marginBottom: hp(3),
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     width: wp(14),
     height: wp(14),
     borderRadius: wp(7),
-    backgroundColor: '#1e293b',
+    backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: wp(4),
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   drawerAvatarText: {
     fontSize: responsiveSize(18),
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text,
   },
   drawerProfileText: {
     flex: 1,
@@ -430,13 +430,13 @@ const styles = StyleSheet.create({
   drawerEmail: {
     fontSize: responsiveSize(16),
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text,
     marginBottom: hp(0.4),
   },
   drawerWelcomeText: {
     fontSize: responsiveSize(14),
     fontWeight: '500',
-    color: '#38bdf8',
+    color: colors.primary,
     marginBottom: hp(0.2),
   },
   sectionHeader: {
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   drawerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#11151f',
+    backgroundColor: colors.surface,
     borderRadius: wp(4),
     paddingVertical: hp(1.5),
     paddingHorizontal: wp(5),
@@ -463,19 +463,19 @@ const styles = StyleSheet.create({
   drawerItemIcon: {
     width: wp(6),
     height: wp(6),
-    tintColor: '#94a3b8',
+    tintColor: colors.textSecondary,
   },
   drawerItemIconActive: {
-    tintColor: '#fff',
+    tintColor: colors.white,
   },
   drawerItemText: {
     marginLeft: wp(4),
     fontSize: responsiveSize(16),
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     fontFamily: fonts.medium,
   },
   drawerItemTextActive: {
-    color: '#fff',
+    color: colors.text,
     fontFamily: fonts.semibold,
   },
 });

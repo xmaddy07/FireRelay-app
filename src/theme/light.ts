@@ -1,5 +1,7 @@
+import {colors} from '../constants/colors';
+
 export const light = {
-  background: '#ffffff',
-  text: '#111111',
-  card: '#f7f9ff',
+  background: colors.background,
+  text: colors.text,
+  card: colors.surface,
 };

@@ -1,22 +1,23 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../../../constants';
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07080e',
+    backgroundColor: colors.background,
   },
   content: {
   },
   title: {
     fontSize: responsiveSize(34),
     fontWeight: '800',
-    color: '#fff',
+    color: colors.text,
     marginBottom: hp(1),
   },
   subtitle: {
     fontSize: responsiveSize(15),
-    color: '#9ca3af',
+    color: colors.textSecondary,
     marginBottom: hp(3),
     lineHeight: responsiveSize(22),
   },
@@ -26,7 +27,7 @@ export const styles = StyleSheet.create({
     marginBottom: hp(2),
   },
   chip: {
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     borderRadius: wp(4),
     paddingVertical: hp(1.5),
     paddingHorizontal: wp(4),

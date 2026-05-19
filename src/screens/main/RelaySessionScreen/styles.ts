@@ -1,19 +1,20 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../../../constants';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#07080e',
+    backgroundColor: colors.background,
   },
   sessionInfo: {
     padding: 20,
     borderRadius: 20,
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     marginBottom: 24,
   },
   infoLabel: {
-    color: '#9ca3af',
+    color: colors.textSecondary,
     marginTop: 10,
     fontSize: 14,
   },
@@ -21,7 +22,7 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginTop: 4,
-    color: '#fff',
+    color: colors.text,
   },
   footer: {
     marginTop: 16,

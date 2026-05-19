@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
 import { styles } from './styles';
-import { images } from '../../constants';
+import { colors, images } from '../../constants';
 
 type Props = {
   title: string;
@@ -11,6 +11,7 @@ type Props = {
   showBack?: boolean;
   onBackPress?: () => void;
   showFilter?: boolean;
+  showNotification?: boolean;
   onFilterPress?: () => void;
   onNotificationPress?: () => void;
 };
@@ -22,21 +23,24 @@ const Header = ({
   showBack,
   onBackPress,
   showFilter,
+  showNotification,
   onFilterPress,
   onNotificationPress,
 }: Props) => (
   <View style={styles.container}>
-    <TouchableOpacity
-      style={styles.menuButton}
-      onPress={showBack ? onBackPress : onMenuPress}
-      activeOpacity={0.7}
-    >
-      {showBack ? (
-        <Icon name="arrowleft" size={24} color="#fff" />
-      ) : (
-        <Image source={images.menu} style={styles.menuIcon} resizeMode="contain" />
-      )}
-    </TouchableOpacity>
+    {(showBack || onMenuPress) && (
+      <TouchableOpacity
+        style={styles.menuButton}
+        onPress={showBack ? onBackPress : onMenuPress}
+        activeOpacity={0.7}
+      >
+        {showBack ? (
+          <Icon name="arrowleft" size={24} color={colors.white} />
+        ) : (
+          <Image source={images.menu} style={styles.menuIcon} resizeMode="contain" />
+        )}
+      </TouchableOpacity>
+    )}
     <View style={styles.titleContainer}>
       <Text style={styles.title}>{title}</Text>
       {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -55,17 +59,18 @@ const Header = ({
           />
         </TouchableOpacity>
       )}
-      <TouchableOpacity
+     {showNotification && <TouchableOpacity
         style={styles.notificationButton}
         activeOpacity={0.7}
-        onPress={onNotificationPress}
-      >
-        <Image
-          source={images.notification}
-          style={styles.notificationIcon}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
+          onPress={onNotificationPress}
+        >
+          <Image
+            source={images.notification}
+            style={styles.notificationIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      }
     </View>
   </View>
 );

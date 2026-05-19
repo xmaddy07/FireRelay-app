@@ -5,17 +5,42 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  Easing,
   StyleSheet,
   Image,
   FlatList,
+  Pressable,
 } from 'react-native';
 import { styles } from './styles';
 import Header from '../../../components/Header';
 import CountyDetailScreen from '../CountyDetailScreen';
+import AdvancedFiltersBottomSheet from '../../../components/AdvancedFiltersBottomSheet';
 import LinearGradient from 'react-native-linear-gradient';
-import { images } from '../../../constants';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import { hp } from '../../../utils/responsive';
+import { glass, images } from '../../../constants';
+
+const ALERT_BORDER_CONFIG = {
+  critical: {
+    dim: 'rgba(255, 84, 81, 0.16)',
+    bright: 'rgba(255, 84, 81, 0.45)',
+    duration: 900,
+  },
+  warning: {
+    dim: 'rgba(245, 158, 11, 0.12)',
+    bright: 'rgba(245, 158, 11, 0.38)',
+    duration: 1200,
+  },
+};
+
+type AdvancedFeedFilters = {
+  county: string;
+  feedType: string;
+  keywordPriority: string;
+  keywords: string;
+  talkgroup: string;
+  talkgroupId: string;
+  fromDate: string;
+  toDate: string;
+};
 
 type County = { name: string; code: string; est: string };
 
@@ -30,6 +55,68 @@ type FeedItem = {
   severity: 'critical' | 'warning' | 'info';
   starred: boolean;
 };
+
+const PRIORITY_SEVERITY: Record<string, FeedItem['severity']> = {
+  High: 'critical',
+  Medium: 'warning',
+  Low: 'info',
+};
+
+const matchesFeedFilters = (item: FeedItem, filters: AdvancedFeedFilters): boolean => {
+  if (filters.county && item.county !== filters.county) {
+    return false;
+  }
+  if (filters.feedType !== 'All' && item.type !== filters.feedType.toLowerCase()) {
+    return false;
+  }
+  if (filters.keywordPriority !== 'All') {
+    if (filters.keywordPriority === 'Nada') {
+      if (item.type !== 'general') return false;
+    } else {
+      const targetSeverity = PRIORITY_SEVERITY[filters.keywordPriority];
+      if (targetSeverity && item.severity !== targetSeverity) {
+        return false;
+      }
+    }
+  }
+  if (filters.keywords) {
+    const query = filters.keywords.toLowerCase();
+    const inSnippet = item.snippet.toLowerCase().includes(query);
+    const inTalkgroup = item.talkgroup.toLowerCase().includes(query);
+    if (!inSnippet && !inTalkgroup) {
+      return false;
+    }
+  }
+  if (
+    filters.talkgroup &&
+    !item.talkgroup.toLowerCase().includes(filters.talkgroup.toLowerCase())
+  ) {
+    return false;
+  }
+  if (filters.talkgroupId && item.talkgroupId !== filters.talkgroupId) {
+    return false;
+  }
+  return true;
+};
+
+const isFeedFiltersEmpty = (filters: {
+  county: string;
+  feedType: string;
+  keywordPriority: string;
+  fromDate: string;
+  toDate: string;
+  keywords: string;
+  talkgroup: string;
+  talkgroupId: string;
+}) =>
+  !filters.county &&
+  filters.feedType === 'All' &&
+  filters.keywordPriority === 'All' &&
+  !filters.fromDate &&
+  !filters.toDate &&
+  !filters.keywords &&
+  !filters.talkgroup &&
+  !filters.talkgroupId;
 
 const counties: County[] = [
   { name: 'Travis', code: 'TX-TRA', est: '1840' },
@@ -107,41 +194,373 @@ const mockFeedItems: FeedItem[] = [
 ];
 
 type Props = {
-  onOpenDrawer?: () => void;
   onNotificationPress?: () => void;
 };
 
-const CountiesScreen = ({ onOpenDrawer, onNotificationPress }: Props) => {
+const LivePulseDot = () => {
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim]);
+
+  const ringScale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 2.8],
+  });
+  const ringOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.55, 0],
+  });
+  const dotScale = pulseAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.2, 1],
+  });
+  const dotOpacity = pulseAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 0.75, 1],
+  });
+
+  return (
+    <View style={styles.livePulseWrapper}>
+      <Animated.View
+        style={[
+          styles.livePulseRing,
+          { opacity: ringOpacity, transform: [{ scale: ringScale }] },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.livePulseDot,
+          { opacity: dotOpacity, transform: [{ scale: dotScale }] },
+        ]}
+      />
+    </View>
+  );
+};
+
+const CountyCard = ({
+  county,
+  fadeAnim,
+  slideAnim,
+  onPress,
+}: {
+  county: County;
+  fadeAnim: Animated.Value;
+  slideAnim: Animated.Value;
+  onPress: () => void;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.94,
+      friction: 6,
+      tension: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 5,
+      tension: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Animated.View
+      style={{
+        opacity: fadeAnim,
+        transform: [
+          { translateX: slideAnim },
+          { scale: scaleAnim },
+        ],
+      }}
+    >
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={styles.horizontalCardCompact}>
+          <View style={styles.horizontalCardIconWrapperCompact}>
+            <Image source={images.map} style={styles.horizontalCardIconImage as any} />
+          </View>
+          <View style={styles.horizontalCardTextCompact}>
+            <Text style={styles.horizontalCardTitleCompact} numberOfLines={1}>
+              {county.name}
+            </Text>
+            <View style={styles.horizontalCardMetaRow}>
+              <Text style={styles.horizontalCardMetaCompact} numberOfLines={1}>
+                {county.code}
+              </Text>
+              <View style={styles.dotCompact} />
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+const AnimatedAlertFeedCard = ({
+  severity,
+  children,
+}: {
+  severity: 'critical' | 'warning';
+  children: React.ReactNode;
+}) => {
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+  const config = ALERT_BORDER_CONFIG[severity];
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: config.duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: config.duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim, config.duration]);
+
+  const borderColor = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [config.dim, config.bright],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.feedItemCard,
+        styles.feedItemCardAlertBorder,
+        { borderColor },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
+const FeedListItem = ({
+  item,
+  entranceAnim,
+  onToggleStar,
+}: {
+  item: FeedItem;
+  entranceAnim: Animated.Value;
+  onToggleStar: (id: string) => void;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  let badgeStyle = styles.feedBadgeGeneral;
+  let badgeTextStyle = styles.feedBadgeGeneralText;
+  let badgeLabel = 'GENERAL';
+
+  if (item.type === 'fire') {
+    badgeStyle = styles.feedBadgeFire;
+    badgeTextStyle = styles.feedBadgeFireText;
+    badgeLabel = 'FIRE';
+  } else if (item.type === 'medical') {
+    badgeStyle = styles.feedBadgeMedical;
+    badgeTextStyle = styles.feedBadgeMedicalText;
+    badgeLabel = 'MEDICAL';
+  } else if (item.type === 'police') {
+    badgeStyle = styles.feedBadgePolice;
+    badgeTextStyle = styles.feedBadgePoliceText;
+    badgeLabel = 'POLICE';
+  }
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.98,
+      friction: 6,
+      tension: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 5,
+      tension: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const slideStyle = {
+    opacity: entranceAnim,
+    transform: [
+      {
+        translateY: entranceAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [18, 0],
+        }),
+      },
+      { scale: scaleAnim },
+    ],
+  };
+
+  const isHighAlert = item.severity === 'critical' || item.severity === 'warning';
+
+  const cardContent = (
+    <>
+      <View style={styles.feedItemHeader}>
+        <View style={styles.feedItemBadgeContainer}>
+          <View style={[styles.feedBadge, badgeStyle]}>
+            <Text style={[styles.feedBadgeText, badgeTextStyle]}>{badgeLabel}</Text>
+          </View>
+          <Text style={styles.feedCountyText}>{item.county.toUpperCase()} COUNTY</Text>
+        </View>
+        <Text style={styles.feedTimeText}>{item.time}</Text>
+      </View>
+
+      <Text style={styles.feedTalkgroupText}>{item.talkgroup} (ID: {item.talkgroupId})</Text>
+      <Text style={styles.feedSnippetText}>{item.snippet}</Text>
+
+      <View style={styles.feedItemFooter}>
+        <TouchableOpacity
+          onPress={() => onToggleStar(item.id)}
+          style={styles.feedStarButton}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.feedStarIcon,
+            item.starred ? styles.feedStarIconActive : styles.feedStarIconInactive,
+          ]}>
+            {item.starred ? '★' : '☆'}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.feedMetaText}>
+          {item.severity.toUpperCase()} • SECURED
+        </Text>
+      </View>
+    </>
+  );
+
+  return (
+    <Animated.View style={slideStyle}>
+      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
+        {isHighAlert ? (
+          <AnimatedAlertFeedCard
+            severity={item.severity === 'critical' ? 'critical' : 'warning'}
+          >
+            {cardContent}
+          </AnimatedAlertFeedCard>
+        ) : (
+          <View style={styles.feedItemCard}>{cardContent}</View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+const CountiesScreen = ({ onNotificationPress }: Props) => {
   const [selectedCounty, setSelectedCounty] = useState<County | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const transitionAnim = useRef(new Animated.Value(0)).current;
 
   // Live Feed State
   const [feedItems, setFeedItems] = useState<FeedItem[]>(mockFeedItems);
-  const [selectedFilter, setSelectedFilter] = useState<'All' | 'Fire' | 'Medical' | 'Police'>('All');
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFeedFilters | null>(null);
 
   // Entrance animations
   const listEntranceAnim = useRef(new Animated.Value(0)).current;
   const cardFades = useRef(counties.map(() => new Animated.Value(0))).current;
-  const cardSlides = useRef(counties.map(() => new Animated.Value(20))).current;
+  const cardSlides = useRef(counties.map(() => new Animated.Value(24))).current;
+  const feedItemAnimsRef = useRef<Record<string, Animated.Value>>({});
+  const hasMountedRef = useRef(false);
+
+  const getFeedItemAnim = (id: string) => {
+    if (!feedItemAnimsRef.current[id]) {
+      feedItemAnimsRef.current[id] = new Animated.Value(0);
+    }
+    return feedItemAnimsRef.current[id];
+  };
+
+  const animateFeedList = (items: FeedItem[]) => {
+    const anims = items.map(item => {
+      const anim = getFeedItemAnim(item.id);
+      anim.setValue(0);
+      return anim;
+    });
+    if (anims.length === 0) return;
+
+    Animated.stagger(
+      55,
+      anims.map(anim =>
+        Animated.spring(anim, {
+          toValue: 1,
+          friction: 7,
+          tension: 65,
+          useNativeDriver: true,
+        }),
+      ),
+    ).start();
+  };
 
   useEffect(() => {
-    // Initial entrance sequence
     Animated.sequence([
       Animated.timing(listEntranceAnim, {
         toValue: 1,
         duration: 500,
         useNativeDriver: true,
       }),
-      Animated.stagger(100, [
-        ...cardFades.map((fade, i) =>
+      Animated.stagger(
+        90,
+        cardFades.map((fade, i) =>
           Animated.parallel([
-            Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }),
-            Animated.timing(cardSlides[i], { toValue: 0, duration: 400, useNativeDriver: true })
-          ])
-        )
-      ])
-    ]).start();
+            Animated.spring(fade, {
+              toValue: 1,
+              friction: 7,
+              tension: 60,
+              useNativeDriver: true,
+            }),
+            Animated.spring(cardSlides[i], {
+              toValue: 0,
+              friction: 7,
+              tension: 60,
+              useNativeDriver: true,
+            }),
+          ]),
+        ),
+      ),
+    ]).start(() => {
+      animateFeedList(mockFeedItems);
+      hasMountedRef.current = true;
+    });
   }, []);
 
   const handleSelectCounty = (county: County) => {
@@ -173,10 +592,18 @@ const CountiesScreen = ({ onOpenDrawer, onNotificationPress }: Props) => {
     );
   };
 
-  const filteredFeed = feedItems.filter(item => {
-    if (selectedFilter === 'All') return true;
-    return item.type.toLowerCase() === selectedFilter.toLowerCase();
-  });
+  const hasAdvancedFilters = advancedFilters !== null;
+
+  const filteredFeed = advancedFilters
+    ? feedItems.filter(item => matchesFeedFilters(item, advancedFilters))
+    : feedItems;
+
+  const feedListKey = filteredFeed.map(item => item.id).join(',');
+
+  useEffect(() => {
+    if (!hasMountedRef.current) return;
+    animateFeedList(filteredFeed);
+  }, [feedListKey]);
 
   const listOpacity = transitionAnim.interpolate({
     inputRange: [0, 1],
@@ -198,169 +625,91 @@ const CountiesScreen = ({ onOpenDrawer, onNotificationPress }: Props) => {
     outputRange: [50, 0],
   });
 
-  const renderFeedItem = ({ item }: { item: FeedItem }) => {
-    let badgeStyle = styles.feedBadgeGeneral;
-    let badgeTextStyle = styles.feedBadgeGeneralText;
-    let badgeLabel = 'GENERAL';
+  const renderFeedItem = ({ item }: { item: FeedItem }) => (
+    <FeedListItem
+      item={item}
+      entranceAnim={getFeedItemAnim(item.id)}
+      onToggleStar={handleToggleStar}
+    />
+  );
 
-    if (item.type === 'fire') {
-      badgeStyle = styles.feedBadgeFire;
-      badgeTextStyle = styles.feedBadgeFireText;
-      badgeLabel = 'FIRE';
-    } else if (item.type === 'medical') {
-      badgeStyle = styles.feedBadgeMedical;
-      badgeTextStyle = styles.feedBadgeMedicalText;
-      badgeLabel = 'MEDICAL';
-    } else if (item.type === 'police') {
-      badgeStyle = styles.feedBadgePolice;
-      badgeTextStyle = styles.feedBadgePoliceText;
-      badgeLabel = 'POLICE';
-    }
-
-    return (
-      <View style={styles.feedItemCard}>
-        <View style={styles.feedItemHeader}>
-          <View style={styles.feedItemBadgeContainer}>
-            <View style={[styles.feedBadge, badgeStyle]}>
-              <Text style={[styles.feedBadgeText, badgeTextStyle]}>{badgeLabel}</Text>
-            </View>
-            <Text style={styles.feedCountyText}>{item.county.toUpperCase()} COUNTY</Text>
-          </View>
-          <Text style={styles.feedTimeText}>{item.time}</Text>
-        </View>
-
-        <Text style={styles.feedTalkgroupText}>{item.talkgroup} (ID: {item.talkgroupId})</Text>
-        <Text style={styles.feedSnippetText}>{item.snippet}</Text>
-
-        <View style={styles.feedItemFooter}>
-          <TouchableOpacity
-            onPress={() => handleToggleStar(item.id)}
-            style={styles.feedStarButton}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.feedStarIcon,
-              item.starred ? styles.feedStarIconActive : styles.feedStarIconInactive
-            ]}>
-              {item.starred ? '★' : '☆'}
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.feedMetaText}>
-            {item.severity.toUpperCase()} • SECURED
-          </Text>
+  const renderCountiesStrip = () => (
+    <Animated.View style={{ opacity: listEntranceAnim }}>
+      <View style={styles.sectionHeaderCompact}>
+        <Text style={styles.sectionTitleCompact}>Counties</Text>
+        <View style={styles.countBadgeCompact}>
+          <Text style={styles.countBadgeTextCompact}>{counties.length} ACTIVE</Text>
         </View>
       </View>
-    );
-  };
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horizontalScrollContent}
+        style={styles.countiesHorizontalContainer}
+      >
+        {counties.map((county, index) => (
+          <CountyCard
+            key={county.name}
+            county={county}
+            fadeAnim={cardFades[index]}
+            slideAnim={cardSlides[index]}
+            onPress={() => handleSelectCounty(county)}
+          />
+        ))}
+      </ScrollView>
+    </Animated.View>
+  );
 
-  const renderListHeader = () => (
-    <View>
-      {/* Counties Section Title */}
-      <Animated.View style={{ opacity: listEntranceAnim }}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Counties</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{counties.length} ACTIVE</Text>
-          </View>
+  const renderFeedSection = () => (
+    <Animated.View style={[styles.feedSection, { opacity: listEntranceAnim }]}>
+      <View style={styles.feedSectionHeader}>
+        <View style={styles.feedTitleRow}>
+          <LivePulseDot />
+          <Text style={styles.feedSectionTitle}>Live Feed</Text>
         </View>
-        <Text style={styles.sectionCaption}>TAP A COUNTY TO VIEW LIVE DISPATCH DETAILS</Text>
-      </Animated.View>
-
-      {/* Counties Horizontal Scroll */}
-      <View style={styles.countiesHorizontalContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalScrollContent}
+        <TouchableOpacity
+          style={[styles.filterIconButton, hasAdvancedFilters && styles.filterIconButtonActive]}
+          onPress={() => setFilterSheetVisible(true)}
+          activeOpacity={0.7}
         >
-          {counties.map((county, index) => (
-            <TouchableOpacity
-              key={county.name}
-              onPress={() => handleSelectCounty(county)}
-              activeOpacity={0.7}
-            >
-              <Animated.View style={[styles.horizontalCard, {
-                opacity: cardFades[index],
-                transform: [{ translateY: cardSlides[index] }]
-              }]}>
-                <View style={styles.horizontalCardHeader}>
-                  <View style={styles.horizontalCardIconWrapper}>
-                    <Image source={images.map} style={styles.horizontalCardIconImage as any} />
-                  </View>
-                  <View style={styles.dotWrapper}>
-                    <View style={styles.dot} />
-                  </View>
-                </View>
-                <View style={styles.horizontalCardContent}>
-                  <Text style={styles.horizontalCardTitle}>{county.name}</Text>
-                  <Text style={styles.horizontalCardMeta}>{county.code} | EST. {county.est}</Text>
-                </View>
-              </Animated.View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          <Image source={images.filter} style={styles.filterIcon} resizeMode="contain" />
+        </TouchableOpacity>
       </View>
-
-      {/* Feed Section Title */}
-      <Animated.View style={[styles.feedHeaderRow, { opacity: listEntranceAnim }]}>
-        <View style={styles.feedTitleContainer}>
-          <View style={styles.livePulseDot} />
-          <Text style={styles.feedTitle}>Live Feed</Text>
-        </View>
-        <Text style={styles.feedSubtitle}>REAL-TIME ALERTS</Text>
-      </Animated.View>
-
-      {/* Category Chips */}
-      <Animated.View style={{ opacity: listEntranceAnim }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsContainer}
-        >
-          {(['All', 'Fire', 'Medical', 'Police'] as const).map(filter => {
-            const isActive = selectedFilter === filter;
-            return (
-              <TouchableOpacity
-                key={filter}
-                style={[styles.chip, isActive && styles.chipActive]}
-                onPress={() => setSelectedFilter(filter)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                  {filter.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </Animated.View>
-    </View>
+    </Animated.View>
   );
 
 
 
   return (
     <LinearGradient
-      colors={['#05070A', '#0B1220', '#1A0F08']}
+      colors={[...glass.screenGradient]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, {
+      <Animated.View style={[StyleSheet.absoluteFill, styles.screenBody, {
         opacity: listOpacity,
         transform: [{ translateX: listTranslateX }],
         zIndex: isDetailVisible ? 0 : 1,
       }]}>
         <Animated.View style={{ opacity: listEntranceAnim }}>
-          <Header title="Live Feed" onMenuPress={onOpenDrawer} onNotificationPress={onNotificationPress} />
+          <Header
+            title="Live Feed"
+            onNotificationPress={onNotificationPress}
+            showNotification={true}
+          />
         </Animated.View>
 
+        {renderCountiesStrip()}
+        {renderFeedSection()}
+
         <FlatList
+          style={styles.feedList}
           data={filteredFeed}
           renderItem={renderFeedItem}
           keyExtractor={item => item.id}
-          ListHeaderComponent={renderListHeader}
-          contentContainerStyle={styles.content}
+          extraData={feedListKey}
+          contentContainerStyle={styles.feedListContent}
           showsVerticalScrollIndicator={false}
         />
       </Animated.View>
@@ -379,6 +728,28 @@ const CountiesScreen = ({ onOpenDrawer, onNotificationPress }: Props) => {
           )}
         </Animated.View>
       )}
+
+      <AdvancedFiltersBottomSheet
+        visible={filterSheetVisible}
+        onClose={() => setFilterSheetVisible(false)}
+        onApply={filters => {
+          if (isFeedFiltersEmpty(filters)) {
+            setAdvancedFilters(null);
+            return;
+          }
+
+          setAdvancedFilters({
+            county: filters.county,
+            feedType: filters.feedType,
+            keywordPriority: filters.keywordPriority,
+            keywords: filters.keywords,
+            talkgroup: filters.talkgroup,
+            talkgroupId: filters.talkgroupId,
+            fromDate: filters.fromDate,
+            toDate: filters.toDate,
+          });
+        }}
+      />
     </LinearGradient>
   );
 };

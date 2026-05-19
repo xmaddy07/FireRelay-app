@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { styles } from './styles';
 import LinearGradient from 'react-native-linear-gradient';
-import { images } from '../../../constants';
+import { glass, images } from '../../../constants';
 import AdvancedFiltersBottomSheet from '../../../components/AdvancedFiltersBottomSheet';
 
 type Props = {
@@ -118,7 +118,7 @@ const CountyDetailScreen = ({ county, onBack }: Props) => {
 
   return (
     <LinearGradient
-      colors={['#05070A', '#0B1220', '#1A0F08']}
+      colors={[...glass.screenGradient]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}

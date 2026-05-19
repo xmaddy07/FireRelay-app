@@ -1,26 +1,27 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../../../constants';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#07080e',
+    backgroundColor: colors.background,
   },
   statusCard: {
     padding: 20,
     borderRadius: 20,
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     marginBottom: 24,
   },
   statusLabel: {
     fontSize: 16,
-    color: '#9ca3af',
+    color: colors.textSecondary,
   },
   statusText: {
     marginTop: 10,
     fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text,
   },
   controls: {
     marginTop: 12,

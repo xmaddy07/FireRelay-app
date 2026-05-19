@@ -1,14 +1,15 @@
 import { StyleSheet } from 'react-native';
+import { colors } from '../../../constants';
 import { hp, wp, responsiveSize } from '../../../utils/responsive';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07080e',
+    backgroundColor: colors.background,
   },
   subtitle: {
     fontSize: responsiveSize(15),
-    color: '#9ca3af',
+    color: colors.textSecondary,
     marginBottom: hp(2),
     lineHeight: responsiveSize(22),
     paddingHorizontal: wp(4),
@@ -22,7 +23,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     paddingVertical: hp(2.5),
     paddingHorizontal: wp(5),
     borderRadius: wp(3),
@@ -32,7 +33,7 @@ export const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: responsiveSize(17),
-    color: '#fff',
+    color: colors.text,
     fontWeight: '600',
   },
   // Tab/Page Content styles
@@ -50,21 +51,39 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(249, 115, 22, 0.1)',
     alignItems: 'center',
   },
+  logoutItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingVertical: hp(2.5),
+    paddingHorizontal: wp(5),
+    borderRadius: wp(3),
+    marginTop: hp(2),
+    marginBottom: hp(4),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  logoutIcon: {
+    width: wp(6),
+    height: wp(6),
+    tintColor: colors.primary,
+    marginRight: wp(4),
+  },
   logoutText: {
-    color: '#f97316',
+    color: colors.primary,
     fontSize: responsiveSize(16),
     fontWeight: '600',
   },
   sectionTitle: {
     fontSize: responsiveSize(18),
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text,
     marginBottom: hp(1),
     marginTop: hp(1),
   },
   sectionSubtitle: {
     fontSize: responsiveSize(14),
-    color: '#94a3b8',
+    color: colors.textSecondary,
     marginBottom: hp(3),
   },
   inputGap: {
@@ -74,7 +93,7 @@ export const styles = StyleSheet.create({
     marginTop: hp(3),
   },
   infoCard: {
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     borderRadius: wp(2),
     padding: wp(4),
     marginBottom: hp(3),
@@ -83,17 +102,17 @@ export const styles = StyleSheet.create({
     marginBottom: hp(2),
   },
   infoLabel: {
-    color: '#94a3b8',
+    color: colors.textSecondary,
     fontSize: responsiveSize(13),
     marginBottom: hp(0.5),
   },
   infoValue: {
-    color: '#fff',
+    color: colors.text,
     fontSize: responsiveSize(15),
     fontWeight: '500',
   },
   subtext: {
-    color: '#94a3b8',
+    color: colors.textSecondary,
     fontSize: responsiveSize(12),
     marginTop: hp(0.5),
     marginBottom: hp(2),
@@ -104,7 +123,7 @@ export const styles = StyleSheet.create({
     marginTop: hp(1),
   },
   subscriptionCard: {
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     borderRadius: wp(2),
     padding: wp(4),
     flexDirection: 'row',
@@ -118,13 +137,13 @@ export const styles = StyleSheet.create({
     marginRight: wp(4),
   },
   subscriptionTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: responsiveSize(16),
     fontWeight: '600',
     marginBottom: hp(0.5),
   },
   subscriptionDesc: {
-    color: '#94a3b8',
+    color: colors.textSecondary,
     fontSize: responsiveSize(13),
     lineHeight: responsiveSize(18),
   },

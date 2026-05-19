@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import LoginScreen from '../screens/auth/LoginScreen';
-import DrawerNavigator from '../drawer';
+import TabNavigator from './TabNavigator';
 import {useAppSelector} from '../redux/hooks';
 
 export const AppNavigator = () => {
@@ -10,7 +10,7 @@ export const AppNavigator = () => {
   return (
     <NavigationContainer>
       {isAuthenticated ? (
-        <DrawerNavigator />
+        <TabNavigator />
       ) : (
         <LoginScreen />
       )}

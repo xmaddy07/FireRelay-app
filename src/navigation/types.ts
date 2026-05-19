@@ -2,7 +2,7 @@ export type Routes =
   | 'Login'
   | 'Signup'
   | 'ForgotPassword'
-  | 'Drawer'
+  | 'MainTabs'
   | 'Dashboard'
   | 'Profile'
   | 'Settings'

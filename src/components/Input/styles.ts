@@ -1,4 +1,5 @@
 import {StyleSheet} from 'react-native';
+import {colors, fonts} from '../../constants';
 import {hp, wp, responsiveSize} from '../../utils/responsive';
 
 export const styles = StyleSheet.create({
@@ -14,10 +15,10 @@ export const styles = StyleSheet.create({
     left: wp(5.2),
     zIndex: 1,
     paddingHorizontal: wp(1.2),
-    backgroundColor: '#0B1220',
-    color: '#f5f7fb',
+    backgroundColor: colors.background,
+    color: colors.text,
     fontSize: responsiveSize(14),
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -26,7 +27,7 @@ export const styles = StyleSheet.create({
     borderRadius: wp(3),
     paddingHorizontal: wp(4),
     borderWidth: 0.9,
-    borderColor: '#ff6f00',
+    borderColor: colors.primary,
     minHeight: hp(6.8),
   },
   iconContainer: {
@@ -34,20 +35,56 @@ export const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#eef2ff',
+    color: colors.text,
     height: hp(5.8),
     fontSize: responsiveSize(16),
+    fontFamily: fonts.regular,
   },
   inputWithIcon: {
     paddingVertical: hp(1.6),
   },
   errorText: {
-    color: '#ff4d4d',
+    color: colors.primary,
     fontSize: responsiveSize(12),
     marginTop: hp(0.5),
     marginLeft: wp(1),
+    fontFamily: fonts.regular,
   },
   inputError: {
-    borderColor: '#ff4d4d',
+    borderColor: colors.primary,
+  },
+  stackedContainer: {
+    width: '100%',
+    marginBottom: hp(2.4),
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: hp(1),
+  },
+  stackedLabel: {
+    color: colors.textSecondary,
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.medium,
+    letterSpacing: 0.4,
+  },
+  stackedInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBackground,
+    borderRadius: wp(2),
+    paddingHorizontal: wp(3.5),
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    minHeight: hp(6.2),
+  },
+  stackedInput: {
+    flex: 1,
+    color: colors.text,
+    height: hp(5.6),
+    fontSize: responsiveSize(14),
+    paddingVertical: hp(1.4),
+    fontFamily: fonts.regular,
   },
 });

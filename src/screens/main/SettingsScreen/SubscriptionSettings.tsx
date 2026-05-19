@@ -4,6 +4,7 @@ import { Header } from '../../../components';
 import { styles } from './styles';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { colors, glass } from '../../../constants';
 
 type Props = {
   navigation: any;
@@ -14,7 +15,7 @@ const SubscriptionSettings = ({ navigation }: Props) => {
 
   return (
     <LinearGradient
-      colors={['#05070A', '#0B1220', '#1A0F08']}
+      colors={[...glass.screenGradient]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -48,8 +49,8 @@ const SubscriptionSettings = ({ navigation }: Props) => {
               <Switch
                 value={audioNotifications}
                 onValueChange={setAudioNotifications}
-                trackColor={{ false: '#334155', true: '#3b82f6' }}
-                thumbColor="#fff"
+                trackColor={{ false: colors.borderMuted, true: colors.primary }}
+                thumbColor={colors.white}
               />
             </View>
           </Animated.View>

@@ -1,4 +1,5 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../../constants';
 import {hp, wp, responsiveSize} from '../../utils/responsive';
 
 export const styles = StyleSheet.create({
@@ -267,11 +268,11 @@ export const styles = StyleSheet.create({
     color: '#6366f1',
   },
   presetButtonActive: {
-    borderColor: '#3b82f6',
+    borderColor: colors.primary,
     backgroundColor: 'rgba(59, 130, 246, 0.12)',
   },
   presetButtonTextActive: {
-    color: '#3b82f6',
+    color: colors.primary,
     fontWeight: '700',
   },
   priorityContainer: {
@@ -292,7 +293,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
   },
   priorityOptionActive: {
-    borderColor: '#3b82f6',
+    borderColor: colors.primary,
     backgroundColor: 'rgba(59, 130, 246, 0.12)',
   },
   priorityOptionText: {
@@ -301,7 +302,7 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
   priorityOptionTextActive: {
-    color: '#3b82f6',
+    color: colors.primary,
     fontWeight: '700',
   },
   searchIconLeft: {
