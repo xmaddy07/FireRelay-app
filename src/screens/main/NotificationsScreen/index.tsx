@@ -13,7 +13,7 @@ import Header from '../../../components/Header';
 import { GlassView } from '../../../components/LiquidGlass';
 import { glass } from '../../../constants/glass';
 import { hp, wp, responsiveSize } from '../../../utils/responsive';
-import { images } from '../../../constants';
+import { colors, images } from '../../../constants';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -303,7 +303,7 @@ const NotificationsScreen = ({ onOpenDrawer, onBack }: Props) => {
 
   return (
     <LinearGradient
-      colors={['#05070A', '#0B1220', '#1A0F08']}
+      colors={[...glass.screenGradient]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -314,6 +314,7 @@ const NotificationsScreen = ({ onOpenDrawer, onBack }: Props) => {
           onMenuPress={onOpenDrawer}
           showBack={!!onBack}
           onBackPress={onBack}
+          showNotification={false}
         />
       </Animated.View>
 
@@ -363,9 +364,9 @@ const styles = StyleSheet.create({
     width: wp(2.4),
     height: wp(2.4),
     borderRadius: wp(999),
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.primary,
     marginRight: wp(2),
-    shadowColor: '#ef4444',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
     shadowRadius: 6,
@@ -387,7 +388,7 @@ const styles = StyleSheet.create({
   unreadBadgeText: {
     fontSize: responsiveSize(10.5),
     fontWeight: '800',
-    color: '#ef4444',
+    color: colors.primary,
     letterSpacing: 0.6,
   },
 
@@ -412,8 +413,8 @@ const styles = StyleSheet.create({
   },
   unreadStrip: {
     width: wp(1),
-    backgroundColor: '#ef4444',
-    shadowColor: '#ef4444',
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
@@ -446,7 +447,7 @@ const styles = StyleSheet.create({
   iconImage: {
     width: wp(5.5),
     height: wp(5.5),
-    tintColor: '#38bdf8',
+    tintColor: colors.primary,
   },
 
   // Content

@@ -1,10 +1,11 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../../../constants';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#07080e',
+    backgroundColor: colors.background,
   },
   list: {
     marginBottom: 24,
@@ -15,15 +16,15 @@ export const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 18,
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     marginBottom: 12,
   },
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.text,
   },
   userStatus: {
-    color: '#60a5fa',
+    color: colors.primary,
   },
 });

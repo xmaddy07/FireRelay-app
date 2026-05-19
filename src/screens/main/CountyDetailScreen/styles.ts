@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { hp, wp, responsiveSize } from '../../../utils/responsive';
-import { fonts } from '../../../constants';
+import { colors, fonts } from '../../../constants';
 
 export const styles = StyleSheet.create({
   container: {
@@ -156,7 +156,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: wp(2),
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
     borderRadius: wp(3),
     paddingVertical: hp(1.6),
   },
@@ -206,7 +206,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resetLink: {
-    color: '#3b82f6',
+    color: colors.primary,
     fontWeight: '600',
   },
   tableHeader: {

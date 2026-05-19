@@ -1,24 +1,26 @@
-import React, { useEffect, useRef } from 'react';
-import { useFormik } from 'formik';
+import React, {useEffect, useRef} from 'react';
+import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {
   Animated,
   Easing,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
-import { styles } from './styles';
-import { Button, Input } from '../../../components';
-import { images } from '../../../constants';
-import LinearGradient from 'react-native-linear-gradient';
-import { useAppDispatch } from '../../../redux/hooks';
-import { userActions } from '../../../redux/slices/userSlice';
-import { authActions } from '../../../redux/slices/authSlice';
-
-// LoginScreenProps is no longer needed as we use Redux for state management
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import {colors, glass, images} from '../../../constants';
+import {styles} from './styles';
+import {Button, Input} from '../../../components';
+import {GlassView} from '../../../components/LiquidGlass';
+import {useAppDispatch} from '../../../redux/hooks';
+import {userActions} from '../../../redux/slices/userSlice';
+import {authActions} from '../../../redux/slices/authSlice';
 
 const validationSchema = Yup.object().shape({
   email: Yup.string()
@@ -29,6 +31,52 @@ const validationSchema = Yup.object().shape({
     .required('Password is required'),
 });
 
+const AnimatedLoginIcon = ({active}: {active?: boolean}) => {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const slide = Animated.sequence([
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: 5,
+          duration: active ? 320 : 520,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.65,
+          duration: active ? 320 : 520,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: active ? 320 : 520,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: active ? 320 : 520,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+
+    const loop = Animated.loop(slide);
+    loop.start();
+    return () => loop.stop();
+  }, [active, opacity, translateX]);
+
+  return (
+    <Animated.View style={{transform: [{translateX}], opacity}}>
+      <MaterialIcons name="login" size={20} color={colors.textOnPrimary} />
+    </Animated.View>
+  );
+};
+
 const LoginScreen = () => {
   const dispatch = useAppDispatch();
 
@@ -38,30 +86,30 @@ const LoginScreen = () => {
       password: '',
     },
     validationSchema,
-    onSubmit: (values, { setSubmitting }) => {
-      console.log('Form values:', values);
+    onSubmit: (values, {setSubmitting}) => {
       const email = values.email.toLowerCase();
-      const role = (email === 'admin@firerelay.com' || email === 'steve@firerelay.com') ? 'admin' : 'user';
-      
-      // Simulate network request delay for a premium loader feel
+      const role =
+        email === 'admin@firerelay.com' || email === 'steve@firerelay.com'
+          ? 'admin'
+          : 'user';
+
       setTimeout(() => {
-        // Save credentials in Redux
         dispatch(
           userActions.setUser({
             id: role === 'admin' ? 'admin-id' : 'user-id',
             name: role === 'admin' ? 'Steve' : 'User',
-            email: email,
-            role: role,
-          })
+            email,
+            role,
+          }),
         );
         dispatch(authActions.login('mock-jwt-token'));
         setSubmitting(false);
       }, 1500);
     },
   });
+
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(36)).current;
-  const logoScale = useRef(new Animated.Value(0.92)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -77,22 +125,11 @@ const LoginScreen = () => {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 7,
-        tension: 70,
-        useNativeDriver: true,
-      }),
     ]).start();
-  }, [cardOpacity, cardTranslateY, logoScale]);
+  }, [cardOpacity, cardTranslateY]);
 
   return (
-    <LinearGradient
-      colors={['#05070A', '#0B1220', '#1A0F08']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -102,70 +139,109 @@ const LoginScreen = () => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View
-            style={[
-              styles.card,
-              {
-                opacity: cardOpacity,
-                transform: [{ translateY: cardTranslateY }],
-              },
-            ]}
-          >
-            <View style={styles.brand}>
-              <Animated.Image
-                source={images.logoname}
-                style={[
-                  styles.brandTitleImage,
-                  { transform: [{ scale: logoScale }] },
-                ]}
-                resizeMode="contain"
-              />
-              <Text style={[styles.brandSubtitle, { fontStyle: 'italic' }]}>
-                Real Referrals, Real Time.
-              </Text>
-              <Animated.Text
-                style={[
-                  styles.brandTitle,
-                  { transform: [{ scale: logoScale }] },
-                ]}
-              >
-                Fire Relay
-              </Animated.Text>
+          <View style={styles.header}>
+            <View style={styles.logoBox}>
+             <Image source={images.logoname} style={styles.logo} resizeMode='contain' />
             </View>
+            <View style={styles.brandRow}>
+              <Text style={styles.brandFire}>FIRE </Text>
+              <Text style={styles.brandRelay}>RELAY</Text>
+            </View>
+            <Text style={styles.brandTagline}>REAL REFERRAIS, REAL TIME</Text>
+          </View>
 
-            <View style={styles.form}>
+          <Animated.View
+            style={{
+              opacity: cardOpacity,
+              transform: [{translateY: cardTranslateY}],
+            }}
+          >
+            <GlassView
+              effect="clear"
+              colorScheme="dark"
+              tintColor={glass.loginCardTint}
+              style={styles.loginCard}
+              fallbackStyle={glass.fallback.loginCard}
+            >
+              <Text style={styles.cardTitle}>Authorized Access</Text>
+              <Text style={styles.cardSubtitle}>
+                Enter credentials to establish terminal link.
+              </Text>
+
               <Input
-                label="Email*"
-                placeholder="Enter your email address"
+                variant="stacked"
+                animatedBorder
+                label="EMAIL ADDRESS"
+                placeholder="your email address"
                 value={formik.values.email}
                 onChangeText={formik.handleChange('email')}
                 onBlur={formik.handleBlur('email')}
-                error={formik.touched.email && formik.errors.email ? formik.errors.email : undefined}
+                error={
+                  formik.touched.email && formik.errors.email
+                    ? formik.errors.email
+                    : undefined
+                }
                 autoCapitalize="none"
                 keyboardType="email-address"
+                labelStyle={styles.inputLabel}
+                wrapperStyle={styles.inputWrapper}
+                inputStyle={styles.inputField}
+                icon={
+                  <AntDesign
+                    name="mail"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                }
               />
+
               <Input
-                label="Password*"
-                placeholder="Enter your password"
+                variant="stacked"
+                animatedBorder
+                label='PASSWORD'
+                placeholder="••••••••••"
                 value={formik.values.password}
                 onChangeText={formik.handleChange('password')}
                 onBlur={formik.handleBlur('password')}
-                error={formik.touched.password && formik.errors.password ? formik.errors.password : undefined}
+                error={
+                  formik.touched.password && formik.errors.password
+                    ? formik.errors.password
+                    : undefined
+                }
                 secureTextEntry
+                labelStyle={styles.inputLabel}
+                wrapperStyle={styles.inputWrapper}
+                inputStyle={styles.inputField}
+                icon={
+                  <AntDesign
+                    name="lock"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                }
               />
 
               <Button
-                title="Sell"
-                onPress={formik.handleSubmit as any}
+                title="SELL"
+                onPress={formik.handleSubmit as () => void}
                 loading={formik.isSubmitting}
+                backgroundColor={colors.primary}
+                loadingColor={colors.textOnPrimary}
                 style={styles.primaryButton}
                 textStyle={styles.primaryButtonText}
+                rightIcon={
+                  <AnimatedLoginIcon active={formik.isSubmitting} />
+                }
               />
-            </View>
+
+
+            </GlassView>
           </Animated.View>
         </ScrollView>
+
+      
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 };
 

@@ -9,14 +9,19 @@ import { Text } from 'react-native';
 const Stack = createNativeStackNavigator();
 
 type Props = {
-  onOpenDrawer?: () => void;
+  onNotificationPress?: () => void;
 };
 
-const SettingsStack = ({ onOpenDrawer }: Props) => {
+const SettingsStack = ({ onNotificationPress }: Props) => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SettingsMenu">
-        {(props) => <SettingsMenu {...props} onOpenDrawer={onOpenDrawer} />}
+        {(props) => (
+          <SettingsMenu
+            {...props}
+            onNotificationPress={onNotificationPress}
+          />
+        )}
       </Stack.Screen>
 
       <Stack.Screen name="ProfileSettings" component={ProfileSettings} />

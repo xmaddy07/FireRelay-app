@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import DatePicker from 'react-native-date-picker';
+import { colors } from '../../constants';
 import { styles } from './styles';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Octicons from 'react-native-vector-icons/Octicons';
@@ -19,6 +20,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type FilterState = {
   county: string;
+  feedType: string;
   keywordPriority: string;
   fromDate: string;
   toDate: string;
@@ -38,6 +40,7 @@ type Props = {
 const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
   const [filters, setFilters] = useState<FilterState>({
     county: '',
+    feedType: 'All',
     keywordPriority: 'All',
     fromDate: '',
     toDate: '',
@@ -122,6 +125,7 @@ const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
   const handleReset = () => {
     setFilters({
       county: '',
+      feedType: 'All',
       keywordPriority: 'All',
       fromDate: '',
       toDate: '',
@@ -167,7 +171,7 @@ const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
               {/* Header with title and reset */}
               <View style={styles.sheetHeader}>
                 <View style={styles.titleContainer}>
-                  <AntDesign name="filter" size={18} color="#3b82f6" />
+                  <AntDesign name="filter" size={18} color={colors.primary} />
                   <Text style={styles.sheetTitle}>Filters</Text>
                 </View>
                 <View style={styles.headerRight}>
@@ -175,7 +179,7 @@ const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
                     <Text style={styles.resetButton}>Reset</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
-                    <AntDesign name="close" size={18} color="#3b82f6" />
+                    <AntDesign name="close" size={18} color={colors.primary} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -196,7 +200,7 @@ const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
                   <View style={styles.searchGroup}>
                     <Text style={styles.label}>Keywords</Text>
                     <View style={styles.searchInputContainer}>
-                      <Octicons name="search" size={20} color="#3b82f6" style={styles.searchIconLeft} />
+                      <Octicons name="search" size={20} color={colors.primary} style={styles.searchIconLeft} />
                       <TextInput
                         style={styles.searchInput}
                         placeholder="Search in transcriptions..."
@@ -232,6 +236,31 @@ const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
                             isActive && styles.presetButtonTextActive,
                           ]}>
                             {countyName}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <Text style={styles.sectionTitle}>Feed Type</Text>
+                  <View style={styles.presetsContainer}>
+                    {['All', 'Fire', 'Medical', 'Police'].map(feedType => {
+                      const isActive = filters.feedType === feedType;
+                      return (
+                        <TouchableOpacity
+                          key={feedType}
+                          style={[
+                            styles.presetButton,
+                            isActive && styles.presetButtonActive,
+                          ]}
+                          onPress={() => setFilters(prev => ({ ...prev, feedType }))}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[
+                            styles.presetButtonText,
+                            isActive && styles.presetButtonTextActive,
+                          ]}>
+                            {feedType}
                           </Text>
                         </TouchableOpacity>
                       );
@@ -279,7 +308,7 @@ const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
                           editable={false}
                           pointerEvents="none"
                         />
-                        <AntDesign name="calendar" size={20} color="#3b82f6" />
+                        <AntDesign name="calendar" size={20} color={colors.primary} />
                       </TouchableOpacity>
                     </View>
                     <View style={styles.dateColumn}>
@@ -297,7 +326,7 @@ const AdvancedFiltersBottomSheet = ({ visible, onClose, onApply }: Props) => {
                           editable={false}
                           pointerEvents="none"
                         />
-                        <AntDesign name="calendar" size={20} color="#3b82f6" />
+                        <AntDesign name="calendar" size={20} color={colors.primary} />
                       </TouchableOpacity>
                     </View>
                   </View>

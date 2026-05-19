@@ -1,16 +1,17 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../../../constants';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#07080e',
+    backgroundColor: colors.background,
   },
   profileCard: {
     alignItems: 'center',
     padding: 24,
     borderRadius: 24,
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
     marginBottom: 24,
   },
   avatar: {
@@ -22,10 +23,10 @@ export const styles = StyleSheet.create({
   name: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text,
   },
   email: {
     marginTop: 6,
-    color: '#9ca3af',
+    color: colors.textSecondary,
   },
 });

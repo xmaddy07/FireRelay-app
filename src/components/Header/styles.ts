@@ -1,9 +1,9 @@
 import { StyleSheet } from 'react-native';
-import { fonts } from '../../constants';
+import { colors, fonts } from '../../constants';
 
 export const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#05070A',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
@@ -59,12 +59,12 @@ export const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: fonts.semibold,
-    color: '#ffffff',
+    color: colors.text,
   },
   subtitle: {
     fontSize: 15,
     fontFamily: fonts.medium,
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     marginTop: 4,
   },
 });

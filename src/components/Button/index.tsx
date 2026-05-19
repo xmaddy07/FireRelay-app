@@ -7,8 +7,10 @@ import {
   ViewStyle,
   TextStyle,
   ActivityIndicator,
+  View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {colors} from '../../constants';
 import {styles} from './styles';
 
 type Props = {
@@ -18,27 +20,48 @@ type Props = {
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  backgroundColor?: string;
+  loadingColor?: string;
+  rightIcon?: React.ReactNode;
 };
 
-const Button = ({title, onPress, disabled, loading, style, textStyle}: Props) => {
+const Button = ({
+  title,
+  onPress,
+  disabled,
+  loading,
+  style,
+  textStyle,
+  backgroundColor,
+  loadingColor = colors.white,
+  rightIcon,
+}: Props) => {
   const isDisabled = disabled || loading;
-  
+
   return (
     <TouchableOpacity
       style={[styles.button, style, isDisabled && styles.disabled]}
       onPress={onPress}
       disabled={isDisabled}
+      activeOpacity={0.85}
     >
-      <LinearGradient
-        colors={['#2F5597', '#9B5427']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 0}}
-        style={styles.gradient}
-      />
-      {loading ? (
-        <ActivityIndicator color="#fff" size="small" />
+      {backgroundColor ? (
+        <View style={[styles.gradient, {backgroundColor}]} />
       ) : (
-        <Text style={[styles.text, textStyle]}>{title}</Text>
+        <LinearGradient
+          colors={[...colors.buttonGradient]}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.gradient}
+        />
+      )}
+      {loading ? (
+        <ActivityIndicator color={loadingColor} size="small" />
+      ) : (
+        <View style={styles.contentRow}>
+          <Text style={[styles.text, textStyle]}>{title}</Text>
+          {rightIcon}
+        </View>
       )}
     </TouchableOpacity>
   );

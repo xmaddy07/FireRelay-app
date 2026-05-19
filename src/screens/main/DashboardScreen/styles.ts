@@ -1,9 +1,10 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../../../constants';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07080e',
+    backgroundColor: colors.background,
   },
   content: {
     padding: 24,
@@ -12,13 +13,13 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 20,
     borderRadius: 22,
-    backgroundColor: '#0f1324',
+    backgroundColor: colors.surface,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
-    color: '#fff',
+    color: colors.text,
   },
   sectionText: {
     color: '#cbd5e1',

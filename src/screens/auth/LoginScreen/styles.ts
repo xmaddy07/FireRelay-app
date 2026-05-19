@@ -1,70 +1,173 @@
-import {StyleSheet} from 'react-native';
+import {Platform, StyleSheet} from 'react-native';
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
-import { fonts } from '../../../constants';
+import {colors, fonts} from '../../../constants';
+
+const monoFont = Platform.select({
+  ios: 'Courier',
+  android: 'monospace',
+  default: 'monospace',
+});
 
 export const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-    backgroundColor: '#040404',
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: wp(6),
+    paddingTop: hp(4),
+    paddingBottom: hp(2),
   },
-  card: {
-    padding: wp(6),
+  header: {
+    alignItems: 'center',
+    marginBottom: hp(3.5),
   },
-  brand: {
-    marginBottom: hp(4),
-  },
-  brandIcon: {
-    width: wp(15),
-    height: wp(15),
+  logoBox: {
+    width: wp(14),
+    height: wp(14),
     borderRadius: wp(3),
-    backgroundColor: '#ff6f00',
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: hp(1),
-  },
-  brandIconImage: {
-    width: wp(10),
-    height: wp(10),
-  },
-  brandTitle: {
-    color: '#fff',
-    fontSize: responsiveSize(38),
-    fontWeight: '800',
-    marginBottom: hp(1.5),
-  },
-  brandTitleImage: {
-    width: wp(35),
-    height: wp(35),
     marginBottom: hp(2),
-    alignSelf:'center'
   },
-  brandSubtitle: {
-    color: '#ffffff',
-    fontSize: responsiveSize(24),
-    fontFamily:fonts.semibold,
-    maxWidth: '92%',
-    marginTop: hp(3),
+  logo: {
+    width: wp(12),
+    height: wp(12),
   },
-  form: {
-    width: '100%',
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: hp(0.8),
+  },
+  brandFire: {
+    color: colors.text,
+    fontSize: responsiveSize(28),
+    fontFamily: fonts.bold,
+    letterSpacing: 1.5,
+  },
+  brandRelay: {
+    color: colors.primary,
+    fontSize: responsiveSize(28),
+    fontFamily: fonts.bold,
+    letterSpacing: 1.5,
+  },
+  brandTagline: {
+    color: colors.textSecondary,
+    fontSize: responsiveSize(10),
+    fontFamily: monoFont,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  loginCard: {
+    borderRadius: wp(2.5),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: wp(5),
+    paddingTop: hp(3),
+    paddingBottom: hp(2.5),
+    overflow: 'hidden',
+  },
+  cardTitle: {
+    color: colors.text,
+    fontSize: responsiveSize(22),
+    fontFamily: fonts.bold,
+    fontWeight: '700',
+    marginBottom: hp(0.8),
+  },
+  cardSubtitle: {
+    color: colors.textSecondary,
+    fontSize: responsiveSize(12),
+    fontFamily: monoFont,
+    marginBottom: hp(3),
+    lineHeight: responsiveSize(18),
+  },
+  forgotCipher: {
+    color: colors.textSecondary,
+    fontSize: responsiveSize(11),
+    fontFamily: monoFont,
+    letterSpacing: 0.3,
   },
   primaryButton: {
-    marginTop: hp(4),
-    borderRadius: wp(4),
-    paddingVertical: hp(2.2),
+    marginTop: hp(1),
+    borderRadius: wp(1.5),
+    paddingVertical: hp(2),
+    marginVertical: 0,
   },
   primaryButtonText: {
-    color: '#fff',
-    fontSize: responsiveSize(18),
-    fontWeight: '700',
+    color: colors.textOnPrimary,
+    fontSize: responsiveSize(14),
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginTop: hp(2.5),
+    marginBottom: hp(2),
+  },
+  registrationRow: {
+    alignItems: 'center',
+  },
+  registrationText: {
+    color: colors.textSecondary,
+    fontSize: responsiveSize(12),
+    fontFamily: monoFont,
+    letterSpacing: 0.3,
+  },
+  registrationLink: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  statusFooter: {
+    alignItems: 'center',
+    paddingBottom: hp(3),
+    paddingTop: hp(2),
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: hp(0.6),
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.success,
+    marginRight: wp(2),
+  },
+  statusText: {
+    color: colors.textSecondary,
+    fontSize: responsiveSize(10),
+    fontFamily: monoFont,
+    letterSpacing: 1,
+  },
+  securityText: {
+    color: colors.textMuted,
+    fontSize: responsiveSize(10),
+    fontFamily: monoFont,
+    letterSpacing: 1.2,
+  },
+  inputLabel: {
+    fontFamily: monoFont,
+    color: colors.textSecondary,
+    fontSize: responsiveSize(11),
+    letterSpacing: 0.3,
+  },
+  inputWrapper: {
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.inputBorder,
+    borderRadius: wp(1.5),
+    minHeight: hp(6),
+  },
+  inputField: {
+    fontFamily: monoFont,
+    fontSize: responsiveSize(13),
   },
 });
