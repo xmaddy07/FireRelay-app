@@ -18,8 +18,9 @@ import {
   UserRecord,
   UserRole,
 } from './types';
-import {premium} from './styles';
-import {editModalStyles as s} from './editUserModal.styles';
+import {useTheme, useThemedStyles} from '../../../theme';
+import {createPremium} from './styles';
+import {createEditModalStyles} from './editUserModal.styles';
 
 type Props = {
   visible: boolean;
@@ -29,6 +30,9 @@ type Props = {
 };
 
 const EditUserModal = ({visible, user, onClose, onSave}: Props) => {
+  const {colors} = useTheme();
+  const premium = useMemo(() => createPremium(colors), [colors]);
+  const s = useThemedStyles(createEditModalStyles);
   const [activeTab, setActiveTab] = useState<EditUserTab>('details');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('admin');

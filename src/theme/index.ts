@@ -1,10 +1,5 @@
-import React from 'react';
-import {light} from './light';
-import {dark} from './dark';
-
-export const theme = {
-  light,
-  dark,
-};
-
-export const ThemeProvider = ({children}: {children: React.ReactNode}) => React.createElement(React.Fragment, null, children);
+export {ThemeProvider, useTheme} from './ThemeContext';
+export {useThemedStyles} from './useThemedStyles';
+export {darkColors, lightColors, getColorsForMode} from './palettes';
+export {createGlass} from './createGlass';
+export type {AppColors, GlassTheme, ThemeMode} from './types';

@@ -11,9 +11,10 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Header from '../../../components/Header';
 import { GlassView } from '../../../components/LiquidGlass';
-import { glass } from '../../../constants/glass';
 import { hp, wp, responsiveSize } from '../../../utils/responsive';
-import { colors, images } from '../../../constants';
+import { fonts, images } from '../../../constants';
+import type { AppColors } from '../../../theme/types';
+import { useTheme, useThemedStyles } from '../../../theme';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,8 @@ type ItemProps = {
 };
 
 const NotificationItem = ({ item, entranceAnim, onPress }: ItemProps) => {
+  const { glass, isDark } = useTheme();
+  const styles = useThemedStyles(createNotificationStyles);
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -188,7 +191,7 @@ const NotificationItem = ({ item, entranceAnim, onPress }: ItemProps) => {
         <GlassView
           interactive
           effect="regular"
-          colorScheme="dark"
+          colorScheme={isDark ? "dark" : "light"}
           tintColor={item.read ? glass.cardReadTint : glass.cardUnreadTint}
           style={[
             styles.card,
@@ -200,37 +203,39 @@ const NotificationItem = ({ item, entranceAnim, onPress }: ItemProps) => {
               : glass.fallback.cardUnread
           }
         >
-          {!item.read && <View style={styles.unreadStrip} />}
+          <View style={styles.cardRow}>
+            {!item.read && <View style={styles.unreadStrip} />}
 
-          <View style={styles.cardInner}>
-            <View style={[styles.iconWrapper, item.read && styles.iconWrapperRead]}>
-              <Image
-                source={images.notification}
-                style={styles.iconImage}
-                resizeMode="contain"
-              />
-            </View>
-
-            {/* Content */}
-            <View style={styles.cardContent}>
-              {/* Title row */}
-              <View style={styles.titleRow}>
-                <Text style={styles.titleText} numberOfLines={1}>
-                  <Text style={styles.emoji}>{getSeverityEmoji(item.severity)} </Text>
-                  <Text style={item.read ? styles.titleRead : styles.titleUnread}>
-                    {buildTitle(item)}
-                  </Text>
-                </Text>
-                <Text style={styles.timeText}>{item.timeAgo}</Text>
+            <View style={styles.cardInner}>
+              <View style={[styles.iconWrapper, item.read && styles.iconWrapperRead]}>
+                <Image
+                  source={images.notification}
+                  style={styles.iconImage}
+                  resizeMode="contain"
+                />
               </View>
 
-              {/* Message */}
-              <Text
-                style={[styles.messageText, item.read && styles.messageRead]}
-                numberOfLines={3}
-              >
-                {item.message}
-              </Text>
+              <View style={styles.cardContent}>
+                <View style={styles.titleRow}>
+                  <Text
+                    style={[
+                      styles.titleText,
+                      item.read ? styles.titleRead : styles.titleUnread,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {`${getSeverityEmoji(item.severity)} ${buildTitle(item)}`}
+                  </Text>
+                  <Text style={styles.timeText}>{item.timeAgo}</Text>
+                </View>
+
+                <Text
+                  style={[styles.messageText, item.read && styles.messageRead]}
+                  numberOfLines={3}
+                >
+                  {item.message}
+                </Text>
+              </View>
             </View>
           </View>
         </GlassView>
@@ -247,6 +252,8 @@ type Props = {
 };
 
 const NotificationsScreen = ({ onOpenDrawer, onBack }: Props) => {
+  const { glass } = useTheme();
+  const styles = useThemedStyles(createNotificationStyles);
   const [notifications, setNotifications] = useState<NotifItem[]>(mockNotifications);
 
   // Staggered entrance animations per item
@@ -339,7 +346,7 @@ const NotificationsScreen = ({ onOpenDrawer, onBack }: Props) => {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createNotificationStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -374,8 +381,8 @@ const styles = StyleSheet.create({
   },
   listHeaderTitle: {
     fontSize: responsiveSize(20),
-    fontWeight: '800',
-    color: '#f8fafc',
+    fontFamily: fonts.bold,
+    color: colors.text,
   },
   unreadBadge: {
     backgroundColor: 'rgba(239,68,68,0.15)',
@@ -387,9 +394,9 @@ const styles = StyleSheet.create({
   },
   unreadBadgeText: {
     fontSize: responsiveSize(10.5),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.primary,
-    letterSpacing: 0.6,
+    letterSpacing: responsiveSize(0.6),
   },
 
   // Card
@@ -398,7 +405,7 @@ const styles = StyleSheet.create({
     marginBottom: hp(1.4),
     borderWidth: 1,
     overflow: 'hidden',
-    flexDirection: 'row',
+    alignSelf: 'stretch',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -406,10 +413,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   cardUnread: {
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: colors.borderMuted,
   },
   cardRead: {
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.menuItemBorder,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    width: '100%',
   },
   unreadStrip: {
     width: wp(1),
@@ -432,17 +444,17 @@ const styles = StyleSheet.create({
     width: wp(11),
     height: wp(11),
     borderRadius: wp(3),
-    backgroundColor: '#1d2c45',
+    backgroundColor: colors.surfaceElevated,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: wp(3),
     borderWidth: 1,
-    borderColor: 'rgba(56,189,248,0.2)',
+    borderColor: colors.borderMuted,
     marginTop: hp(0.3),
   },
   iconWrapperRead: {
-    backgroundColor: '#131c2c',
-    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: colors.inputBackground,
+    borderColor: colors.menuItemBorder,
   },
   iconImage: {
     width: wp(5.5),
@@ -464,33 +476,31 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: wp(2),
   },
-  emoji: {
-    fontSize: responsiveSize(13),
-  },
   titleUnread: {
     fontSize: responsiveSize(13.5),
-    fontWeight: '800',
-    color: '#f1f5f9',
+    fontFamily: fonts.bold,
+    color: colors.text,
   },
   titleRead: {
     fontSize: responsiveSize(13.5),
-    fontWeight: '700',
-    color: '#94a3b8',
+    fontFamily: fonts.semibold,
+    color: colors.textSecondary,
   },
   timeText: {
     fontSize: responsiveSize(11),
-    color: '#64748b',
-    fontWeight: '500',
+    color: colors.textMuted,
+    fontFamily: fonts.medium,
     flexShrink: 0,
     marginTop: hp(0.15),
   },
   messageText: {
     fontSize: responsiveSize(12.5),
-    color: '#cbd5e1',
+    fontFamily: fonts.regular,
+    color: colors.text,
     lineHeight: responsiveSize(18),
   },
   messageRead: {
-    color: '#64748b',
+    color: colors.textMuted,
   },
 });
 

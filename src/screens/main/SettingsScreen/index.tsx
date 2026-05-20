@@ -1,34 +1,108 @@
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, {useCallback, useEffect, useLayoutEffect, useState} from 'react';
+import {BackHandler, StyleSheet, View} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import SettingsMenu from './SettingsMenu';
 import ProfileSettings from './ProfileSettings';
 import PasswordSettings from './PasswordSettings';
 import SubscriptionSettings from './SubscriptionSettings';
-import { Text } from 'react-native';
-
-const Stack = createNativeStackNavigator();
+import type {SettingsRoute} from './types';
+import {useTheme} from '../../../theme';
+import {TAB_BAR_HEIGHT} from '../../../utils/responsive';
 
 type Props = {
   onNotificationPress?: () => void;
+  onRouteChange?: (route: SettingsRoute) => void;
 };
 
-const SettingsStack = ({ onNotificationPress }: Props) => {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="SettingsMenu">
-        {(props) => (
+const SettingsScreen = ({onNotificationPress, onRouteChange}: Props) => {
+  const {glass} = useTheme();
+  const navigation = useNavigation();
+  const [route, setRoute] = useState<SettingsRoute>('menu');
+
+  const goBack = useCallback(() => setRoute('menu'), []);
+
+  useEffect(() => {
+    onRouteChange?.(route);
+  }, [route, onRouteChange]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      sceneStyle: {
+        backgroundColor: 'transparent',
+        paddingBottom: route === 'menu' ? TAB_BAR_HEIGHT : 0,
+      },
+    });
+  }, [navigation, route]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setRoute('menu');
+        onRouteChange?.('menu');
+      };
+    }, [onRouteChange]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route === 'menu') {
+        return undefined;
+      }
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          goBack();
+          return true;
+        },
+      );
+
+      return () => subscription.remove();
+    }, [route, goBack]),
+  );
+
+  const renderRoute = () => {
+    switch (route) {
+      case 'profile':
+        return <ProfileSettings onBack={goBack} />;
+      case 'password':
+        return <PasswordSettings onBack={goBack} />;
+      case 'subscription':
+        return <SubscriptionSettings onBack={goBack} />;
+      case 'menu':
+      default:
+        return (
           <SettingsMenu
-            {...props}
+            onNavigate={setRoute}
             onNotificationPress={onNotificationPress}
           />
-        )}
-      </Stack.Screen>
+        );
+    }
+  };
 
-      <Stack.Screen name="ProfileSettings" component={ProfileSettings} />
-      <Stack.Screen name="PasswordSettings" component={PasswordSettings} />
-      <Stack.Screen name="SubscriptionSettings" component={SubscriptionSettings} />
-    </Stack.Navigator>
+  return (
+    <View style={styles.root}>
+      <LinearGradient
+        colors={[...glass.screenGradient]}
+        start={{x: 0, y: 0}}
+        end={{x: 0.4, y: 1}}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <View style={styles.content}>{renderRoute()}</View>
+    </View>
   );
 };
 
-export default SettingsStack;
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+  },
+});
+
+export default SettingsScreen;
+export type {SettingsRoute} from './types';

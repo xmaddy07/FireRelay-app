@@ -1,6 +1,7 @@
 import {Platform, StyleSheet} from 'react-native';
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
-import {colors, fonts} from '../../../constants';
+import {fonts} from '../../../constants';
+import type { AppColors } from "../../../theme/types";
 
 const monoFont = Platform.select({
   ios: 'Courier',
@@ -8,7 +9,7 @@ const monoFont = Platform.select({
   default: 'monospace',
 });
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -50,19 +51,19 @@ export const styles = StyleSheet.create({
     color: colors.text,
     fontSize: responsiveSize(28),
     fontFamily: fonts.bold,
-    letterSpacing: 1.5,
+    letterSpacing: responsiveSize(1.5),
   },
   brandRelay: {
     color: colors.primary,
     fontSize: responsiveSize(28),
     fontFamily: fonts.bold,
-    letterSpacing: 1.5,
+    letterSpacing: responsiveSize(1.5),
   },
   brandTagline: {
     color: colors.textSecondary,
     fontSize: responsiveSize(10),
     fontFamily: monoFont,
-    letterSpacing: 2,
+    letterSpacing: responsiveSize(2),
     textTransform: 'uppercase',
   },
   loginCard: {
@@ -78,7 +79,6 @@ export const styles = StyleSheet.create({
     color: colors.text,
     fontSize: responsiveSize(22),
     fontFamily: fonts.bold,
-    fontWeight: '700',
     marginBottom: hp(0.8),
   },
   cardSubtitle: {
@@ -92,7 +92,7 @@ export const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: responsiveSize(11),
     fontFamily: monoFont,
-    letterSpacing: 0.3,
+    letterSpacing: responsiveSize(0.3),
   },
   primaryButton: {
     marginTop: hp(1),
@@ -103,11 +103,11 @@ export const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.textOnPrimary,
     fontSize: responsiveSize(14),
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    fontFamily: fonts.bold,
+    letterSpacing: responsiveSize(1.2),
   },
   cardDivider: {
-    height: 1,
+    height: responsiveSize(1),
     backgroundColor: colors.border,
     marginTop: hp(2.5),
     marginBottom: hp(2),
@@ -119,11 +119,11 @@ export const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: responsiveSize(12),
     fontFamily: monoFont,
-    letterSpacing: 0.3,
+    letterSpacing: responsiveSize(0.3),
   },
   registrationLink: {
     color: colors.text,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   statusFooter: {
     alignItems: 'center',
@@ -136,9 +136,9 @@ export const styles = StyleSheet.create({
     marginBottom: hp(0.6),
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: wp(1.6),
+    height: wp(1.6),
+    borderRadius: wp(0.8),
     backgroundColor: colors.success,
     marginRight: wp(2),
   },
@@ -146,19 +146,19 @@ export const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: responsiveSize(10),
     fontFamily: monoFont,
-    letterSpacing: 1,
+    letterSpacing: responsiveSize(1),
   },
   securityText: {
     color: colors.textMuted,
     fontSize: responsiveSize(10),
     fontFamily: monoFont,
-    letterSpacing: 1.2,
+    letterSpacing: responsiveSize(1.2),
   },
   inputLabel: {
     fontFamily: monoFont,
     color: colors.textSecondary,
     fontSize: responsiveSize(11),
-    letterSpacing: 0.3,
+    letterSpacing: responsiveSize(0.3),
   },
   inputWrapper: {
     backgroundColor: colors.inputBackground,
@@ -167,7 +167,8 @@ export const styles = StyleSheet.create({
     minHeight: hp(6),
   },
   inputField: {
-    fontFamily: monoFont,
     fontSize: responsiveSize(13),
+    fontFamily: monoFont,
+    color: colors.text,
   },
 });

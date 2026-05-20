@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {colors, glass, images} from '../../../constants';
-import {styles} from './styles';
+import {images} from '../../../constants';
+import {createStyles} from './styles';
+import {useTheme, useThemedStyles} from '../../../theme';
 import {Button, Input} from '../../../components';
 import {GlassView} from '../../../components/LiquidGlass';
 import {useAppDispatch} from '../../../redux/hooks';
@@ -32,6 +33,9 @@ const validationSchema = Yup.object().shape({
 });
 
 const AnimatedLoginIcon = ({active}: {active?: boolean}) => {
+  const {colors, glass} = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
@@ -78,6 +82,8 @@ const AnimatedLoginIcon = ({active}: {active?: boolean}) => {
 };
 
 const LoginScreen = () => {
+  const {colors, glass, isDark} = useTheme();
+  const styles = useThemedStyles(createStyles);
   const dispatch = useAppDispatch();
 
   const formik = useFormik({
@@ -158,7 +164,7 @@ const LoginScreen = () => {
           >
             <GlassView
               effect="clear"
-              colorScheme="dark"
+              colorScheme={isDark ? 'dark' : 'light'}
               tintColor={glass.loginCardTint}
               style={styles.loginCard}
               fallbackStyle={glass.fallback.loginCard}

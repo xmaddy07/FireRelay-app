@@ -6,12 +6,7 @@ export const icons = {
   notification: require('./notification.png'),
   senders: require('./senders.png'),
   setting: require('./setting.png'),
-  sound: require('./sound.png'),
   users: require('./users.png'),
   filter: require('./filter.png'),
-  previous: require('./previous.png'),
-  danger: require('./danger.png'),
-  radio: require('./radio.png'),
-  signal: require('./signal.png'),
   map: require('./map.png'),
 };

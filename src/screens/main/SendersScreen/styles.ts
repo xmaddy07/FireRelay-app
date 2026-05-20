@@ -1,8 +1,9 @@
 import {StyleSheet} from 'react-native';
-import {colors} from '../../../constants';
+import {fonts} from '../../../constants';
+import type { AppColors } from "../../../theme/types";
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -11,12 +12,13 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontSize: responsiveSize(34),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
     marginBottom: hp(1),
   },
   subtitle: {
     fontSize: responsiveSize(15),
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
     marginBottom: hp(3),
     lineHeight: responsiveSize(22),
@@ -29,12 +31,13 @@ export const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: responsiveSize(18),
-    fontWeight: '700',
+    fontFamily: fonts.semibold,
     color: colors.text,
     marginBottom: hp(0.5),
   },
   cardText: {
     fontSize: responsiveSize(14),
     color: '#cbd5e1',
+    fontFamily: fonts.regular,
   },
 });

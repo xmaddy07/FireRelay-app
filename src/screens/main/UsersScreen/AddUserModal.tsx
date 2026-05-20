@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import {ROLE_OPTIONS, UserRecord, UserRole} from './types';
-import {premium} from './styles';
-import {editModalStyles as s} from './editUserModal.styles';
+import {useTheme, useThemedStyles} from '../../../theme';
+import {createPremium} from './styles';
+import {createEditModalStyles} from './editUserModal.styles';
 
 type Props = {
   visible: boolean;
@@ -21,6 +22,9 @@ type Props = {
 };
 
 const AddUserModal = ({visible, onClose, onCreate}: Props) => {
+  const {colors} = useTheme();
+  const premium = useMemo(() => createPremium(colors), [colors]);
+  const s = useThemedStyles(createEditModalStyles);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('user');
   const [roleOpen, setRoleOpen] = useState(false);

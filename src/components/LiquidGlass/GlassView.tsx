@@ -73,7 +73,7 @@ const GlassView = ({
       {...rest}
     >
       {highlight}
-      {children}
+      <View style={styles.content}>{children}</View>
     </LiquidGlassView>
   );
 };

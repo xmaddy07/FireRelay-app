@@ -1,8 +1,9 @@
 import {StyleSheet} from 'react-native';
-import {colors, fonts} from '../../constants';
+import {fonts} from '../../constants';
+import type { AppColors } from "../../theme/types";
 import {hp, wp, responsiveSize} from '../../utils/responsive';
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     width: '100%',
     marginBottom: hp(3),
@@ -67,7 +68,7 @@ export const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: responsiveSize(12),
     fontFamily: fonts.medium,
-    letterSpacing: 0.4,
+    letterSpacing: responsiveSize(0.4),
   },
   stackedInputWrapper: {
     flexDirection: 'row',
