@@ -4,16 +4,32 @@ import {StatusBar, StyleSheet} from 'react-native';
 import {Provider} from 'react-redux';
 import {AppNavigator} from './src/navigation/AppNavigator';
 import {store} from './src/redux/store';
+import {ThemeProvider, useTheme} from './src/theme';
+
+const AppShell = () => {
+  const {colors, isDark} = useTheme();
+
+  return (
+    <>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
+      <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]} edges={['top']}>
+        <AppNavigator />
+      </SafeAreaView>
+    </>
+  );
+};
 
 const App = () => {
   return (
     <Provider store={store}>
-      <SafeAreaProvider>
-        <StatusBar barStyle="light-content" backgroundColor="#10141A" />
-        <SafeAreaView style={styles.container} edges={['top']}>
-          <AppNavigator />
-        </SafeAreaView>
-      </SafeAreaProvider>
+      <ThemeProvider>
+        <SafeAreaProvider>
+          <AppShell />
+        </SafeAreaProvider>
+      </ThemeProvider>
     </Provider>
   );
 };
@@ -21,7 +37,6 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07080e',
   },
 });
 

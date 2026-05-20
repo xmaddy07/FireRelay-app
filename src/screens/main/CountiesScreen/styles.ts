@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
-import { colors } from '../../../constants';
+import {fonts} from '../../../constants';
+import type { AppColors } from "../../../theme/types";
 import { hp, wp, responsiveSize } from '../../../utils/responsive';
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -17,8 +18,8 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   feedListContent: {
-    paddingHorizontal: wp(4),
-    paddingBottom: hp(3),
+    paddingHorizontal: wp(3.5),
+    paddingBottom: hp(2),
     flexGrow: 1,
   },
   statusCard: {
@@ -31,18 +32,19 @@ export const styles = StyleSheet.create({
   },
   statusTitle: {
     fontSize: responsiveSize(28),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: '#A8B9E8',
     marginBottom: hp(1.2),
   },
   statusSubtitle: {
     fontSize: responsiveSize(14),
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
     lineHeight: responsiveSize(20),
   },
   statusLive: {
     color: '#4cd89f',
-    fontWeight: '700',
+    fontFamily: fonts.semibold,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -59,12 +61,12 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: responsiveSize(24),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
   },
   sectionTitleCompact: {
     fontSize: responsiveSize(15),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
   },
   countBadge: {
@@ -82,19 +84,20 @@ export const styles = StyleSheet.create({
   countBadgeText: {
     color: '#cbd5e1',
     fontSize: responsiveSize(12),
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontFamily: fonts.semibold,
+    letterSpacing: responsiveSize(0.5),
   },
   countBadgeTextCompact: {
     color: colors.textSecondary,
     fontSize: responsiveSize(9),
-    fontWeight: '700',
-    letterSpacing: 0.4,
+    fontFamily: fonts.semibold,
+    letterSpacing: responsiveSize(0.4),
   },
   sectionCaption: {
     color: '#7b8aa6',
     fontSize: responsiveSize(11),
-    letterSpacing: 1.4,
+    fontFamily: fonts.medium,
+    letterSpacing: responsiveSize(1.4),
     marginBottom: hp(2.4),
   },
   card: {
@@ -133,14 +136,15 @@ export const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: responsiveSize(18),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
     marginBottom: hp(0.5),
   },
   cardMeta: {
     fontSize: responsiveSize(12),
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
-    letterSpacing: 0.7,
+    letterSpacing: responsiveSize(0.7),
     marginTop: hp(0.4),
   },
   cardEnd: {
@@ -173,6 +177,7 @@ export const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: responsiveSize(18),
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
     lineHeight: responsiveSize(18),
   },
@@ -191,14 +196,15 @@ export const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: responsiveSize(22),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
     marginBottom: hp(1),
   },
   featureSubtitle: {
     fontSize: responsiveSize(12),
+    fontFamily: fonts.medium,
     color: '#4cd89f',
-    letterSpacing: 1.2,
+    letterSpacing: responsiveSize(1.2),
   },
   // Top Counties Horizontal Scroll Section Styles
   countiesHorizontalContainer: {
@@ -238,6 +244,10 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
   },
+  horizontalCardCompactSelected: {
+    borderColor: 'rgba(56, 189, 248, 0.65)',
+    backgroundColor: 'rgba(47, 85, 151, 0.28)',
+  },
   horizontalCardIconWrapperCompact: {
     width: wp(7),
     height: wp(7),
@@ -253,7 +263,7 @@ export const styles = StyleSheet.create({
   },
   horizontalCardTitleCompact: {
     fontSize: responsiveSize(13),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
   },
   horizontalCardMetaRow: {
@@ -263,8 +273,9 @@ export const styles = StyleSheet.create({
   },
   horizontalCardMetaCompact: {
     fontSize: responsiveSize(9),
+    fontFamily: fonts.regular,
     color: '#64748b',
-    letterSpacing: 0.2,
+    letterSpacing: responsiveSize(0.2),
     flex: 1,
   },
   dotCompact: {
@@ -297,80 +308,15 @@ export const styles = StyleSheet.create({
   },
   horizontalCardTitle: {
     fontSize: responsiveSize(16),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
     marginBottom: hp(0.2),
   },
   horizontalCardMeta: {
     fontSize: responsiveSize(11),
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
-    letterSpacing: 0.3,
-  },
-  feedSection: {
-    paddingHorizontal: wp(4),
-    marginBottom: hp(1),
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-    paddingBottom: hp(0.8),
-  },
-  feedSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: hp(0.8),
-  },
-  feedTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  feedSectionTitle: {
-    fontSize: responsiveSize(17),
-    fontWeight: '800',
-    color: colors.text,
-    marginLeft: wp(2),
-  },
-  filterIconButton: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: wp(2.5),
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterIconButtonActive: {
-    backgroundColor: 'rgba(47, 85, 151, 0.35)',
-    borderColor: 'rgba(47, 85, 151, 0.5)',
-  },
-  filterIcon: {
-    width: wp(4.5),
-    height: wp(4.5),
-    tintColor: '#a8b9e8',
-  },
-  livePulseWrapper: {
-    width: wp(3.2),
-    height: wp(3.2),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  livePulseRing: {
-    position: 'absolute',
-    width: wp(2),
-    height: wp(2),
-    borderRadius: wp(999),
-    backgroundColor: colors.primary,
-  },
-  livePulseDot: {
-    width: wp(2),
-    height: wp(2),
-    borderRadius: wp(999),
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 4,
+    letterSpacing: responsiveSize(0.3),
   },
   chipsContainer: {
     flexDirection: 'row',
@@ -391,9 +337,9 @@ export const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: responsiveSize(11),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
-    letterSpacing: 0.5,
+    letterSpacing: responsiveSize(0.5),
   },
   chipTextActive: {
     color: colors.text,
@@ -401,16 +347,17 @@ export const styles = StyleSheet.create({
   // Feed Item Card Styles
   feedItemCard: {
     backgroundColor: colors.inputBackground,
-    borderRadius: wp(4.5),
-    padding: wp(4),
-    marginBottom: hp(1.4),
+    borderRadius: wp(3),
+    paddingHorizontal: wp(2.8),
+    paddingVertical: hp(0.75),
+    marginBottom: hp(0.55),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
-    elevation: 3,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
   feedItemCardAlertBorder: {
     borderWidth: 1,
@@ -418,23 +365,25 @@ export const styles = StyleSheet.create({
   feedItemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: hp(1.2),
+    marginBottom: hp(0.35),
   },
   feedItemBadgeContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: wp(1.2),
+    marginRight: wp(1.5),
   },
   feedBadge: {
-    borderRadius: wp(3),
-    paddingVertical: hp(0.4),
-    paddingHorizontal: wp(2.2),
-    marginRight: wp(2.2),
+    borderRadius: wp(2),
+    paddingVertical: hp(0.15),
+    paddingHorizontal: wp(1.6),
+    marginRight: wp(1.4),
   },
   feedBadgeText: {
-    fontSize: responsiveSize(9.5),
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontSize: responsiveSize(8),
+    fontFamily: fonts.bold,
+    letterSpacing: responsiveSize(0.4),
   },
   feedBadgeFire: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
@@ -461,41 +410,51 @@ export const styles = StyleSheet.create({
     color: '#9ca3af',
   },
   feedCountyText: {
-    fontSize: responsiveSize(11.5),
+    flex: 1,
+    fontSize: responsiveSize(10),
     color: '#38bdf8',
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontFamily: fonts.bold,
+    letterSpacing: responsiveSize(0.3),
+  },
+  feedTimeColumn: {
+    alignItems: 'flex-end',
   },
   feedTimeText: {
-    fontSize: responsiveSize(11.5),
+    fontSize: responsiveSize(10),
     color: '#64748b',
-    fontWeight: '500',
+    fontFamily: fonts.semibold,
   },
-  feedTalkgroupText: {
-    fontSize: responsiveSize(14.5),
-    fontWeight: '800',
-    color: '#a8b9e8',
-    marginBottom: hp(0.6),
-  },
-  feedSnippetText: {
-    fontSize: responsiveSize(13),
-    color: '#cbd5e1',
-    lineHeight: responsiveSize(18),
-  },
-  feedItemFooter: {
+  feedTalkgroupRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: hp(1.2),
-    paddingTop: hp(1),
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.03)',
+    marginBottom: hp(0.25),
   },
+  feedTalkgroupText: {
+    flex: 1,
+    fontSize: responsiveSize(11.5),
+    fontFamily: fonts.semibold,
+    color: '#a8b9e8',
+    marginRight: wp(1.5),
+  },
+  feedSnippetText: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.regular,
+    color: '#cbd5e1',
+    lineHeight: responsiveSize(14.5),
+  },
+  feedSnippetHighlight: {
+    fontFamily: fonts.bold,
+    color: colors.primary,
+  },
+
   feedStarButton: {
-    padding: wp(1),
+    padding: 0,
+    width: wp(4.5),
+    alignItems: 'center',
   },
   feedStarIcon: {
-    fontSize: responsiveSize(16),
+    fontSize: responsiveSize(13),
+    fontFamily: fonts.regular,
   },
   feedStarIconActive: {
     color: '#fbbf24',
@@ -504,9 +463,9 @@ export const styles = StyleSheet.create({
     color: '#475569',
   },
   feedMetaText: {
-    fontSize: responsiveSize(10.5),
+    fontSize: responsiveSize(8.5),
     color: '#475569',
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontFamily: fonts.semibold,
+    marginTop: hp(0.1),
   },
 });

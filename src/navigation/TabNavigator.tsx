@@ -5,11 +5,15 @@ import LinearGradient from 'react-native-linear-gradient';
 import CountiesScreen from '../screens/main/CountiesScreen';
 import UsersScreen from '../screens/main/UsersScreen';
 import KeywordsScreen from '../screens/main/KeywordsScreen';
-import SettingsScreen from '../screens/main/SettingsScreen';
+import SettingsScreen, {
+  type SettingsRoute,
+} from '../screens/main/SettingsScreen';
 import DashboardScreen from '../screens/main/DashboardScreen';
 import SendersScreen from '../screens/main/SendersScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
-import {glass, images} from '../constants';
+import {images} from '../constants';
+import {useTheme} from '../theme';
+import {TAB_BAR_HEIGHT} from '../utils/responsive';
 import {useAppSelector} from '../redux/hooks';
 import LiquidGlassTabBar, {type TabBarConfig} from './LiquidGlassTabBar';
 
@@ -30,13 +34,26 @@ const adminTabConfig: Record<string, TabBarConfig> = {
 };
 
 const TabNavigator = () => {
+  const {glass} = useTheme();
   const role = useAppSelector(state => state.user.role) || 'user';
   const isAdmin = role === 'admin';
   const tabConfig = isAdmin ? adminTabConfig : userTabConfig;
 
   const [notifMounted, setNotifMounted] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [settingsRoute, setSettingsRoute] = useState<SettingsRoute>('menu');
   const notifSlide = useRef(new Animated.Value(1)).current;
+
+  const renderTabBar = (props: React.ComponentProps<typeof LiquidGlassTabBar>) => {
+    const focusedRoute = props.state.routes[props.state.index]?.name;
+    const hideTabBar = focusedRoute === 'Settings' && settingsRoute !== 'menu';
+
+    if (hideTabBar) {
+      return null;
+    }
+
+    return <LiquidGlassTabBar {...props} tabConfig={tabConfig} />;
+  };
 
   const openNotifications = () => {
     setNotifMounted(true);
@@ -72,7 +89,7 @@ const TabNavigator = () => {
           headerShown: false,
           sceneStyle: styles.scene,
         }}
-        tabBar={props => <LiquidGlassTabBar {...props} tabConfig={tabConfig} />}
+        tabBar={renderTabBar}
       >
         {isAdmin ? (
           <>
@@ -97,7 +114,12 @@ const TabNavigator = () => {
               {() => <KeywordsScreen onNotificationPress={openNotifications} />}
             </Tab.Screen>
             <Tab.Screen name="Settings">
-              {() => <SettingsScreen onNotificationPress={openNotifications} />}
+              {() => (
+                <SettingsScreen
+                  onNotificationPress={openNotifications}
+                  onRouteChange={setSettingsRoute}
+                />
+              )}
             </Tab.Screen>
           </>
         )}
@@ -133,7 +155,7 @@ const styles = StyleSheet.create({
   },
   scene: {
     backgroundColor: 'transparent',
-    paddingBottom: 88,
+    paddingBottom: TAB_BAR_HEIGHT,
   },
   notificationsOverlay: {
     zIndex: 50,

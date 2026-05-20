@@ -1,28 +1,34 @@
 import {StyleSheet, Platform} from 'react-native';
-import {colors} from '../../../constants';
-import {hp, wp, responsiveSize} from '../../../utils/responsive';
+import {fonts} from '../../../constants';
+import type { AppColors } from "../../../theme/types";
+import {
+  hp,
+  wp,
+  responsiveSize,
+  TAB_BAR_HEIGHT,
+} from '../../../utils/responsive';
 
-export const TAB_BAR_HEIGHT = 88;
-export const ADD_BUTTON_SIZE = 46;
+export {TAB_BAR_HEIGHT};
+export const ADD_BUTTON_SIZE = wp(12.3);
 
-export const premium = {
-  bg: '#0B121B',
-  surface: '#151E29',
-  surfaceRaised: '#1A2432',
-  searchBg: '#121A26',
-  accent: '#FF4D4D',
+export const createPremium = (colors: AppColors) => ({
+  bg: colors.background,
+  surface: colors.surface,
+  surfaceRaised: colors.surfaceElevated,
+  searchBg: colors.inputBackground,
+  accent: colors.primary,
   accentSoft: 'rgba(255, 77, 77, 0.18)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  borderStrong: 'rgba(255, 255, 255, 0.14)',
-  textMuted: '#94A3B8',
+  border: colors.menuItemBorder,
+  borderStrong: colors.borderMuted,
+  textMuted: colors.textMuted,
   adminBadge: '#6B2222',
   userBadge: '#107C41',
   dispatcherBadge: '#5C4A1F',
-  selectedGreen: '#22C55E',
-  selectedBorder: 'rgba(34, 197, 94, 0.4)',
-} as const;
+});
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => {
+  const premium = createPremium(colors);
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: premium.bg,
@@ -38,9 +44,9 @@ export const styles = StyleSheet.create({
   },
   premiumHeaderTitle: {
     fontSize: responsiveSize(20),
-    fontWeight: '700',
-    color: colors.white,
-    letterSpacing: 0.2,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+    letterSpacing: responsiveSize(0.2),
   },
   premiumHeaderBell: {
     position: 'absolute',
@@ -83,7 +89,8 @@ export const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: responsiveSize(14),
-    color: colors.white,
+    fontFamily: fonts.regular,
+    color: colors.text,
     paddingVertical: Platform.OS === 'ios' ? hp(1.2) : hp(0.9),
   },
   roleChipsRow: {
@@ -120,14 +127,14 @@ export const styles = StyleSheet.create({
   },
   roleChipText: {
     fontSize: responsiveSize(12),
-    fontWeight: '600',
-    color: colors.white,
-    letterSpacing: 0.2,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+    letterSpacing: responsiveSize(0.2),
     textAlign: 'center',
   },
   roleChipTextActive: {
-    color: colors.white,
-    fontWeight: '700',
+    color: colors.textOnPrimary,
+    fontFamily: fonts.semibold,
   },
   list: {
     flex: 1,
@@ -156,14 +163,6 @@ export const styles = StyleSheet.create({
       },
       android: {elevation: 3},
     }),
-  },
-  userCardSelected: {
-    borderColor: premium.selectedBorder,
-    backgroundColor: '#172230',
-  },
-  selectedAccent: {
-    width: wp(1.1),
-    backgroundColor: premium.selectedGreen,
   },
   userCardBody: {
     flex: 1,
@@ -196,9 +195,9 @@ export const styles = StyleSheet.create({
     flexShrink: 0,
   },
   actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: wp(9.6),
+    height: wp(9.6),
+    borderRadius: wp(2.7),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(37, 99, 235, 0.15)',
@@ -214,9 +213,9 @@ export const styles = StyleSheet.create({
   },
   emailText: {
     fontSize: responsiveSize(14),
-    fontWeight: '700',
-    color: colors.white,
-    letterSpacing: 0.1,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+    letterSpacing: responsiveSize(0.1),
   },
   youBadge: {
     backgroundColor: premium.accentSoft,
@@ -229,9 +228,9 @@ export const styles = StyleSheet.create({
   },
   youBadgeText: {
     fontSize: responsiveSize(9),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: premium.accent,
-    letterSpacing: 0.8,
+    letterSpacing: responsiveSize(0.8),
   },
   roleBadge: {
     alignSelf: 'flex-start',
@@ -250,8 +249,8 @@ export const styles = StyleSheet.create({
   },
   roleBadgeText: {
     fontSize: responsiveSize(10),
-    fontWeight: '700',
-    letterSpacing: 0.6,
+    fontFamily: fonts.semibold,
+    letterSpacing: responsiveSize(0.6),
     color: colors.white,
   },
   roleBadgeTextAdmin: {
@@ -278,7 +277,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     fontSize: responsiveSize(12),
     color: premium.textMuted,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   addButtonWrap: {
     width: ADD_BUTTON_SIZE,
@@ -293,6 +292,7 @@ export const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: responsiveSize(14),
+    fontFamily: fonts.regular,
     color: premium.textMuted,
   },
   addButtonRing: {
@@ -317,4 +317,5 @@ export const styles = StyleSheet.create({
       android: {elevation: 6},
     }),
   },
-});
+  });
+};

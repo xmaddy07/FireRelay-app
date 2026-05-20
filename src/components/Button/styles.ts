@@ -1,14 +1,16 @@
 import {StyleSheet} from 'react-native';
-import {colors} from '../../constants';
+import {fonts} from '../../constants';
+import type { AppColors } from "../../theme/types";
+import {hp, wp, responsiveSize} from '../../utils/responsive';
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => StyleSheet.create({
   button: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: hp(1.7),
+    paddingHorizontal: wp(5.3),
+    borderRadius: wp(3.2),
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
+    marginVertical: hp(1),
     overflow: 'hidden',
   },
   gradient: {
@@ -25,11 +27,11 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: wp(2),
   },
   text: {
     color: colors.white,
-    fontWeight: '600',
-    fontSize: 16,
+    fontFamily: fonts.semibold,
+    fontSize: responsiveSize(16),
   },
 });

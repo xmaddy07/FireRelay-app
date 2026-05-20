@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
-import {colors, images} from '../../../constants';
+import {Header} from '../../../components';
+import {useTheme, useThemedStyles} from '../../../theme';
 import {useAppSelector} from '../../../redux/hooks';
 import AddUserModal from './AddUserModal';
 import EditUserModal from './EditUserModal';
-import {premium, styles, TAB_BAR_HEIGHT} from './styles';
+import {hp, responsiveHitSlop, wp} from '../../../utils/responsive';
+import {createPremium, createStyles, TAB_BAR_HEIGHT} from './styles';
 import {RoleFilter, UserRecord, UserRole} from './types';
 
 const INITIAL_USERS: UserRecord[] = [
@@ -66,7 +68,10 @@ const formatCreatedDate = (iso: string) => {
   return `Created ${formatted}`;
 };
 
-const getRoleBadgeStyle = (role: UserRole) => {
+const getRoleBadgeStyle = (
+  role: UserRole,
+  styles: ReturnType<typeof createStyles>,
+) => {
   switch (role) {
     case 'admin':
       return {
@@ -92,31 +97,17 @@ const UsersScreenHeader = ({
 }: {
   onNotificationPress?: () => void;
 }) => (
-  <View style={styles.premiumHeader}>
-    <Text style={styles.premiumHeaderTitle}>Users</Text>
-    {onNotificationPress ? (
-      <TouchableOpacity
-        style={styles.premiumHeaderBell}
-        onPress={onNotificationPress}
-        activeOpacity={0.75}
-        hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-      >
-        <Image
-          source={images.notification}
-          style={{width: 22, height: 22}}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-    ) : null}
-  </View>
+  <Header
+    title="Users"
+    showNotification={!!onNotificationPress}
+    onNotificationPress={onNotificationPress}
+  />
 );
 
 type UserListItemProps = {
   item: UserRecord;
   entranceAnim: Animated.Value;
   isCurrentUser: boolean;
-  isSelected: boolean;
-  onSelect: (id: string) => void;
   onEdit: (user: UserRecord) => void;
   onDelete: (user: UserRecord) => void;
 };
@@ -125,13 +116,14 @@ const UserListItem = ({
   item,
   entranceAnim,
   isCurrentUser,
-  isSelected,
-  onSelect,
   onEdit,
   onDelete,
 }: UserListItemProps) => {
+  const {colors} = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const premium = useMemo(() => createPremium(colors), [colors]);
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const roleBadge = getRoleBadgeStyle(item.role);
+  const roleBadge = getRoleBadgeStyle(item.role, styles);
   const canDelete = !isCurrentUser;
 
   const entranceStyle = {
@@ -168,13 +160,10 @@ const UserListItem = ({
   return (
     <Animated.View style={entranceStyle}>
       <Pressable
-        onPress={() => onSelect(item.id)}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[styles.userCard, isSelected && styles.userCardSelected]}
+        style={styles.userCard}
       >
-        {isSelected ? <View style={styles.selectedAccent} /> : null}
-
         <View style={styles.userCardBody}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.emailRow}>
@@ -199,7 +188,7 @@ const UserListItem = ({
                 style={styles.actionButton}
                 onPress={() => onEdit(item)}
                 activeOpacity={0.75}
-                hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}
+                hitSlop={responsiveHitSlop(1.6)}
               >
                 <Icon name="edit-2" size={15} color="#60A5FA" />
               </TouchableOpacity>
@@ -212,7 +201,7 @@ const UserListItem = ({
                 onPress={() => onDelete(item)}
                 activeOpacity={canDelete ? 0.75 : 1}
                 disabled={!canDelete}
-                hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}
+                hitSlop={responsiveHitSlop(1.6)}
               >
                 <Icon
                   name="trash-2"
@@ -244,15 +233,17 @@ const UserListItem = ({
 };
 
 const UsersScreen = ({onNotificationPress}: Props) => {
+  const {colors} = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const premium = useMemo(() => createPremium(colors), [colors]);
   const insets = useSafeAreaInsets();
   const currentEmail =
     useAppSelector(state => state.user.email) || 'matt.shelton@firerelay.com';
   const [users, setUsers] = useState<UserRecord[]>(INITIAL_USERS);
 
-  const listBottomInset = insets.bottom + TAB_BAR_HEIGHT + 16;
+  const listBottomInset = insets.bottom + TAB_BAR_HEIGHT + hp(2);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('All Roles');
-  const [selectedUserId, setSelectedUserId] = useState('4');
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -362,7 +353,6 @@ const UsersScreen = ({onNotificationPress}: Props) => {
 
   const handleCreateUser = (user: UserRecord) => {
     setUsers(prev => [user, ...prev]);
-    setSelectedUserId(user.id);
   };
 
   const handleDeleteUser = (user: UserRecord) => {
@@ -376,9 +366,6 @@ const UsersScreen = ({onNotificationPress}: Props) => {
         style: 'destructive',
         onPress: () => {
           setUsers(prev => prev.filter(u => u.id !== user.id));
-          if (selectedUserId === user.id) {
-            setSelectedUserId('');
-          }
         },
       },
     ]);
@@ -434,8 +421,6 @@ const UsersScreen = ({onNotificationPress}: Props) => {
       item={item}
       entranceAnim={getItemAnim(item.id)}
       isCurrentUser={item.email === currentEmail}
-      isSelected={item.id === selectedUserId}
-      onSelect={setSelectedUserId}
       onEdit={openEditModal}
       onDelete={handleDeleteUser}
     />
@@ -475,7 +460,7 @@ const UsersScreen = ({onNotificationPress}: Props) => {
             activeOpacity={0.9}
             onPress={() => setAddModalVisible(true)}
           >
-            <Icon name="plus" size={22} color={colors.white} />
+            <Icon name="plus" size={22} color={colors.textOnPrimary} />
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>

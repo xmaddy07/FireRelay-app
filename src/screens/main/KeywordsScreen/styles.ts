@@ -1,8 +1,9 @@
 import {StyleSheet} from 'react-native';
-import {colors} from '../../../constants';
+import {fonts} from '../../../constants';
+import type { AppColors } from "../../../theme/types";
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -11,12 +12,13 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontSize: responsiveSize(34),
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: colors.text,
     marginBottom: hp(1),
   },
   subtitle: {
     fontSize: responsiveSize(15),
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
     marginBottom: hp(3),
     lineHeight: responsiveSize(22),
@@ -28,6 +30,8 @@ export const styles = StyleSheet.create({
   },
   chip: {
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderMuted,
     borderRadius: wp(4),
     paddingVertical: hp(1.5),
     paddingHorizontal: wp(4),
@@ -35,7 +39,8 @@ export const styles = StyleSheet.create({
     marginBottom: hp(1.2),
   },
   chipText: {
-    color: '#e2e8f0',
+    color: colors.text,
     fontSize: responsiveSize(14),
+    fontFamily: fonts.regular,
   },
 });

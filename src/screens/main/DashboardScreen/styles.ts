@@ -1,28 +1,31 @@
 import {StyleSheet} from 'react-native';
-import {colors} from '../../../constants';
+import {fonts} from '../../../constants';
+import type { AppColors } from "../../../theme/types";
+import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   content: {
-    padding: 24,
+    padding: wp(6.4),
   },
   section: {
-    marginBottom: 20,
-    padding: 20,
-    borderRadius: 22,
+    marginBottom: hp(2.5),
+    padding: wp(5.3),
+    borderRadius: wp(5.9),
     backgroundColor: colors.surface,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: responsiveSize(18),
+    fontFamily: fonts.bold,
+    marginBottom: hp(1),
     color: colors.text,
   },
   sectionText: {
     color: '#cbd5e1',
-    fontSize: 15,
+    fontSize: responsiveSize(15),
+    fontFamily: fonts.regular,
   },
 });

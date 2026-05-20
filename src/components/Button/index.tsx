@@ -10,8 +10,8 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {colors} from '../../constants';
-import {styles} from './styles';
+import {createStyles} from './styles';
+import {useTheme, useThemedStyles} from '../../theme';
 
 type Props = {
   title: string;
@@ -33,9 +33,12 @@ const Button = ({
   style,
   textStyle,
   backgroundColor,
-  loadingColor = colors.white,
+  loadingColor,
   rightIcon,
 }: Props) => {
+  const {colors} = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const resolvedLoadingColor = loadingColor ?? colors.white;
   const isDisabled = disabled || loading;
 
   return (
@@ -56,7 +59,7 @@ const Button = ({
         />
       )}
       {loading ? (
-        <ActivityIndicator color={loadingColor} size="small" />
+        <ActivityIndicator color={resolvedLoadingColor} size="small" />
       ) : (
         <View style={styles.contentRow}>
           <Text style={[styles.text, textStyle]}>{title}</Text>

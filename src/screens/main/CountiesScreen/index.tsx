@@ -11,12 +11,15 @@ import {
   FlatList,
   Pressable,
 } from 'react-native';
-import { styles } from './styles';
+import { createStyles } from './styles';
+import { useTheme, useThemedStyles } from '../../../theme';
 import Header from '../../../components/Header';
-import CountyDetailScreen from '../CountyDetailScreen';
-import AdvancedFiltersBottomSheet from '../../../components/AdvancedFiltersBottomSheet';
+import AdvancedFiltersBottomSheet, {
+  FilterState as SheetFilterState,
+} from '../../../components/AdvancedFiltersBottomSheet';
 import LinearGradient from 'react-native-linear-gradient';
-import { glass, images } from '../../../constants';
+import {images} from '../../../constants';
+import { responsiveHitSlop } from '../../../utils/responsive';
 
 const ALERT_BORDER_CONFIG = {
   critical: {
@@ -32,12 +35,10 @@ const ALERT_BORDER_CONFIG = {
 };
 
 type AdvancedFeedFilters = {
-  county: string;
-  feedType: string;
+  counties: string[];
   keywordPriority: string;
   keywords: string;
   talkgroup: string;
-  talkgroupId: string;
   fromDate: string;
   toDate: string;
 };
@@ -49,11 +50,15 @@ type FeedItem = {
   county: string;
   talkgroup: string;
   talkgroupId: string;
+  date: string;
   time: string;
   snippet: string;
+  highlightKeywords: string[];
   type: 'fire' | 'medical' | 'police' | 'general';
   severity: 'critical' | 'warning' | 'info';
   starred: boolean;
+  hasWarning: boolean;
+  hasSecure: boolean;
 };
 
 const PRIORITY_SEVERITY: Record<string, FeedItem['severity']> = {
@@ -63,10 +68,7 @@ const PRIORITY_SEVERITY: Record<string, FeedItem['severity']> = {
 };
 
 const matchesFeedFilters = (item: FeedItem, filters: AdvancedFeedFilters): boolean => {
-  if (filters.county && item.county !== filters.county) {
-    return false;
-  }
-  if (filters.feedType !== 'All' && item.type !== filters.feedType.toLowerCase()) {
+  if (filters.counties.length > 0 && !filters.counties.includes(item.county)) {
     return false;
   }
   if (filters.keywordPriority !== 'All') {
@@ -83,7 +85,10 @@ const matchesFeedFilters = (item: FeedItem, filters: AdvancedFeedFilters): boole
     const query = filters.keywords.toLowerCase();
     const inSnippet = item.snippet.toLowerCase().includes(query);
     const inTalkgroup = item.talkgroup.toLowerCase().includes(query);
-    if (!inSnippet && !inTalkgroup) {
+    const inHighlights = item.highlightKeywords.some(k =>
+      k.toLowerCase().includes(query),
+    );
+    if (!inSnippet && !inTalkgroup && !inHighlights) {
       return false;
     }
   }
@@ -93,30 +98,63 @@ const matchesFeedFilters = (item: FeedItem, filters: AdvancedFeedFilters): boole
   ) {
     return false;
   }
-  if (filters.talkgroupId && item.talkgroupId !== filters.talkgroupId) {
-    return false;
-  }
   return true;
 };
 
-const isFeedFiltersEmpty = (filters: {
-  county: string;
-  feedType: string;
-  keywordPriority: string;
-  fromDate: string;
-  toDate: string;
-  keywords: string;
-  talkgroup: string;
-  talkgroupId: string;
-}) =>
-  !filters.county &&
-  filters.feedType === 'All' &&
+const DEFAULT_ADVANCED_FILTERS: AdvancedFeedFilters = {
+  counties: [],
+  keywordPriority: 'All',
+  fromDate: '',
+  toDate: '',
+  keywords: '',
+  talkgroup: '',
+};
+
+const isFeedFiltersEmpty = (filters: AdvancedFeedFilters) =>
+  filters.counties.length === 0 &&
   filters.keywordPriority === 'All' &&
   !filters.fromDate &&
   !filters.toDate &&
   !filters.keywords &&
-  !filters.talkgroup &&
-  !filters.talkgroupId;
+  !filters.talkgroup;
+
+const sheetFiltersToAdvanced = (
+  filters: Pick<
+    SheetFilterState,
+    | 'counties'
+    | 'keywordPriority'
+    | 'fromDate'
+    | 'toDate'
+    | 'keywords'
+    | 'talkgroup'
+  >,
+): AdvancedFeedFilters => ({
+  counties: [...filters.counties],
+  keywordPriority: filters.keywordPriority,
+  fromDate: filters.fromDate,
+  toDate: filters.toDate,
+  keywords: filters.keywords,
+  talkgroup: filters.talkgroup,
+});
+
+const advancedFiltersToSheet = (
+  filters: AdvancedFeedFilters | null,
+): SheetFilterState | null => {
+  if (!filters) {
+    return null;
+  }
+
+  return {
+    counties: [...filters.counties],
+    keywordPriority: filters.keywordPriority,
+    fromDate: filters.fromDate,
+    toDate: filters.toDate,
+    keywords: filters.keywords,
+    talkgroup: filters.talkgroup,
+    alertStatus: 'Flagged',
+    recordsMatched: 0,
+  };
+};
 
 const counties: County[] = [
   { name: 'Travis', code: 'TX-TRA', est: '1840' },
@@ -128,68 +166,98 @@ const mockFeedItems: FeedItem[] = [
   {
     id: 'f1',
     county: 'Travis',
-    talkgroup: 'AFD Dispatch',
-    talkgroupId: '1147',
-    time: '04:12:35',
-    snippet: 'Engine 1 responding to automatic fire alarm at 123 Main St. Smoke reported on third floor.',
+    talkgroup: 'F-COM E. F-COM W.',
+    talkgroupId: '1122 1142',
+    date: '05/20/2026',
+    time: '05:22:29',
+    snippet:
+      'From the structure fire, the first due Engine 7 and arriving unit B1 from the area is still attempting to initiate fire suppression ops. We\'re still having problems with the broken water line but we\'re going to try and fight this fire with what we have.',
+    highlightKeywords: ['structure fire', 'broken water'],
     type: 'fire',
-    severity: 'warning',
+    severity: 'critical',
     starred: false,
+    hasWarning: true,
+    hasSecure: true,
   },
   {
     id: 'f2',
-    county: 'Wilco',
-    talkgroup: 'WCSO Dispatch',
-    talkgroupId: '2214',
-    time: '04:09:47',
-    snippet: 'Medic 4 on scene of a 2-vehicle collision, requesting backup for traffic control.',
-    type: 'medical',
-    severity: 'warning',
-    starred: true,
+    county: 'Travis',
+    talkgroup: 'F-COM W. F-COM E.',
+    talkgroupId: '1122 1142',
+    date: '05/20/2026',
+    time: '05:18:10',
+    snippet:
+      'Pulling a rear third line. Scene secure. We have knocked out the fire and our heavy rescue in line 29 is going to be the only unit on scene for a while.',
+    highlightKeywords: [],
+    type: 'fire',
+    severity: 'info',
+    starred: false,
+    hasWarning: true,
+    hasSecure: true,
   },
   {
     id: 'f3',
     county: 'Travis',
-    talkgroup: 'ATCEMS Dispatch',
-    talkgroupId: '1052',
-    time: '04:05:12',
-    snippet: 'Ambulance 12 dispatched for high-priority medical emergency. CPR in progress.',
-    type: 'medical',
-    severity: 'critical',
-    starred: false,
+    talkgroup: 'AFD Locution',
+    talkgroupId: '1147',
+    date: '05/20/2026',
+    time: '05:17:46',
+    snippet:
+      'Engine 23 broken water pipe at 4500 block of Burnet Road. Requesting water department and additional engine company for traffic control.',
+    highlightKeywords: ['broken water'],
+    type: 'fire',
+    severity: 'warning',
+    starred: true,
+    hasWarning: true,
+    hasSecure: true,
   },
   {
     id: 'f4',
-    county: 'McLennan',
-    talkgroup: 'Waco PD North',
-    talkgroupId: '3401',
-    time: '03:58:22',
-    snippet: 'Unit 204 in pursuit of a black sedan heading north on I-35. Speeds exceeding 90mph.',
-    type: 'police',
-    severity: 'critical',
+    county: 'Travis',
+    talkgroup: 'AFD Location',
+    talkgroupId: '1147',
+    date: '05/20/2026',
+    time: '05:22:29',
+    snippet:
+      'Medic 4 on scene of a 2-vehicle collision requesting backup for traffic control on I-35 frontage road.',
+    highlightKeywords: [],
+    type: 'medical',
+    severity: 'warning',
     starred: false,
+    hasWarning: true,
+    hasSecure: true,
   },
   {
     id: 'f5',
     county: 'Wilco',
-    talkgroup: 'Round Rock FD',
-    talkgroupId: '2411',
-    time: '03:49:15',
-    snippet: 'Truck 3 assisting with power line down on Palm Valley Blvd. Area secured.',
+    talkgroup: 'WCSO Dispatch',
+    talkgroupId: '2214',
+    date: '05/20/2026',
+    time: '05:17:46',
+    snippet:
+      'Engine 23 broken water pipe at 4500 block of Burnet Road. Requesting water department response.',
+    highlightKeywords: ['broken water'],
     type: 'fire',
-    severity: 'info',
+    severity: 'warning',
     starred: false,
+    hasWarning: true,
+    hasSecure: true,
   },
   {
     id: 'f6',
-    county: 'McLennan',
-    talkgroup: 'MCSO Dispatch',
-    talkgroupId: '3120',
-    time: '03:30:45',
-    snippet: 'Routine patrol completed around Hewitt area. No anomalies detected.',
-    type: 'police',
+    county: 'Travis',
+    talkgroup: 'F-COM E. F-COM W.',
+    talkgroupId: '1122 1142',
+    date: '05/20/2026',
+    time: '05:14:02',
+    snippet:
+      'Command advising all units the structure fire is now under control. Rehab sector established on the B side.',
+    highlightKeywords: ['structure fire'],
+    type: 'fire',
     severity: 'info',
-    starred: false,
+    starred: true,
+    hasWarning: true,
+    hasSecure: true,
   },
 ];
 
@@ -197,76 +265,20 @@ type Props = {
   onNotificationPress?: () => void;
 };
 
-const LivePulseDot = () => {
-  const pulseAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulseAnim]);
-
-  const ringScale = pulseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 2.8],
-  });
-  const ringOpacity = pulseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.55, 0],
-  });
-  const dotScale = pulseAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [1, 1.2, 1],
-  });
-  const dotOpacity = pulseAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [1, 0.75, 1],
-  });
-
-  return (
-    <View style={styles.livePulseWrapper}>
-      <Animated.View
-        style={[
-          styles.livePulseRing,
-          { opacity: ringOpacity, transform: [{ scale: ringScale }] },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.livePulseDot,
-          { opacity: dotOpacity, transform: [{ scale: dotScale }] },
-        ]}
-      />
-    </View>
-  );
-};
-
 const CountyCard = ({
   county,
   fadeAnim,
   slideAnim,
+  isSelected,
   onPress,
 }: {
   county: County;
   fadeAnim: Animated.Value;
   slideAnim: Animated.Value;
+  isSelected: boolean;
   onPress: () => void;
 }) => {
+  const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -302,7 +314,12 @@ const CountyCard = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
-        <View style={styles.horizontalCardCompact}>
+        <View
+          style={[
+            styles.horizontalCardCompact,
+            isSelected && styles.horizontalCardCompactSelected,
+          ]}
+        >
           <View style={styles.horizontalCardIconWrapperCompact}>
             <Image source={images.map} style={styles.horizontalCardIconImage as any} />
           </View>
@@ -323,6 +340,55 @@ const CountyCard = ({
   );
 };
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const FEED_SNIPPET_MAX_LINES = 2;
+
+const FeedSnippetText = ({
+  snippet,
+  highlightKeywords,
+}: {
+  snippet: string;
+  highlightKeywords: string[];
+}) => {
+  const styles = useThemedStyles(createStyles);
+  const snippetProps = {
+    style: styles.feedSnippetText,
+    numberOfLines: FEED_SNIPPET_MAX_LINES,
+    ellipsizeMode: 'tail' as const,
+  };
+
+  if (highlightKeywords.length === 0) {
+    return <Text {...snippetProps}>{snippet}</Text>;
+  }
+
+  const pattern = new RegExp(
+    `(${highlightKeywords.map(escapeRegExp).join('|')})`,
+    'gi',
+  );
+  const parts = snippet.split(pattern).filter(part => part.length > 0);
+
+  return (
+    <Text {...snippetProps}>
+      {parts.map((part, index) => {
+        const isHighlight = highlightKeywords.some(
+          keyword => keyword.toLowerCase() === part.toLowerCase(),
+        );
+
+        if (isHighlight) {
+          return (
+            <Text key={`${part}-${index}`} style={styles.feedSnippetHighlight}>
+              {part}
+            </Text>
+          );
+        }
+
+        return <Text key={`${part}-${index}`}>{part}</Text>;
+      })}
+    </Text>
+  );
+};
+
 const AnimatedAlertFeedCard = ({
   severity,
   children,
@@ -330,6 +396,7 @@ const AnimatedAlertFeedCard = ({
   severity: 'critical' | 'warning';
   children: React.ReactNode;
 }) => {
+  const styles = useThemedStyles(createStyles);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const config = ALERT_BORDER_CONFIG[severity];
 
@@ -381,6 +448,8 @@ const FeedListItem = ({
   entranceAnim: Animated.Value;
   onToggleStar: (id: string) => void;
 }) => {
+  const {colors} = useTheme();
+  const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   let badgeStyle = styles.feedBadgeGeneral;
@@ -437,35 +506,44 @@ const FeedListItem = ({
   const cardContent = (
     <>
       <View style={styles.feedItemHeader}>
+        <Pressable
+          style={styles.feedStarButton}
+          onPress={() => onToggleStar(item.id)}
+          hitSlop={responsiveHitSlop(2)}
+        >
+          <Text
+            style={[
+              styles.feedStarIcon,
+              item.starred ? styles.feedStarIconActive : styles.feedStarIconInactive,
+            ]}
+          >
+            {item.starred ? '★' : '☆'}
+          </Text>
+        </Pressable>
         <View style={styles.feedItemBadgeContainer}>
           <View style={[styles.feedBadge, badgeStyle]}>
             <Text style={[styles.feedBadgeText, badgeTextStyle]}>{badgeLabel}</Text>
           </View>
-          <Text style={styles.feedCountyText}>{item.county.toUpperCase()} COUNTY</Text>
+          <Text style={styles.feedCountyText} numberOfLines={1}>
+            {item.county.toUpperCase()} COUNTY
+          </Text>
         </View>
-        <Text style={styles.feedTimeText}>{item.time}</Text>
+        <View style={styles.feedTimeColumn}>
+          <Text style={styles.feedTimeText}>{item.time}</Text>
+          <Text style={styles.feedMetaText}>{item.date}</Text>
+        </View>
       </View>
 
-      <Text style={styles.feedTalkgroupText}>{item.talkgroup} (ID: {item.talkgroupId})</Text>
-      <Text style={styles.feedSnippetText}>{item.snippet}</Text>
-
-      <View style={styles.feedItemFooter}>
-        <TouchableOpacity
-          onPress={() => onToggleStar(item.id)}
-          style={styles.feedStarButton}
-          activeOpacity={0.7}
-        >
-          <Text style={[
-            styles.feedStarIcon,
-            item.starred ? styles.feedStarIconActive : styles.feedStarIconInactive,
-          ]}>
-            {item.starred ? '★' : '☆'}
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.feedMetaText}>
-          {item.severity.toUpperCase()} • SECURED
+      <View style={styles.feedTalkgroupRow}>
+        <Text style={styles.feedTalkgroupText} numberOfLines={1}>
+          {item.talkgroup} (ID: {item.talkgroupId})
         </Text>
       </View>
+
+      <FeedSnippetText
+        snippet={item.snippet}
+        highlightKeywords={item.highlightKeywords}
+      />
     </>
   );
 
@@ -487,11 +565,8 @@ const FeedListItem = ({
 };
 
 const CountiesScreen = ({ onNotificationPress }: Props) => {
-  const [selectedCounty, setSelectedCounty] = useState<County | null>(null);
-  const [isDetailVisible, setIsDetailVisible] = useState(false);
-  const transitionAnim = useRef(new Animated.Value(0)).current;
-
-  // Live Feed State
+  const {colors, glass} = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [feedItems, setFeedItems] = useState<FeedItem[]>(mockFeedItems);
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFeedFilters | null>(null);
@@ -563,24 +638,15 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
     });
   }, []);
 
-  const handleSelectCounty = (county: County) => {
-    setSelectedCounty(county);
-    setIsDetailVisible(true);
-    Animated.timing(transitionAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handleBack = () => {
-    Animated.timing(transitionAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setIsDetailVisible(false);
-      setSelectedCounty(null);
+  const handleCountyPress = (county: County) => {
+    setAdvancedFilters(prev => {
+      const current = prev ?? { ...DEFAULT_ADVANCED_FILTERS };
+      const isSelected = current.counties.includes(county.name);
+      const nextCounties = isSelected
+        ? current.counties.filter(name => name !== county.name)
+        : [...current.counties, county.name];
+      const next = { ...current, counties: nextCounties };
+      return isFeedFiltersEmpty(next) ? null : next;
     });
   };
 
@@ -592,11 +658,16 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
     );
   };
 
-  const hasAdvancedFilters = advancedFilters !== null;
+  const hasAdvancedFilters =
+    advancedFilters !== null && !isFeedFiltersEmpty(advancedFilters);
+
+  const selectedCountyNames = advancedFilters?.counties ?? [];
 
   const filteredFeed = advancedFilters
     ? feedItems.filter(item => matchesFeedFilters(item, advancedFilters))
     : feedItems;
+
+  const sheetAppliedFilters = advancedFiltersToSheet(advancedFilters);
 
   const feedListKey = filteredFeed.map(item => item.id).join(',');
 
@@ -604,26 +675,6 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
     if (!hasMountedRef.current) return;
     animateFeedList(filteredFeed);
   }, [feedListKey]);
-
-  const listOpacity = transitionAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0],
-  });
-
-  const listTranslateX = transitionAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -50],
-  });
-
-  const detailOpacity = transitionAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
-  const detailTranslateX = transitionAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [50, 0],
-  });
 
   const renderFeedItem = ({ item }: { item: FeedItem }) => (
     <FeedListItem
@@ -635,12 +686,12 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
 
   const renderCountiesStrip = () => (
     <Animated.View style={{ opacity: listEntranceAnim }}>
-      <View style={styles.sectionHeaderCompact}>
+      {/* <View style={styles.sectionHeaderCompact}>
         <Text style={styles.sectionTitleCompact}>Counties</Text>
         <View style={styles.countBadgeCompact}>
           <Text style={styles.countBadgeTextCompact}>{counties.length} ACTIVE</Text>
         </View>
-      </View>
+      </View> */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -653,32 +704,13 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
             county={county}
             fadeAnim={cardFades[index]}
             slideAnim={cardSlides[index]}
-            onPress={() => handleSelectCounty(county)}
+            isSelected={selectedCountyNames.includes(county.name)}
+            onPress={() => handleCountyPress(county)}
           />
         ))}
       </ScrollView>
     </Animated.View>
   );
-
-  const renderFeedSection = () => (
-    <Animated.View style={[styles.feedSection, { opacity: listEntranceAnim }]}>
-      <View style={styles.feedSectionHeader}>
-        <View style={styles.feedTitleRow}>
-          <LivePulseDot />
-          <Text style={styles.feedSectionTitle}>Live Feed</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.filterIconButton, hasAdvancedFilters && styles.filterIconButtonActive]}
-          onPress={() => setFilterSheetVisible(true)}
-          activeOpacity={0.7}
-        >
-          <Image source={images.filter} style={styles.filterIcon} resizeMode="contain" />
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
-
-
 
   return (
     <LinearGradient
@@ -687,21 +719,19 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, styles.screenBody, {
-        opacity: listOpacity,
-        transform: [{ translateX: listTranslateX }],
-        zIndex: isDetailVisible ? 0 : 1,
-      }]}>
+      <View style={[StyleSheet.absoluteFill, styles.screenBody]}>
         <Animated.View style={{ opacity: listEntranceAnim }}>
           <Header
             title="Live Feed"
+            showFilter
+            filterActive={hasAdvancedFilters}
+            onFilterPress={() => setFilterSheetVisible(true)}
             onNotificationPress={onNotificationPress}
-            showNotification={true}
+            showNotification
           />
         </Animated.View>
 
         {renderCountiesStrip()}
-        {renderFeedSection()}
 
         <FlatList
           style={styles.feedList}
@@ -711,43 +741,20 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
           extraData={feedListKey}
           contentContainerStyle={styles.feedListContent}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
+          maxToRenderPerBatch={6}
+          windowSize={7}
         />
-      </Animated.View>
-
-      {(isDetailVisible || selectedCounty) && (
-        <Animated.View style={[StyleSheet.absoluteFill, {
-          opacity: detailOpacity,
-          transform: [{ translateX: detailTranslateX }],
-          zIndex: isDetailVisible ? 1 : 0,
-        }]}>
-          {selectedCounty && (
-            <CountyDetailScreen
-              county={selectedCounty}
-              onBack={handleBack}
-            />
-          )}
-        </Animated.View>
-      )}
+      </View>
 
       <AdvancedFiltersBottomSheet
         visible={filterSheetVisible}
         onClose={() => setFilterSheetVisible(false)}
+        appliedFilters={sheetAppliedFilters}
         onApply={filters => {
-          if (isFeedFiltersEmpty(filters)) {
-            setAdvancedFilters(null);
-            return;
-          }
-
-          setAdvancedFilters({
-            county: filters.county,
-            feedType: filters.feedType,
-            keywordPriority: filters.keywordPriority,
-            keywords: filters.keywords,
-            talkgroup: filters.talkgroup,
-            talkgroupId: filters.talkgroupId,
-            fromDate: filters.fromDate,
-            toDate: filters.toDate,
-          });
+          const next = sheetFiltersToAdvanced(filters);
+          setAdvancedFilters(isFeedFiltersEmpty(next) ? null : next);
         }}
       />
     </LinearGradient>

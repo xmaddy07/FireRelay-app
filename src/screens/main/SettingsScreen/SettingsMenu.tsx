@@ -1,91 +1,171 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { Header } from '../../../components';
-import { styles } from './styles';
-import LinearGradient from 'react-native-linear-gradient';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { colors, glass, images } from '../../../constants';
-import { wp } from '../../../utils/responsive';
-import { useAppDispatch } from '../../../redux/hooks';
-import { authActions } from '../../../redux/slices/authSlice';
-import { userActions } from '../../../redux/slices/userSlice';
+import React, {useState} from 'react';
+import {View, Text} from 'react-native';
+import {GlassView} from '../../../components/LiquidGlass';
+import {createStyles} from './styles';
+import {useTheme, useThemedStyles} from '../../../theme';
+import {useAppDispatch} from '../../../redux/hooks';
+import {authActions} from '../../../redux/slices/authSlice';
+import {userActions} from '../../../redux/slices/userSlice';
+import AnimatedToggle from './components/AnimatedToggle';
+import AnimatedBellIcon from './components/AnimatedBellIcon';
+import AnimatedMoonIcon from './components/AnimatedMoonIcon';
+import AccountNavRow from './components/AccountNavRow';
+import AnimatedLogoutButton from './components/AnimatedLogoutButton';
+import SettingsScreenLayout from './SettingsScreenLayout';
+import type {SettingsRoute} from './types';
 
 type Props = {
-  navigation: any;
+  onNavigate: (route: SettingsRoute) => void;
   onNotificationPress?: () => void;
 };
 
-const SettingsMenu = ({ navigation, onNotificationPress }: Props) => {
+const ACCOUNT_ITEMS: {
+  key: string;
+  label: string;
+  icon: string;
+  route: SettingsRoute;
+}[] = [
+  {key: 'profile', label: 'Profile', icon: 'user', route: 'profile'},
+  {key: 'password', label: 'Password', icon: 'lock', route: 'password'},
+  {
+    key: 'subscriptions',
+    label: 'Subscriptions',
+    icon: 'creditcard',
+    route: 'subscription',
+  },
+];
+
+const SettingsMenu = ({onNavigate, onNotificationPress}: Props) => {
   const dispatch = useAppDispatch();
+  const {colors, glass, isDark, toggleTheme} = useTheme();
+  const styles = useThemedStyles(createStyles);
+
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [bellRing, setBellRing] = useState(0);
+  const [moonPulse, setMoonPulse] = useState(0);
 
   const handleLogout = () => {
     dispatch(authActions.logout());
     dispatch(userActions.clearUser());
   };
+
+  const handlePushToggle = (next: boolean) => {
+    setPushEnabled(next);
+    if (next) {
+      setBellRing(n => n + 1);
+    }
+  };
+
+  const handleDarkModeToggle = (next: boolean) => {
+    if (next !== isDark) {
+      toggleTheme();
+    }
+    setMoonPulse(n => n + 1);
+  };
+
   return (
-    <LinearGradient
-      colors={[...glass.screenGradient]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
+    <SettingsScreenLayout
+      title="Settings"
+      subtitle="Manage your account settings and preferences."
+      layout="stacked"
+      showNotification
+      onNotificationPress={onNotificationPress}
     >
-      <Animated.View entering={FadeInDown.duration(400).delay(100)}>
-        <Header
-          title="Settings"
-          showBack={false}
-          onNotificationPress={onNotificationPress}
-          showNotification={true}
-        />
-      </Animated.View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-        <Text style={{ color: colors.text, textAlign: "center", fontSize: 14, alignSelf: 'flex-start', marginLeft: wp(4) }}>Manage your account settings and preferences</Text>
-        <View style={styles.menuList}>
-          <Animated.View entering={FadeInDown.duration(400).delay(200)}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('ProfileSettings')}
+      <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>
+        PREFERENCES
+      </Text>
+      <GlassView
+        effect="regular"
+        colorScheme={isDark ? 'dark' : 'light'}
+        tintColor={glass.settingsCardTint}
+        style={styles.glassCard}
+        fallbackStyle={glass.fallback.settingsCard}
+        showHighlight={false}
+        pointerEvents="box-none"
+      >
+        <View style={styles.settingRow} pointerEvents="box-none">
+          <View style={[styles.iconBox, styles.iconBoxAccent]}>
+            <AnimatedBellIcon color={colors.primary} ringTrigger={bellRing} />
+          </View>
+          <View style={styles.settingTextBlock}>
+            <Text style={styles.settingTitle}>Push Notifications</Text>
+            <Text
+              style={[
+                styles.settingSubtitle,
+                pushEnabled && styles.settingSubtitleActive,
+              ]}
             >
-              <Text style={styles.menuItemText}>Profile</Text>
-              <AntDesign name="right" size={18} color={colors.primary} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(400).delay(300)}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('PasswordSettings')}
-            >
-              <Text style={styles.menuItemText}>Password</Text>
-              <AntDesign name="right" size={18} color={colors.primary} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(400).delay(400)}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('SubscriptionSettings')}
-            >
-              <Text style={styles.menuItemText}>Subscriptions</Text>
-              <AntDesign name="right" size={18} color={colors.primary} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(400).delay(500)}>
-            <TouchableOpacity style={styles.logoutItem} onPress={handleLogout} activeOpacity={0.82}>
-              <Image
-                source={images.setting}
-                style={styles.logoutIcon}
-                resizeMode="contain"
-              />
-              <Text style={styles.logoutText}>Log Out</Text>
-            </TouchableOpacity>
-          </Animated.View>
-
+              Real-time status updates
+            </Text>
+          </View>
+          <AnimatedToggle
+            value={pushEnabled}
+            onValueChange={handlePushToggle}
+            trackOnColor={colors.primary}
+            trackOffColor={colors.borderMuted}
+            thumbColor={colors.white}
+          />
         </View>
-      </ScrollView>
-    </LinearGradient>
+
+        <View style={styles.preferenceDivider} />
+
+        <View style={styles.settingRow}>
+          <View style={[styles.iconBox, styles.iconBoxAccent]}>
+            <AnimatedMoonIcon color={colors.primary} pulseTrigger={moonPulse} />
+          </View>
+          <View style={styles.settingTextBlock}>
+            <Text style={styles.settingTitle}>Dark mode</Text>
+            <Text
+              style={[
+                styles.settingSubtitle,
+                isDark && styles.settingSubtitleActive,
+              ]}
+            >
+              {isDark ? 'Enabled' : 'Disabled'}
+            </Text>
+          </View>
+          <AnimatedToggle
+            value={isDark}
+            onValueChange={handleDarkModeToggle}
+            trackOnColor={colors.primary}
+            trackOffColor={colors.borderMuted}
+            thumbColor={colors.white}
+          />
+        </View>
+      </GlassView>
+
+      <Text style={styles.sectionLabel}>ACCOUNT</Text>
+      <GlassView
+        effect="regular"
+        colorScheme={isDark ? 'dark' : 'light'}
+        tintColor={glass.settingsCardTint}
+        style={styles.glassCard}
+        fallbackStyle={glass.fallback.settingsCard}
+        showHighlight={false}
+        pointerEvents="box-none"
+      >
+        {ACCOUNT_ITEMS.map((item, index) => (
+          <AccountNavRow
+            key={item.key}
+            label={item.label}
+            icon={item.icon}
+            onPress={() => onNavigate(item.route)}
+            showDivider={index < ACCOUNT_ITEMS.length - 1}
+            styles={styles}
+            colors={colors}
+          />
+        ))}
+      </GlassView>
+
+      <AnimatedLogoutButton
+        onPress={handleLogout}
+        label="Log Out"
+        iconColor={colors.primary}
+        textStyle={styles.logoutText}
+        buttonStyle={styles.logoutButton}
+        iconStyle={styles.logoutIconVector}
+      />
+    </SettingsScreenLayout>
   );
 };
 

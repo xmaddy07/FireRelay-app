@@ -12,8 +12,8 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import {colors} from '../../constants';
-import {styles} from './styles';
+import {createStyles} from './styles';
+import {useTheme, useThemedStyles} from '../../theme';
 
 type Props = TextInputProps & {
   label?: string;
@@ -43,6 +43,8 @@ const Input = ({
   onBlur,
   ...props
 }: Props) => {
+  const {colors} = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [isFocused, setIsFocused] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
 

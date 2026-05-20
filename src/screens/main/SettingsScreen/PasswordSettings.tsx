@@ -1,15 +1,14 @@
 import React from 'react';
-import { useFormik } from 'formik';
+import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import { View, Text, ScrollView } from 'react-native';
-import { Header, Input, Button } from '../../../components';
-import { styles } from './styles';
-import LinearGradient from 'react-native-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import {glass} from '../../../constants';
+import {Text} from 'react-native';
+import {Input, Button} from '../../../components';
+import {createStyles} from './styles';
+import {useThemedStyles} from '../../../theme';
+import SettingsScreenLayout from './SettingsScreenLayout';
 
 type Props = {
-  navigation: any;
+  onBack: () => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -22,7 +21,9 @@ const validationSchema = Yup.object().shape({
     .required('Confirm password is required'),
 });
 
-const PasswordSettings = ({ navigation }: Props) => {
+const PasswordSettings = ({onBack}: Props) => {
+  const styles = useThemedStyles(createStyles);
+
   const formik = useFormik({
     initialValues: {
       oldPassword: '',
@@ -30,78 +31,71 @@ const PasswordSettings = ({ navigation }: Props) => {
       confirmPassword: '',
     },
     validationSchema,
-    onSubmit: (values) => {
+    onSubmit: values => {
       console.log('Password change values:', values);
-      // Handle password change logic here
     },
   });
 
   return (
-    <LinearGradient
-      colors={[...glass.screenGradient]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
+    <SettingsScreenLayout
+      title="Password"
+      showBack
+      onBackPress={onBack}
+      fullScreen
     >
-      <Animated.View entering={FadeInDown.duration(400).delay(100)}>
-        <Header
-          title="Password"
-          showBack={true}
-          onBackPress={() => navigation.goBack()}
-        />
-      </Animated.View>
+      <Text style={styles.sectionTitle}>Change Password</Text>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={styles.contentContainer}>
-          <Animated.View entering={FadeInDown.duration(400).delay(200)}>
-            <Text style={styles.sectionTitle}>Change Password</Text>
-          </Animated.View>
+      <Input
+        label="Old Password"
+        value={formik.values.oldPassword}
+        onChangeText={formik.handleChange('oldPassword')}
+        onBlur={formik.handleBlur('oldPassword')}
+        error={
+          formik.touched.oldPassword && formik.errors.oldPassword
+            ? formik.errors.oldPassword
+            : undefined
+        }
+        placeholder="Enter old password"
+        secureTextEntry
+        style={styles.inputGap}
+      />
 
-          <Animated.View entering={FadeInDown.duration(400).delay(300)}>
-            <Input
-              label="Old Password"
-              value={formik.values.oldPassword}
-              onChangeText={formik.handleChange('oldPassword')}
-              onBlur={formik.handleBlur('oldPassword')}
-              error={formik.touched.oldPassword && formik.errors.oldPassword ? formik.errors.oldPassword : undefined}
-              placeholder="Enter old password"
-              secureTextEntry
-              style={styles.inputGap}
-            />
-          </Animated.View>
+      <Input
+        label="New Password"
+        value={formik.values.newPassword}
+        onChangeText={formik.handleChange('newPassword')}
+        onBlur={formik.handleBlur('newPassword')}
+        error={
+          formik.touched.newPassword && formik.errors.newPassword
+            ? formik.errors.newPassword
+            : undefined
+        }
+        placeholder="Enter new password"
+        secureTextEntry
+        style={styles.inputGap}
+      />
 
-          <Animated.View entering={FadeInDown.duration(400).delay(400)}>
-            <Input
-              label="New Password"
-              value={formik.values.newPassword}
-              onChangeText={formik.handleChange('newPassword')}
-              onBlur={formik.handleBlur('newPassword')}
-              error={formik.touched.newPassword && formik.errors.newPassword ? formik.errors.newPassword : undefined}
-              placeholder="Enter new password"
-              secureTextEntry
-              style={styles.inputGap}
-            />
-          </Animated.View>
+      <Input
+        label="Confirm New Password"
+        value={formik.values.confirmPassword}
+        onChangeText={formik.handleChange('confirmPassword')}
+        onBlur={formik.handleBlur('confirmPassword')}
+        error={
+          formik.touched.confirmPassword && formik.errors.confirmPassword
+            ? formik.errors.confirmPassword
+            : undefined
+        }
+        placeholder="Enter confirm new password"
+        secureTextEntry
+        style={styles.inputGap}
+      />
 
-          <Animated.View entering={FadeInDown.duration(400).delay(500)}>
-            <Input
-              label="Confirm New Password"
-              value={formik.values.confirmPassword}
-              onChangeText={formik.handleChange('confirmPassword')}
-              onBlur={formik.handleBlur('confirmPassword')}
-              error={formik.touched.confirmPassword && formik.errors.confirmPassword ? formik.errors.confirmPassword : undefined}
-              placeholder="Enter confirm new password"
-              secureTextEntry
-              style={styles.inputGap}
-            />
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(400).delay(600)}>
-            <Button title="Change Password" style={styles.saveButton} onPress={formik.handleSubmit as any} />
-          </Animated.View>
-        </View>
-      </ScrollView>
-    </LinearGradient>
+      <Button
+        title="Change Password"
+        style={styles.saveButton}
+        onPress={formik.handleSubmit as () => void}
+      />
+    </SettingsScreenLayout>
   );
 };
 
