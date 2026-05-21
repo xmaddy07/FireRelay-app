@@ -28,6 +28,7 @@ const GlassView = ({
   showHighlight = true,
   ...rest
 }: Props) => {
+  const isLightScheme = colorScheme === 'light';
   const resolvedStyle = StyleSheet.flatten([
     style,
     !isLiquidGlassSupported && fallbackStyle,
@@ -53,12 +54,21 @@ const GlassView = ({
       <View style={[resolvedStyle, styles.fallbackContainer]}>
         <BlurView
           style={StyleSheet.absoluteFill}
-          blurType="dark"
+          blurType={isLightScheme ? 'light' : 'dark'}
           blurAmount={Platform.select({ios: 28, android: 18, default: 20})}
-          reducedTransparencyFallbackColor="rgba(16, 20, 26, 0.92)"
+          reducedTransparencyFallbackColor={
+            isLightScheme
+              ? 'rgba(255, 255, 255, 0.92)'
+              : 'rgba(16, 20, 26, 0.92)'
+          }
           overlayColor="transparent"
         />
-        <View style={styles.fallbackTint} />
+        <View
+          style={[
+            styles.fallbackTint,
+            isLightScheme && styles.fallbackTintLight,
+          ]}
+        />
         {highlight}
         <View style={styles.content}>{children}</View>
       </View>
@@ -83,8 +93,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fallbackTint: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  fallbackTintLight: {
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
   },
   content: {
     zIndex: 1,

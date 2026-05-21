@@ -1,14 +1,12 @@
 import React, {useState} from 'react';
 import {View, Text, Switch} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {createStyles} from './styles';
 import {useTheme, useThemedStyles} from '../../../theme';
 import SettingsScreenLayout from './SettingsScreenLayout';
 
-type Props = {
-  onBack: () => void;
-};
-
-const SubscriptionSettings = ({onBack}: Props) => {
+const SubscriptionSettings = () => {
+  const navigation = useNavigation();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const [audioNotifications, setAudioNotifications] = useState(true);
@@ -17,7 +15,7 @@ const SubscriptionSettings = ({onBack}: Props) => {
     <SettingsScreenLayout
       title="Subscription"
       showBack
-      onBackPress={onBack}
+      onBackPress={() => navigation.goBack()}
       fullScreen
     >
       <Text style={styles.sectionTitle}>Email Subscriptions</Text>

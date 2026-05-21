@@ -9,7 +9,7 @@ import {
 } from '../../../utils/responsive';
 
 export {TAB_BAR_HEIGHT};
-export const ADD_BUTTON_SIZE = wp(12.3);
+export const ADD_BUTTON_SIZE = wp(10.5);
 
 export const createPremium = (colors: AppColors) => ({
   bg: colors.background,
@@ -32,29 +32,6 @@ export const createStyles = (colors: AppColors) => {
   container: {
     flex: 1,
     backgroundColor: premium.bg,
-  },
-  premiumHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(1),
-    paddingBottom: hp(1.8),
-    paddingHorizontal: wp(4),
-    minHeight: hp(6.5),
-  },
-  premiumHeaderTitle: {
-    fontSize: responsiveSize(20),
-    fontFamily: fonts.semibold,
-    color: colors.text,
-    letterSpacing: responsiveSize(0.2),
-  },
-  premiumHeaderBell: {
-    position: 'absolute',
-    right: wp(2),
-    width: wp(11),
-    height: wp(11),
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   searchRow: {
     flexDirection: 'row',
@@ -316,6 +293,22 @@ export const createStyles = (colors: AppColors) => {
       },
       android: {elevation: 6},
     }),
+  },
+  notificationButton: {
+    width: ADD_BUTTON_SIZE,
+    height: ADD_BUTTON_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderRadius: ADD_BUTTON_SIZE / 2,
+    backgroundColor: 'rgba(255, 84, 81, 0.12)',
+    flexShrink: 0,
+  },
+  notificationIcon: {
+    width: wp(5),
+    height: wp(5),
+    tintColor: colors.primary,
   },
   });
 };

@@ -14,6 +14,8 @@ const cardShadow = Platform.select({
   default: {},
 });
 
+export const TOOLBAR_BUTTON_SIZE = wp(10.5);
+
 export const createStyles = (colors: AppColors) =>
   StyleSheet.create({
   container: {
@@ -27,6 +29,47 @@ export const createStyles = (colors: AppColors) =>
     paddingHorizontal: wp(4),
     paddingTop: hp(1),
   },
+  screenHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: wp(3),
+    marginBottom: hp(2),
+  },
+  screenHeaderText: {
+    flex: 1,
+    minWidth: 0,
+    gap: hp(0.4),
+  },
+  screenTitle: {
+    fontSize: responsiveSize(26),
+    fontFamily: fonts.bold,
+    color: colors.text,
+    letterSpacing: responsiveSize(-0.3),
+  },
+  screenSubtitle: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.semibold,
+    color: colors.textMuted,
+    letterSpacing: responsiveSize(1.2),
+    textTransform: 'uppercase',
+  },
+  headerNotificationButton: {
+    width: TOOLBAR_BUTTON_SIZE,
+    height: TOOLBAR_BUTTON_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderRadius: TOOLBAR_BUTTON_SIZE / 2,
+    backgroundColor: 'rgba(255, 84, 81, 0.12)',
+    flexShrink: 0,
+  },
+  notificationIcon: {
+    width: wp(5),
+    height: wp(5),
+    tintColor: colors.primary,
+  },
   sectionLabel: {
     fontSize: responsiveSize(11),
     fontFamily: fonts.bold,
@@ -36,7 +79,7 @@ export const createStyles = (colors: AppColors) =>
     marginTop: hp(2.5),
   },
   sectionLabelFirst: {
-    marginTop: hp(1.5),
+    marginTop: 0,
   },
   glassCard: {
     borderRadius: wp(5),

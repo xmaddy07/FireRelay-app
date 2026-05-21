@@ -1,16 +1,17 @@
 import React from 'react';
 import {View, Text, ScrollView} from 'react-native';
 import {Header} from '../../../components';
+import {useOpenNotifications} from '../../../navigation/hooks';
 import {createStyles} from './styles';
 import {useTheme, useThemedStyles} from '../../../theme';
 import LinearGradient from 'react-native-linear-gradient';
 
 type Props = {
   onOpenDrawer?: () => void;
-  onNotificationPress?: () => void;
 };
 
-const SendersScreen = ({onOpenDrawer, onNotificationPress}: Props) => {
+const SendersScreen = ({onOpenDrawer}: Props) => {
+  const openNotifications = useOpenNotifications();
   const {glass} = useTheme();
   const styles = useThemedStyles(createStyles);
 
@@ -26,8 +27,8 @@ const SendersScreen = ({onOpenDrawer, onNotificationPress}: Props) => {
           title="Senders"
           subtitle="View active audio senders and relay targets."
           onMenuPress={onOpenDrawer}
-          showNotification={!!onNotificationPress}
-          onNotificationPress={onNotificationPress}
+          showNotification
+          onNotificationPress={openNotifications}
         />
         <Text style={styles.subtitle}>View active audio senders and relay targets.</Text>
         <View style={styles.card}>

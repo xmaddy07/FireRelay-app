@@ -1,7 +1,9 @@
-import { StyleSheet } from 'react-native';
+import {StyleSheet, Platform} from 'react-native';
 import {fonts} from '../../../constants';
 import type { AppColors } from "../../../theme/types";
 import { hp, wp, responsiveSize } from '../../../utils/responsive';
+
+export const TOOLBAR_BUTTON_SIZE = wp(10.5);
 
 export const createStyles = (colors: AppColors) => StyleSheet.create({
   container: {
@@ -9,6 +11,86 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   screenBody: {
     flex: 1,
+  },
+  toolbarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: wp(4),
+    marginBottom: hp(1.2),
+    gap: wp(2.5),
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+    backgroundColor: colors.inputBackground,
+    borderRadius: wp(8),
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
+    paddingLeft: wp(4),
+    paddingRight: wp(1.2),
+    minHeight: TOOLBAR_BUTTON_SIZE,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+      },
+      android: {elevation: 2},
+    }),
+  },
+  searchIcon: {
+    flexShrink: 0,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: responsiveSize(14),
+    fontFamily: fonts.regular,
+    color: colors.text,
+    paddingVertical: Platform.OS === 'ios' ? hp(1.2) : hp(0.9),
+    paddingRight: 0,
+  },
+  searchBarFilterButton: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(2.2),
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
+  },
+  searchBarFilterButtonActive: {
+    backgroundColor: 'rgba(91, 64, 62, 0.9)',
+    borderColor: 'rgba(255, 84, 81, 0.5)',
+  },
+  filterIcon: {
+    width: wp(5.3),
+    height: wp(5.3),
+    tintColor: colors.textMuted,
+  },
+  filterIconActive: {
+    tintColor: colors.primary,
+  },
+  notificationButton: {
+    width: TOOLBAR_BUTTON_SIZE,
+    height: TOOLBAR_BUTTON_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderRadius: TOOLBAR_BUTTON_SIZE / 2,
+    backgroundColor: 'rgba(255, 84, 81, 0.12)',
+    flexShrink: 0,
+  },
+  notificationIcon: {
+    width: wp(5),
+    height: wp(5),
+    tintColor: colors.primary,
   },
   content: {
     paddingHorizontal: wp(4),

@@ -1,1 +1,1 @@
-export const fonts = {};
+export {fonts} from '../../constants/fonts';

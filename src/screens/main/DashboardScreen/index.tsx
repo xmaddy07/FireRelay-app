@@ -1,15 +1,16 @@
 import React from 'react';
 import {View, Text, ScrollView} from 'react-native';
 import {Button, Header} from '../../../components';
+import {useOpenNotifications} from '../../../navigation/hooks';
 import {createStyles} from './styles';
 import {useThemedStyles} from '../../../theme';
 
 type Props = {
   onOpenDrawer?: () => void;
-  onNotificationPress?: () => void;
 };
 
-const DashboardScreen = ({onOpenDrawer, onNotificationPress}: Props) => {
+const DashboardScreen = ({onOpenDrawer}: Props) => {
+  const openNotifications = useOpenNotifications();
   const styles = useThemedStyles(createStyles);
 
   return (
@@ -18,8 +19,8 @@ const DashboardScreen = ({onOpenDrawer, onNotificationPress}: Props) => {
         title="Dashboard"
         subtitle="Your relay sessions at a glance."
         onMenuPress={onOpenDrawer}
-        showNotification={!!onNotificationPress}
-        onNotificationPress={onNotificationPress}
+        showNotification
+        onNotificationPress={openNotifications}
       />
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Active relay</Text>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
   Image,
   FlatList,
   Pressable,
+  TextInput,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 import { createStyles } from './styles';
 import { useTheme, useThemedStyles } from '../../../theme';
-import Header from '../../../components/Header';
+import {useOpenNotifications} from '../../../navigation/hooks';
 import AdvancedFiltersBottomSheet, {
   FilterState as SheetFilterState,
 } from '../../../components/AdvancedFiltersBottomSheet';
@@ -260,10 +262,6 @@ const mockFeedItems: FeedItem[] = [
     hasSecure: true,
   },
 ];
-
-type Props = {
-  onNotificationPress?: () => void;
-};
 
 const CountyCard = ({
   county,
@@ -564,10 +562,12 @@ const FeedListItem = ({
   );
 };
 
-const CountiesScreen = ({ onNotificationPress }: Props) => {
+const CountiesScreen = () => {
+  const openNotifications = useOpenNotifications();
   const {colors, glass} = useTheme();
   const styles = useThemedStyles(createStyles);
   const [feedItems, setFeedItems] = useState<FeedItem[]>(mockFeedItems);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFeedFilters | null>(null);
 
@@ -663,9 +663,24 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
 
   const selectedCountyNames = advancedFilters?.counties ?? [];
 
-  const filteredFeed = advancedFilters
-    ? feedItems.filter(item => matchesFeedFilters(item, advancedFilters))
-    : feedItems;
+  const filteredFeed = useMemo(() => {
+    const base = advancedFilters
+      ? feedItems.filter(item => matchesFeedFilters(item, advancedFilters))
+      : feedItems;
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return base;
+    }
+    return base.filter(
+      item =>
+        item.snippet.toLowerCase().includes(query) ||
+        item.county.toLowerCase().includes(query) ||
+        item.talkgroup.toLowerCase().includes(query) ||
+        item.highlightKeywords.some(keyword =>
+          keyword.toLowerCase().includes(query),
+        ),
+    );
+  }, [feedItems, advancedFilters, searchQuery]);
 
   const sheetAppliedFilters = advancedFiltersToSheet(advancedFilters);
 
@@ -720,15 +735,55 @@ const CountiesScreen = ({ onNotificationPress }: Props) => {
       style={styles.container}
     >
       <View style={[StyleSheet.absoluteFill, styles.screenBody]}>
-        <Animated.View style={{ opacity: listEntranceAnim }}>
-          <Header
-            title="Live Feed"
-            showFilter
-            filterActive={hasAdvancedFilters}
-            onFilterPress={() => setFilterSheetVisible(true)}
-            onNotificationPress={onNotificationPress}
-            showNotification
-          />
+        <Animated.View style={[styles.toolbarRow, {opacity: listEntranceAnim}]}>
+          <View style={styles.searchBar}>
+            <Icon
+              name="search"
+              size={18}
+              color={colors.textMuted}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search feed..."
+              placeholderTextColor={colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={[
+                styles.searchBarFilterButton,
+                hasAdvancedFilters && styles.searchBarFilterButtonActive,
+              ]}
+              onPress={() => setFilterSheetVisible(true)}
+              activeOpacity={0.7}
+              hitSlop={responsiveHitSlop(1.6)}
+            >
+              <Image
+                source={images.filter}
+                style={[
+                  styles.filterIcon,
+                  hasAdvancedFilters && styles.filterIconActive,
+                ]}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.notificationButton}
+            activeOpacity={0.7}
+            onPress={openNotifications}
+            hitSlop={responsiveHitSlop(2)}
+          >
+            <Image
+              source={images.notification}
+              style={styles.notificationIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </Animated.View>
 
         {renderCountiesStrip()}
