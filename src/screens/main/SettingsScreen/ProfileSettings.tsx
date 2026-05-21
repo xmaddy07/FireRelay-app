@@ -1,4 +1,5 @@
 import React from 'react';
+import {useNavigation} from '@react-navigation/native';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {View, Text} from 'react-native';
@@ -8,17 +9,14 @@ import {useThemedStyles} from '../../../theme';
 import {hp} from '../../../utils/responsive';
 import SettingsScreenLayout from './SettingsScreenLayout';
 
-type Props = {
-  onBack: () => void;
-};
-
 const validationSchema = Yup.object().shape({
   newEmail: Yup.string()
     .email('Please enter a valid email address')
     .required('New email address is required'),
 });
 
-const ProfileSettings = ({onBack}: Props) => {
+const ProfileSettings = () => {
+  const navigation = useNavigation();
   const styles = useThemedStyles(createStyles);
 
   const formik = useFormik({
@@ -35,7 +33,7 @@ const ProfileSettings = ({onBack}: Props) => {
     <SettingsScreenLayout
       title="Profile"
       showBack
-      onBackPress={onBack}
+      onBackPress={() => navigation.goBack()}
       fullScreen
     >
       <Text style={styles.sectionTitle}>Profile Information</Text>

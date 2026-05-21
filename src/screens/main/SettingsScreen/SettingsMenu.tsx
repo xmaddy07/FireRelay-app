@@ -1,6 +1,12 @@
 import React, {useState} from 'react';
-import {View, Text} from 'react-native';
+import {View, Text, TouchableOpacity, Image} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {images} from '../../../constants';
 import {GlassView} from '../../../components/LiquidGlass';
+import {useOpenNotifications} from '../../../navigation/hooks';
+import type {SettingsStackParamList} from '../../../navigation/types';
+import {responsiveHitSlop} from '../../../utils/responsive';
 import {createStyles} from './styles';
 import {useTheme, useThemedStyles} from '../../../theme';
 import {useAppDispatch} from '../../../redux/hooks';
@@ -12,30 +18,27 @@ import AnimatedMoonIcon from './components/AnimatedMoonIcon';
 import AccountNavRow from './components/AccountNavRow';
 import AnimatedLogoutButton from './components/AnimatedLogoutButton';
 import SettingsScreenLayout from './SettingsScreenLayout';
-import type {SettingsRoute} from './types';
-
-type Props = {
-  onNavigate: (route: SettingsRoute) => void;
-  onNotificationPress?: () => void;
-};
 
 const ACCOUNT_ITEMS: {
   key: string;
   label: string;
   icon: string;
-  route: SettingsRoute;
+  route: keyof SettingsStackParamList;
 }[] = [
-  {key: 'profile', label: 'Profile', icon: 'user', route: 'profile'},
-  {key: 'password', label: 'Password', icon: 'lock', route: 'password'},
+  {key: 'profile', label: 'Profile', icon: 'user', route: 'Profile'},
+  {key: 'password', label: 'Password', icon: 'lock', route: 'Password'},
   {
     key: 'subscriptions',
     label: 'Subscriptions',
     icon: 'creditcard',
-    route: 'subscription',
+    route: 'Subscription',
   },
 ];
 
-const SettingsMenu = ({onNavigate, onNotificationPress}: Props) => {
+const SettingsMenu = () => {
+  const openNotifications = useOpenNotifications();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const dispatch = useAppDispatch();
   const {colors, glass, isDark, toggleTheme} = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -64,13 +67,30 @@ const SettingsMenu = ({onNavigate, onNotificationPress}: Props) => {
   };
 
   return (
-    <SettingsScreenLayout
-      title="Settings"
-      subtitle="Manage your account settings and preferences."
-      layout="stacked"
-      showNotification
-      onNotificationPress={onNotificationPress}
-    >
+    <SettingsScreenLayout>
+      <View style={styles.screenHeader}>
+        <View style={styles.screenHeaderText}>
+          <Text style={styles.screenTitle} numberOfLines={2}>
+            Settings
+          </Text>
+          <Text style={styles.screenSubtitle}>
+            Manage your account settings and preferences.
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.headerNotificationButton}
+          activeOpacity={0.7}
+          onPress={openNotifications}
+          hitSlop={responsiveHitSlop(2)}
+        >
+          <Image
+            source={images.notification}
+            style={styles.notificationIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+
       <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>
         PREFERENCES
       </Text>
@@ -149,7 +169,7 @@ const SettingsMenu = ({onNavigate, onNotificationPress}: Props) => {
             key={item.key}
             label={item.label}
             icon={item.icon}
-            onPress={() => onNavigate(item.route)}
+            onPress={() => navigation.navigate(item.route)}
             showDivider={index < ACCOUNT_ITEMS.length - 1}
             styles={styles}
             colors={colors}

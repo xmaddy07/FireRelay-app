@@ -60,8 +60,8 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     tintColor: colors.primary,
   },
   notificationButton: {
-    width: wp(9),
-    height: wp(9),
+    width: wp(10.5),
+    height: wp(10.5),
     alignItems: 'center',
     justifyContent: 'center',
   },

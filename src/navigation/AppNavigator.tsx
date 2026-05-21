@@ -1,19 +1,24 @@
-import React, {useState} from 'react';
+import React, {useMemo} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
-import LoginScreen from '../screens/auth/LoginScreen';
-import TabNavigator from './TabNavigator';
 import {useAppSelector} from '../redux/hooks';
+import {useTheme} from '../theme';
+import {createNavigationTheme} from '../theme/navigationTheme';
+import RootNavigator from './RootNavigator';
 
 export const AppNavigator = () => {
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+  const {colors, isDark} = useTheme();
+  const navigationTheme = useMemo(
+    () => createNavigationTheme(colors, isDark),
+    [colors, isDark],
+  );
 
   return (
-    <NavigationContainer>
-      {isAuthenticated ? (
-        <TabNavigator />
-      ) : (
-        <LoginScreen />
-      )}
+    <NavigationContainer
+      key={isAuthenticated ? 'auth' : 'guest'}
+      theme={navigationTheme}
+    >
+      <RootNavigator />
     </NavigationContainer>
   );
 };

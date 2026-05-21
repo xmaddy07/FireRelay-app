@@ -12,6 +12,10 @@
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		D5D21515ABAEB1019EE6FBBA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		FR0B00012CA45674006654EE /* Poppins-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FR0F00012CA45674006654EE /* Poppins-Bold.ttf */; };
+		FR0B00022CA45674006654EE /* Poppins-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FR0F00022CA45674006654EE /* Poppins-Medium.ttf */; };
+		FR0B00032CA45674006654EE /* Poppins-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FR0F00032CA45674006654EE /* Poppins-Regular.ttf */; };
+		FR0B00042CA45674006654EE /* Poppins-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FR0F00042CA45674006654EE /* Poppins-SemiBold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +29,10 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = FireRelay/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = FireRelay/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		FR0F00012CA45674006654EE /* Poppins-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Poppins-Bold.ttf"; path = "FireRelay/Fonts/Poppins-Bold.ttf"; sourceTree = "<group>"; };
+		FR0F00022CA45674006654EE /* Poppins-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Poppins-Medium.ttf"; path = "FireRelay/Fonts/Poppins-Medium.ttf"; sourceTree = "<group>"; };
+		FR0F00032CA45674006654EE /* Poppins-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Poppins-Regular.ttf"; path = "FireRelay/Fonts/Poppins-Regular.ttf"; sourceTree = "<group>"; };
+		FR0F00042CA45674006654EE /* Poppins-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Poppins-SemiBold.ttf"; path = "FireRelay/Fonts/Poppins-SemiBold.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -43,6 +51,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				FR0G00012CA45674006654EE /* Fonts */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
@@ -96,6 +105,17 @@
 				5709B34CF0A7D63546082F79 /* Pods-FireRelay.release.xcconfig */,
 			);
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		FR0G00012CA45674006654EE /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				FR0F00032CA45674006654EE /* Poppins-Regular.ttf */,
+				FR0F00022CA45674006654EE /* Poppins-Medium.ttf */,
+				FR0F00042CA45674006654EE /* Poppins-SemiBold.ttf */,
+				FR0F00012CA45674006654EE /* Poppins-Bold.ttf */,
+			);
+			name = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -161,6 +181,10 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				D5D21515ABAEB1019EE6FBBA /* PrivacyInfo.xcprivacy in Resources */,
+				FR0B00032CA45674006654EE /* Poppins-Regular.ttf in Resources */,
+				FR0B00022CA45674006654EE /* Poppins-Medium.ttf in Resources */,
+				FR0B00042CA45674006654EE /* Poppins-SemiBold.ttf in Resources */,
+				FR0B00012CA45674006654EE /* Poppins-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

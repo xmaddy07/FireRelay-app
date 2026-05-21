@@ -13,12 +13,13 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
-import {Header} from '../../../components';
+import {images} from '../../../constants';
 import {useTheme, useThemedStyles} from '../../../theme';
 import {useAppSelector} from '../../../redux/hooks';
 import AddUserModal from './AddUserModal';
 import EditUserModal from './EditUserModal';
 import {hp, responsiveHitSlop, wp} from '../../../utils/responsive';
+import {useOpenNotifications} from '../../../navigation/hooks';
 import {createPremium, createStyles, TAB_BAR_HEIGHT} from './styles';
 import {RoleFilter, UserRecord, UserRole} from './types';
 
@@ -87,22 +88,6 @@ const getRoleBadgeStyle = (
       };
   }
 };
-
-type Props = {
-  onNotificationPress?: () => void;
-};
-
-const UsersScreenHeader = ({
-  onNotificationPress,
-}: {
-  onNotificationPress?: () => void;
-}) => (
-  <Header
-    title="Users"
-    showNotification={!!onNotificationPress}
-    onNotificationPress={onNotificationPress}
-  />
-);
 
 type UserListItemProps = {
   item: UserRecord;
@@ -232,7 +217,8 @@ const UserListItem = ({
   );
 };
 
-const UsersScreen = ({onNotificationPress}: Props) => {
+const UsersScreen = () => {
+  const openNotifications = useOpenNotifications();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const premium = useMemo(() => createPremium(colors), [colors]);
@@ -428,8 +414,6 @@ const UsersScreen = ({onNotificationPress}: Props) => {
 
   return (
     <View style={styles.container}>
-      <UsersScreenHeader onNotificationPress={onNotificationPress} />
-
       <Animated.View style={[styles.searchRow, searchBarStyle]}>
         <View style={styles.searchBar}>
           <Icon
@@ -463,6 +447,19 @@ const UsersScreen = ({onNotificationPress}: Props) => {
             <Icon name="plus" size={22} color={colors.textOnPrimary} />
           </TouchableOpacity>
         </Animated.View>
+
+        <TouchableOpacity
+          style={styles.notificationButton}
+          activeOpacity={0.7}
+          onPress={openNotifications}
+          hitSlop={responsiveHitSlop(2)}
+        >
+          <Image
+            source={images.notification}
+            style={styles.notificationIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
       </Animated.View>
 
       <View style={styles.roleChipsRow}>

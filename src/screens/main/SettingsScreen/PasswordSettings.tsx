@@ -1,4 +1,5 @@
 import React from 'react';
+import {useNavigation} from '@react-navigation/native';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
 import {Text} from 'react-native';
@@ -6,10 +7,6 @@ import {Input, Button} from '../../../components';
 import {createStyles} from './styles';
 import {useThemedStyles} from '../../../theme';
 import SettingsScreenLayout from './SettingsScreenLayout';
-
-type Props = {
-  onBack: () => void;
-};
 
 const validationSchema = Yup.object().shape({
   oldPassword: Yup.string().required('Old password is required'),
@@ -21,7 +18,8 @@ const validationSchema = Yup.object().shape({
     .required('Confirm password is required'),
 });
 
-const PasswordSettings = ({onBack}: Props) => {
+const PasswordSettings = () => {
+  const navigation = useNavigation();
   const styles = useThemedStyles(createStyles);
 
   const formik = useFormik({
@@ -40,7 +38,7 @@ const PasswordSettings = ({onBack}: Props) => {
     <SettingsScreenLayout
       title="Password"
       showBack
-      onBackPress={onBack}
+      onBackPress={() => navigation.goBack()}
       fullScreen
     >
       <Text style={styles.sectionTitle}>Change Password</Text>

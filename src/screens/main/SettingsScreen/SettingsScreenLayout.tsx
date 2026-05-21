@@ -7,7 +7,7 @@ import {useThemedStyles} from '../../../theme';
 import {TAB_BAR_HEIGHT, hp} from '../../../utils/responsive';
 
 type Props = {
-  title: string;
+  title?: string;
   subtitle?: string;
   showBack?: boolean;
   onBackPress?: () => void;
@@ -37,18 +37,21 @@ const SettingsScreenLayout = ({
   const bottomInset = fullScreen
     ? insets.bottom + hp(3)
     : TAB_BAR_HEIGHT + hp(2);
+  const showHeader = Boolean(title || showBack);
 
   return (
     <View style={styles.container}>
-      <Header
-        title={title}
-        subtitle={subtitle}
-        layout={layout}
-        showBack={showBack}
-        onBackPress={onBackPress}
-        showNotification={showNotification}
-        onNotificationPress={onNotificationPress}
-      />
+      {showHeader ? (
+        <Header
+          title={title ?? ''}
+          subtitle={subtitle}
+          layout={layout}
+          showBack={showBack}
+          onBackPress={onBackPress}
+          showNotification={showNotification}
+          onNotificationPress={onNotificationPress}
+        />
+      ) : null}
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
