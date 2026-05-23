@@ -24,7 +24,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.text,
   },
   sectionText: {
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     fontSize: responsiveSize(15),
     fontFamily: fonts.regular,
   },

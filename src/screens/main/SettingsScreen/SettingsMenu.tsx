@@ -30,7 +30,7 @@ const ACCOUNT_ITEMS: {
   {
     key: 'subscriptions',
     label: 'Subscriptions',
-    icon: 'creditcard',
+    icon: 'credit-card',
     route: 'Subscription',
   },
 ];

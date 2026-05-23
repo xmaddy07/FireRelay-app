@@ -1,13 +1,14 @@
 import React from 'react';
 import {Text, TouchableOpacity, View} from 'react-native';
-import Icon from 'react-native-vector-icons/AntDesign';
+import Feather from 'react-native-vector-icons/Feather';
 import AnimatedChevron, {useAnimatedChevron} from './AnimatedChevron';
 import type {AppColors} from '../../../../theme/types';
+import {wp} from '../../../../utils/responsive';
 
 type Styles = {
   settingRow: object;
   iconBox: object;
-  iconBoxNeutral: object;
+  iconBoxAccent: object;
   settingTitle: object;
   settingTitleFlex: object;
   rowDivider: object;
@@ -40,8 +41,8 @@ const AccountNavRow = ({
         activeOpacity={0.75}
         {...chevron.bind}
       >
-        <View style={[s.iconBox, s.iconBoxNeutral]}>
-          <Icon name={icon} size={20} color={colors.primary} />
+        <View style={[s.iconBox, s.iconBoxAccent]}>
+          <Feather name={icon} size={wp(5.2)} color={colors.primary} />
         </View>
         <Text style={[s.settingTitle, s.settingTitleFlex]}>{label}</Text>
         <AnimatedChevron color={colors.textSecondary} style={chevron.style} />

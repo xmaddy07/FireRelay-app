@@ -36,5 +36,21 @@ target 'FireRelay' do
         build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
       end
     end
+
+    # react-native-sound (RNSound) uses AVAudioPlayer/AVAudioSession but its podspec
+    # does not declare AVFoundation, which causes undefined symbol linker errors.
+    installer.aggregate_targets.each do |aggregate_target|
+      aggregate_target.xcconfigs.each do |config_name, _config_file|
+        xcconfig_path = aggregate_target.xcconfig_path(config_name)
+        xcconfig = File.read(xcconfig_path)
+        next if xcconfig.include?('AVFoundation')
+
+        xcconfig.gsub!(
+          /^(OTHER_LDFLAGS = .*)$/,
+          '\1 -framework "AVFoundation"'
+        )
+        File.write(xcconfig_path, xcconfig)
+      end
+    end
   end
 end

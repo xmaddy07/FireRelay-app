@@ -1,0 +1,69 @@
+export type FeedItem = {
+  id: string;
+  county: string;
+  talkgroup: string;
+  talkgroupId: string;
+  date: string;
+  time: string;
+  snippet: string;
+  highlightKeywords: string[];
+  type: 'fire' | 'medical' | 'police' | 'general';
+  severity: 'critical' | 'warning' | 'info';
+  starred: boolean;
+  hasWarning: boolean;
+  hasSecure: boolean;
+};
+
+export type FeedDetailData = {
+  title: string;
+  talkgroupShort: string;
+  priority: string;
+  confidencePercent: number;
+};
+
+const priorityForSeverity = (severity: FeedItem['severity']) => {
+  if (severity === 'critical') return 'High';
+  if (severity === 'warning') return 'Medium';
+  return 'Normal';
+};
+
+const confidenceForItem = (item: FeedItem) => {
+  let hash = 0;
+  for (let i = 0; i < item.id.length; i += 1) {
+    hash = (hash << 5) - hash + item.id.charCodeAt(i);
+    hash |= 0;
+  }
+  return 28 + (Math.abs(hash) % 58);
+};
+
+const titleForItem = (item: FeedItem) => {
+  if (item.type === 'fire' && item.severity === 'critical') {
+    return 'Residential Structure Fire';
+  }
+  if (item.type === 'medical') {
+    return 'Medical Emergency Response';
+  }
+  if (item.type === 'police') {
+    return 'Law Enforcement Incident';
+  }
+  if (item.highlightKeywords.length > 0) {
+    const keyword = item.highlightKeywords[0];
+    return keyword.charAt(0).toUpperCase() + keyword.slice(1);
+  }
+  return `${item.type.charAt(0).toUpperCase()}${item.type.slice(1)} Dispatch Alert`;
+};
+
+const talkgroupShortForItem = (item: FeedItem) => {
+  const firstToken = item.talkgroup.split(/[\s.]+/).find(Boolean);
+  if (!firstToken) return item.talkgroupId;
+  return firstToken.length > 8
+    ? firstToken.slice(0, 8).toUpperCase()
+    : firstToken.toUpperCase();
+};
+
+export const buildFeedDetail = (item: FeedItem): FeedDetailData => ({
+  title: titleForItem(item),
+  talkgroupShort: talkgroupShortForItem(item),
+  priority: priorityForSeverity(item.severity),
+  confidencePercent: confidenceForItem(item),
+});

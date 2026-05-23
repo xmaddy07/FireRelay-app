@@ -3,21 +3,21 @@ import {fonts} from '../../../constants';
 import type {AppColors} from '../../../theme/types';
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
-const cardShadow = Platform.select({
-  ios: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 6},
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-  },
-  android: {elevation: 4},
-  default: {},
-});
-
 export const TOOLBAR_BUTTON_SIZE = wp(10.5);
 
-export const createStyles = (colors: AppColors) =>
-  StyleSheet.create({
+export const createStyles = (colors: AppColors) => {
+  const cardShadow = Platform.select({
+    ios: {
+      shadowColor: colors.shadow,
+      shadowOffset: {width: 0, height: 6},
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+    },
+    android: {elevation: 4},
+    default: {},
+  });
+
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -60,9 +60,9 @@ export const createStyles = (colors: AppColors) =>
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderColor: colors.primaryBorder,
     borderRadius: TOOLBAR_BUTTON_SIZE / 2,
-    backgroundColor: 'rgba(255, 84, 81, 0.12)',
+    backgroundColor: colors.primaryTint,
     flexShrink: 0,
   },
   notificationIcon: {
@@ -102,12 +102,8 @@ export const createStyles = (colors: AppColors) =>
     borderWidth: 1,
   },
   iconBoxAccent: {
-    backgroundColor: 'rgba(255, 84, 81, 0.12)',
-    borderColor: 'rgba(255, 84, 81, 0.22)',
-  },
-  iconBoxNeutral: {
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.menuItemBorder,
+    backgroundColor: colors.primaryTint,
+    borderColor: colors.primaryBorder,
   },
   settingTextBlock: {
     flex: 1,
@@ -149,7 +145,7 @@ export const createStyles = (colors: AppColors) =>
     paddingVertical: hp(2.2),
     borderRadius: wp(6),
     borderWidth: 1,
-    borderColor: 'rgba(255, 84, 81, 0.5)',
+    borderColor: colors.primaryBorder,
     backgroundColor: colors.surface,
     ...cardShadow,
   },
@@ -253,3 +249,4 @@ export const createStyles = (colors: AppColors) =>
     lineHeight: responsiveSize(18),
   },
 });
+};

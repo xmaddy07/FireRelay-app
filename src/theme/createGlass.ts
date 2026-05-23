@@ -8,45 +8,69 @@ export const createGlass = (colors: AppColors, mode: ThemeMode) => {
 
   return {
     screenGradient: colors.screenGradient,
-    cardUnreadTint: `rgba(${primaryRgb}, 0.06)`,
-    cardReadTint: isDark ? 'rgba(16, 20, 26, 0.4)' : 'rgba(255, 255, 255, 0.65)',
-    badgeTint: `rgba(${primaryRgb}, 0.12)`,
-    iconTint: `rgba(${primaryRgb}, 0.08)`,
-    settingsCardTint: `rgba(${primaryRgb}, 0.05)`,
-    loginCardTint: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.85)',
+    cardUnreadTint: `rgba(${primaryRgb}, ${isDark ? '0.06' : '0.05'})`,
+    cardReadTint: isDark
+      ? 'rgba(16, 20, 26, 0.4)'
+      : 'rgba(255, 255, 255, 0.92)',
+    badgeTint: `rgba(${primaryRgb}, ${isDark ? '0.12' : '0.08'})`,
+    iconTint: `rgba(${primaryRgb}, ${isDark ? '0.08' : '0.06'})`,
+    settingsCardTint: `rgba(${primaryRgb}, ${isDark ? '0.05' : '0.04'})`,
+    loginCardTint: isDark
+      ? 'rgba(255, 255, 255, 0.08)'
+      : 'rgba(255, 255, 255, 0.94)',
     fallback: {
       loginCard: {
-        backgroundColor: isDark ? 'rgba(20, 25, 32, 0.45)' : 'rgba(255, 255, 255, 0.75)',
+        backgroundColor: isDark
+          ? 'rgba(20, 25, 32, 0.45)'
+          : 'rgba(255, 255, 255, 0.96)',
         borderWidth: 1,
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.08)',
+        borderColor: isDark
+          ? 'rgba(255, 255, 255, 0.18)'
+          : colors.menuItemBorder,
       },
       cardUnread: {
-        backgroundColor: isDark ? 'rgba(20, 25, 32, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: isDark
+          ? 'rgba(20, 25, 32, 0.92)'
+          : 'rgba(255, 255, 255, 0.98)',
       },
       cardRead: {
-        backgroundColor: isDark ? 'rgba(16, 20, 26, 0.88)' : 'rgba(249, 250, 251, 0.95)',
+        backgroundColor: isDark
+          ? 'rgba(16, 20, 26, 0.88)'
+          : 'rgba(250, 250, 248, 0.98)',
       },
       badge: {
-        backgroundColor: `rgba(${primaryRgb}, 0.15)`,
+        backgroundColor: `rgba(${primaryRgb}, ${isDark ? '0.15' : '0.1'})`,
       },
       icon: {
-        backgroundColor: isDark ? 'rgba(20, 25, 32, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: isDark
+          ? 'rgba(20, 25, 32, 0.9)'
+          : 'rgba(255, 255, 255, 0.98)',
       },
       iconRead: {
-        backgroundColor: isDark ? 'rgba(16, 20, 26, 0.9)' : 'rgba(243, 244, 246, 0.95)',
+        backgroundColor: isDark
+          ? 'rgba(16, 20, 26, 0.9)'
+          : 'rgba(247, 246, 243, 0.98)',
       },
       settingsCard: {
-        backgroundColor: isDark ? 'rgba(20, 25, 32, 0.78)' : 'rgba(255, 255, 255, 0.94)',
+        backgroundColor: isDark
+          ? 'rgba(20, 25, 32, 0.78)'
+          : 'rgba(255, 255, 255, 0.98)',
         borderWidth: 1,
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        borderColor: isDark
+          ? 'rgba(255, 255, 255, 0.08)'
+          : colors.menuItemBorder,
       },
       settingsIconBox: {
-        backgroundColor: `rgba(${primaryRgb}, 0.12)`,
-        borderColor: `rgba(${primaryRgb}, 0.22)`,
+        backgroundColor: `rgba(${primaryRgb}, ${isDark ? '0.12' : '0.08'})`,
+        borderColor: `rgba(${primaryRgb}, ${isDark ? '0.22' : '0.18'})`,
       },
       settingsIconBoxNeutral: {
-        backgroundColor: isDark ? 'rgba(16, 20, 26, 0.85)' : 'rgba(243, 244, 246, 0.95)',
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        backgroundColor: isDark
+          ? 'rgba(16, 20, 26, 0.85)'
+          : colors.surfaceInset,
+        borderColor: isDark
+          ? 'rgba(255, 255, 255, 0.08)'
+          : colors.menuItemBorder,
       },
     },
   } as const;

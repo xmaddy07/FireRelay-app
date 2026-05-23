@@ -7,7 +7,7 @@ export const createStyles = (colors: AppColors) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: colors.overlay,
     },
     bottomSheet: {
       backgroundColor: colors.surfaceElevated,
@@ -225,7 +225,7 @@ export const createStyles = (colors: AppColors) =>
     infoBox: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(49, 212, 146, 0.1)',
+      backgroundColor: `${colors.live}1A`,
       borderWidth: 1,
       borderColor: 'rgba(49, 212, 146, 0.3)',
       borderRadius: wp(2),
@@ -293,7 +293,7 @@ export const createStyles = (colors: AppColors) =>
     },
     presetButtonActive: {
       borderColor: colors.primary,
-      backgroundColor: 'rgba(255, 84, 81, 0.12)',
+      backgroundColor: colors.primaryTint,
     },
     presetButtonTextActive: {
       color: colors.primary,
@@ -318,7 +318,7 @@ export const createStyles = (colors: AppColors) =>
     },
     priorityOptionActive: {
       borderColor: colors.primary,
-      backgroundColor: 'rgba(255, 84, 81, 0.12)',
+      backgroundColor: colors.primaryTint,
     },
     priorityOptionText: {
       fontSize: responsiveSize(13),
