@@ -2,11 +2,11 @@ import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
-import SettingsMenu from '../screens/main/SettingsScreen/SettingsMenu';
-import ProfileSettings from '../screens/main/SettingsScreen/ProfileSettings';
-import PasswordSettings from '../screens/main/SettingsScreen/PasswordSettings';
-import SubscriptionSettings from '../screens/main/SettingsScreen/SubscriptionSettings';
-import {useTheme} from '../theme';
+import SettingsMenu from '../screens/main/settings/SettingsMenu';
+import ProfileSettings from '../screens/main/settings/ProfileSettings';
+import PasswordSettings from '../screens/main/settings/PasswordSettings';
+import SubscriptionSettings from '../screens/main/settings/SubscriptionSettings';
+import {useTheme} from '../config/theme';
 import type {SettingsStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<SettingsStackParamList>();

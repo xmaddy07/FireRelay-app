@@ -4,6 +4,13 @@ export type RootStackParamList = {
   Notifications: undefined;
 };
 
+export type MainTabParamList = {
+  Feed: undefined;
+  Keywords: undefined;
+  LeadLog: undefined;
+  Settings: undefined;
+};
+
 export type SettingsStackParamList = {
   Menu: undefined;
   Profile: undefined;

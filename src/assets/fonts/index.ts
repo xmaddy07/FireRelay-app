@@ -1,1 +1,1 @@
-export {fonts} from '../../constants/fonts';
+export {fonts} from '../../config/theme/typography';

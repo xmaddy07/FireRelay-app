@@ -1,4 +1,2 @@
-export * from './colors';
-export * from './sizes';
-export * from './fonts';
-export * from './images';
+/** @deprecated Import from `config/constants` instead */
+export * from '../config/constants';

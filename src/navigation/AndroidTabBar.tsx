@@ -10,10 +10,10 @@ import {
 import type {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import LinearGradient from 'react-native-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {GlassView} from '../components/LiquidGlass';
-import {fonts} from '../constants';
-import type {AppColors, GlassTheme} from '../theme/types';
-import {useTheme} from '../theme';
+import {GlassView} from '../components/feed/LiquidGlass';
+import {fonts} from '../config/constants';
+import type {AppColors, GlassTheme} from '../config/theme/types';
+import {useTheme} from '../config/theme';
 import {hp, responsiveSize, wp} from '../utils/responsive';
 import type {TabBarConfig} from './tabConfig';
 
