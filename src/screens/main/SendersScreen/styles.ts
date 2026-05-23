@@ -37,7 +37,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   cardText: {
     fontSize: responsiveSize(14),
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     fontFamily: fonts.regular,
   },
 });

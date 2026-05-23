@@ -28,6 +28,21 @@ export type AppColors = {
   screenGradient: readonly [string, string, string];
   menuItemBorder: string;
   iconTint: string;
+  overlay: string;
+  accent: string;
+  accentMuted: string;
+  live: string;
+  surfaceInset: string;
+  starActive: string;
+  starInactive: string;
+  modalSurface: string;
+  primaryTint: string;
+  primaryBorder: string;
+  primaryTintStrong: string;
+  selectedTintBg: string;
+  selectedTintBorder: string;
+  metaValue: string;
+  playerGradient: readonly [string, string, string];
 };
 
 export type GlassTheme = ReturnType<typeof import('./createGlass').createGlass>;

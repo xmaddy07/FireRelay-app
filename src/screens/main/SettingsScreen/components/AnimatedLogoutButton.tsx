@@ -6,7 +6,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/AntDesign';
+import Feather from 'react-native-vector-icons/Feather';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -69,7 +69,7 @@ const AnimatedLogoutButton = ({
       activeOpacity={0.92}
     >
       <Animated.View style={[iconStyle, iconAnimatedStyle]}>
-        <Icon name="logout" size={wp(5)} color={iconColor} />
+        <Feather name="log-out" size={wp(5)} color={iconColor} />
       </Animated.View>
       <Text style={textStyle}>{label}</Text>
     </TouchableOpacity>

@@ -92,8 +92,10 @@ const LoginScreen = () => {
       password: '',
     },
     validationSchema,
+    validateOnChange: true,
+    validateOnBlur: true,
     onSubmit: (values, {setSubmitting}) => {
-      const email = values.email.toLowerCase();
+      const email = values.email.trim().toLowerCase();
       const role =
         email === 'admin@firerelay.com' || email === 'steve@firerelay.com'
           ? 'admin'
@@ -227,8 +229,15 @@ const LoginScreen = () => {
                 }
               />
 
+              {(formik.touched.email && formik.errors.email) ||
+              (formik.touched.password && formik.errors.password) ? (
+                <Text style={styles.errorText}>
+                  {formik.errors.email || formik.errors.password}
+                </Text>
+              ) : null}
+
               <Button
-                title="SELL"
+                title="SIGN IN"
                 onPress={formik.handleSubmit as () => void}
                 loading={formik.isSubmitting}
                 backgroundColor={colors.primary}

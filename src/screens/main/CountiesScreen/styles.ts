@@ -1,7 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {fonts} from '../../../constants';
 import type { AppColors } from "../../../theme/types";
-import { hp, wp, responsiveSize } from '../../../utils/responsive';
+import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
 export const TOOLBAR_BUTTON_SIZE = wp(10.5);
 
@@ -33,9 +33,9 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     minHeight: TOOLBAR_BUTTON_SIZE,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.08,
         shadowRadius: 6,
       },
       android: {elevation: 2},
@@ -65,8 +65,8 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     borderColor: colors.menuItemBorder,
   },
   searchBarFilterButtonActive: {
-    backgroundColor: 'rgba(91, 64, 62, 0.9)',
-    borderColor: 'rgba(255, 84, 81, 0.5)',
+    backgroundColor: colors.primaryTintStrong,
+    borderColor: colors.primaryBorder,
   },
   filterIcon: {
     width: wp(5.3),
@@ -82,9 +82,9 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderColor: colors.primaryBorder,
     borderRadius: TOOLBAR_BUTTON_SIZE / 2,
-    backgroundColor: 'rgba(255, 84, 81, 0.12)',
+    backgroundColor: colors.primaryTint,
     flexShrink: 0,
   },
   notificationIcon: {
@@ -110,12 +110,12 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     padding: wp(5),
     marginBottom: hp(3),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: colors.menuItemBorder,
   },
   statusTitle: {
     fontSize: responsiveSize(28),
     fontFamily: fonts.bold,
-    color: '#A8B9E8',
+    color: colors.accent,
     marginBottom: hp(1.2),
   },
   statusSubtitle: {
@@ -125,7 +125,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     lineHeight: responsiveSize(20),
   },
   statusLive: {
-    color: '#4cd89f',
+    color: colors.live,
     fontFamily: fonts.semibold,
   },
   sectionHeader: {
@@ -152,19 +152,19 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.text,
   },
   countBadge: {
-    backgroundColor: '#111826',
+    backgroundColor: colors.surfaceInset,
     borderRadius: wp(6),
     paddingVertical: hp(0.8),
     paddingHorizontal: wp(3),
   },
   countBadgeCompact: {
-    backgroundColor: '#111826',
+    backgroundColor: colors.surfaceInset,
     borderRadius: wp(4),
     paddingVertical: hp(0.35),
     paddingHorizontal: wp(2),
   },
   countBadgeText: {
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     fontSize: responsiveSize(12),
     fontFamily: fonts.semibold,
     letterSpacing: responsiveSize(0.5),
@@ -176,7 +176,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     letterSpacing: responsiveSize(0.4),
   },
   sectionCaption: {
-    color: '#7b8aa6',
+    color: colors.accentMuted,
     fontSize: responsiveSize(11),
     fontFamily: fonts.medium,
     letterSpacing: responsiveSize(1.4),
@@ -189,7 +189,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingHorizontal: wp(4),
     marginBottom: hp(2),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.menuItemBorder,
   },
   cardRow: {
     flexDirection: 'row',
@@ -199,7 +199,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     width: wp(12),
     height: wp(12),
     borderRadius: wp(4),
-    backgroundColor: '#1d2537',
+    backgroundColor: colors.surfaceInset,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: wp(4),
@@ -236,7 +236,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     width: wp(4.5),
     height: wp(4.5),
     borderRadius: wp(999),
-    backgroundColor: 'rgba(49, 212, 146, 0.1)',
+    backgroundColor: `${colors.live}1A`,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: wp(2),
@@ -246,9 +246,9 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     width: wp(2.2),
     height: wp(2.2),
     borderRadius: wp(999),
-    backgroundColor: '#4cd89f',
+    backgroundColor: colors.live,
 
-    shadowColor: '#4cd89f',
+    shadowColor: colors.live,
     shadowOffset: {
       width: 0,
       height: 0,
@@ -269,10 +269,10 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     padding: wp(5),
     marginBottom: hp(5),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    shadowColor: '#000',
+    borderColor: colors.menuItemBorder,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.1,
     shadowRadius: 18,
     elevation: 5,
   },
@@ -285,7 +285,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   featureSubtitle: {
     fontSize: responsiveSize(12),
     fontFamily: fonts.medium,
-    color: '#4cd89f',
+    color: colors.live,
     letterSpacing: responsiveSize(1.2),
   },
   // Top Counties Horizontal Scroll Section Styles
@@ -306,10 +306,10 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     padding: wp(3.5),
     marginRight: wp(3),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.menuItemBorder,
     justifyContent: 'space-between',
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -324,17 +324,17 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingHorizontal: wp(2.5),
     marginRight: wp(2),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.menuItemBorder,
   },
   horizontalCardCompactSelected: {
-    borderColor: 'rgba(56, 189, 248, 0.65)',
-    backgroundColor: 'rgba(47, 85, 151, 0.28)',
+    borderColor: colors.selectedTintBorder,
+    backgroundColor: colors.selectedTintBg,
   },
   horizontalCardIconWrapperCompact: {
     width: wp(7),
     height: wp(7),
     borderRadius: wp(2),
-    backgroundColor: '#1d2537',
+    backgroundColor: colors.surfaceInset,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: wp(2),
@@ -356,7 +356,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   horizontalCardMetaCompact: {
     fontSize: responsiveSize(9),
     fontFamily: fonts.regular,
-    color: '#64748b',
+    color: colors.textMuted,
     letterSpacing: responsiveSize(0.2),
     flex: 1,
   },
@@ -364,7 +364,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     width: wp(1.6),
     height: wp(1.6),
     borderRadius: wp(999),
-    backgroundColor: '#4cd89f',
+    backgroundColor: colors.live,
     marginLeft: wp(1),
   },
   horizontalCardHeader: {
@@ -376,14 +376,14 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     width: wp(8.5),
     height: wp(8.5),
     borderRadius: wp(2.5),
-    backgroundColor: '#1d2537',
+    backgroundColor: colors.surfaceInset,
     justifyContent: 'center',
     alignItems: 'center',
   },
   horizontalCardIconImage: {
     width: wp(4),
     height: wp(4),
-    tintColor: '#a8b9e8',
+    tintColor: colors.accent,
   },
   horizontalCardContent: {
     marginTop: 'auto',
@@ -408,14 +408,14 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingVertical: hp(0.55),
     paddingHorizontal: wp(3.5),
     borderRadius: wp(999),
-    backgroundColor: '#111827',
+    backgroundColor: colors.surfaceInset,
     marginRight: wp(1.8),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.menuItemBorder,
   },
   chipActive: {
     backgroundColor: colors.primary,
-    borderColor: 'rgba(47, 85, 151, 0.4)',
+    borderColor: colors.primaryBorder,
   },
   chipText: {
     fontSize: responsiveSize(11),
@@ -424,7 +424,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     letterSpacing: responsiveSize(0.5),
   },
   chipTextActive: {
-    color: colors.text,
+    color: colors.textOnPrimary,
   },
   // Feed Item Card Styles
   feedItemCard: {
@@ -434,9 +434,9 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingVertical: hp(0.75),
     marginBottom: hp(0.55),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.menuItemBorder,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -483,18 +483,18 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: 'rgba(245, 158, 11, 0.15)',
   },
   feedBadgePoliceText: {
-    color: '#f59e0b',
+    color: colors.warning,
   },
   feedBadgeGeneral: {
     backgroundColor: 'rgba(107, 114, 128, 0.15)',
   },
   feedBadgeGeneralText: {
-    color: '#9ca3af',
+    color: colors.textMuted,
   },
   feedCountyText: {
     flex: 1,
     fontSize: responsiveSize(10),
-    color: '#38bdf8',
+    color: colors.secure,
     fontFamily: fonts.bold,
     letterSpacing: responsiveSize(0.3),
   },
@@ -503,7 +503,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   feedTimeText: {
     fontSize: responsiveSize(10),
-    color: '#64748b',
+    color: colors.textMuted,
     fontFamily: fonts.semibold,
   },
   feedTalkgroupRow: {
@@ -515,13 +515,13 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     flex: 1,
     fontSize: responsiveSize(11.5),
     fontFamily: fonts.semibold,
-    color: '#a8b9e8',
+    color: colors.accent,
     marginRight: wp(1.5),
   },
   feedSnippetText: {
     fontSize: responsiveSize(11),
     fontFamily: fonts.regular,
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     lineHeight: responsiveSize(14.5),
   },
   feedSnippetHighlight: {
@@ -539,14 +539,14 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     fontFamily: fonts.regular,
   },
   feedStarIconActive: {
-    color: '#fbbf24',
+    color: colors.starActive,
   },
   feedStarIconInactive: {
-    color: '#475569',
+    color: colors.starInactive,
   },
   feedMetaText: {
     fontSize: responsiveSize(8.5),
-    color: '#475569',
+    color: colors.textMuted,
     fontFamily: fonts.semibold,
     marginTop: hp(0.1),
   },

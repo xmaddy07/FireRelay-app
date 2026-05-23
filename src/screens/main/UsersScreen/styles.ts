@@ -52,7 +52,7 @@ export const createStyles = (colors: AppColors) => {
     minHeight: ADD_BUTTON_SIZE,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.2,
         shadowRadius: 6,
@@ -133,7 +133,7 @@ export const createStyles = (colors: AppColors) => {
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: {width: 0, height: 4},
         shadowOpacity: 0.22,
         shadowRadius: 10,
@@ -300,9 +300,9 @@ export const createStyles = (colors: AppColors) => {
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderColor: colors.primaryBorder,
     borderRadius: ADD_BUTTON_SIZE / 2,
-    backgroundColor: 'rgba(255, 84, 81, 0.12)',
+    backgroundColor: colors.primaryTint,
     flexShrink: 0,
   },
   notificationIcon: {

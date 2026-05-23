@@ -6,7 +6,7 @@ export type ThemeState = {
 };
 
 const initialState: ThemeState = {
-  mode: 'dark',
+  mode: 'light',
 };
 
 const themeSlice = createSlice({

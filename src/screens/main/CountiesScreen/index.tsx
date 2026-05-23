@@ -22,6 +22,9 @@ import AdvancedFiltersBottomSheet, {
 import LinearGradient from 'react-native-linear-gradient';
 import {images} from '../../../constants';
 import { responsiveHitSlop } from '../../../utils/responsive';
+import FeedDetailModal from './FeedDetailModal';
+import FeedSnippetText from './FeedSnippetText';
+import {buildFeedDetail, type FeedItem} from './feedTypes';
 
 const ALERT_BORDER_CONFIG = {
   critical: {
@@ -46,22 +49,6 @@ type AdvancedFeedFilters = {
 };
 
 type County = { name: string; code: string; est: string };
-
-type FeedItem = {
-  id: string;
-  county: string;
-  talkgroup: string;
-  talkgroupId: string;
-  date: string;
-  time: string;
-  snippet: string;
-  highlightKeywords: string[];
-  type: 'fire' | 'medical' | 'police' | 'general';
-  severity: 'critical' | 'warning' | 'info';
-  starred: boolean;
-  hasWarning: boolean;
-  hasSecure: boolean;
-};
 
 const PRIORITY_SEVERITY: Record<string, FeedItem['severity']> = {
   High: 'critical',
@@ -338,54 +325,7 @@ const CountyCard = ({
   );
 };
 
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 const FEED_SNIPPET_MAX_LINES = 2;
-
-const FeedSnippetText = ({
-  snippet,
-  highlightKeywords,
-}: {
-  snippet: string;
-  highlightKeywords: string[];
-}) => {
-  const styles = useThemedStyles(createStyles);
-  const snippetProps = {
-    style: styles.feedSnippetText,
-    numberOfLines: FEED_SNIPPET_MAX_LINES,
-    ellipsizeMode: 'tail' as const,
-  };
-
-  if (highlightKeywords.length === 0) {
-    return <Text {...snippetProps}>{snippet}</Text>;
-  }
-
-  const pattern = new RegExp(
-    `(${highlightKeywords.map(escapeRegExp).join('|')})`,
-    'gi',
-  );
-  const parts = snippet.split(pattern).filter(part => part.length > 0);
-
-  return (
-    <Text {...snippetProps}>
-      {parts.map((part, index) => {
-        const isHighlight = highlightKeywords.some(
-          keyword => keyword.toLowerCase() === part.toLowerCase(),
-        );
-
-        if (isHighlight) {
-          return (
-            <Text key={`${part}-${index}`} style={styles.feedSnippetHighlight}>
-              {part}
-            </Text>
-          );
-        }
-
-        return <Text key={`${part}-${index}`}>{part}</Text>;
-      })}
-    </Text>
-  );
-};
 
 const AnimatedAlertFeedCard = ({
   severity,
@@ -441,10 +381,12 @@ const FeedListItem = ({
   item,
   entranceAnim,
   onToggleStar,
+  onPress,
 }: {
   item: FeedItem;
   entranceAnim: Animated.Value;
   onToggleStar: (id: string) => void;
+  onPress: (item: FeedItem) => void;
 }) => {
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -541,13 +483,18 @@ const FeedListItem = ({
       <FeedSnippetText
         snippet={item.snippet}
         highlightKeywords={item.highlightKeywords}
+        numberOfLines={FEED_SNIPPET_MAX_LINES}
       />
     </>
   );
 
   return (
     <Animated.View style={slideStyle}>
-      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
+      <Pressable
+        onPress={() => onPress(item)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
         {isHighAlert ? (
           <AnimatedAlertFeedCard
             severity={item.severity === 'critical' ? 'critical' : 'warning'}
@@ -570,6 +517,7 @@ const CountiesScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFeedFilters | null>(null);
+  const [selectedFeedItem, setSelectedFeedItem] = useState<FeedItem | null>(null);
 
   // Entrance animations
   const listEntranceAnim = useRef(new Animated.Value(0)).current;
@@ -691,11 +639,17 @@ const CountiesScreen = () => {
     animateFeedList(filteredFeed);
   }, [feedListKey]);
 
+  const selectedFeedDetail = useMemo(
+    () => (selectedFeedItem ? buildFeedDetail(selectedFeedItem) : null),
+    [selectedFeedItem],
+  );
+
   const renderFeedItem = ({ item }: { item: FeedItem }) => (
     <FeedListItem
       item={item}
       entranceAnim={getFeedItemAnim(item.id)}
       onToggleStar={handleToggleStar}
+      onPress={setSelectedFeedItem}
     />
   );
 
@@ -811,6 +765,13 @@ const CountiesScreen = () => {
           const next = sheetFiltersToAdvanced(filters);
           setAdvancedFilters(isFeedFiltersEmpty(next) ? null : next);
         }}
+      />
+
+      <FeedDetailModal
+        visible={selectedFeedItem !== null}
+        item={selectedFeedItem}
+        detail={selectedFeedDetail}
+        onClose={() => setSelectedFeedItem(null)}
       />
     </LinearGradient>
   );

@@ -47,9 +47,9 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   filterButtonActive: {
-    backgroundColor: 'rgba(255, 84, 81, 0.15)',
+    backgroundColor: colors.primaryTint,
     borderWidth: 1,
-    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderColor: colors.primaryBorder,
   },
   filterIcon: {
     width: wp(5.3),
@@ -72,9 +72,9 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   notificationButtonBordered: {
     borderWidth: 1,
-    borderColor: 'rgba(255, 84, 81, 0.4)',
+    borderColor: colors.primaryBorder,
     borderRadius: wp(5.5),
-    backgroundColor: 'rgba(255, 84, 81, 0.12)',
+    backgroundColor: colors.primaryTint,
   },
   notificationIconAccent: {
     tintColor: colors.primary,

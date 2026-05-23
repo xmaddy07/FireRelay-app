@@ -12,10 +12,6 @@ const monoFont = Platform.select({
   default: 'monospace',
 });
 
-export const KEYWORD_TEXT = '#A5B4FC';
-export const STATUS_ACTIVE = '#4ADE80';
-export const CRITICAL_TEXT = '#FCA5A5';
-
 export const createPremium = (colors: AppColors) => ({
   bg: colors.background,
   surface: colors.surface,
@@ -76,9 +72,9 @@ export const createStyles = (colors: AppColors) => {
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(255, 84, 81, 0.4)',
+      borderColor: colors.primaryBorder,
       borderRadius: TOOLBAR_BUTTON_SIZE / 2,
-      backgroundColor: 'rgba(255, 84, 81, 0.12)',
+      backgroundColor: colors.primaryTint,
       flexShrink: 0,
     },
     addButtonWrap: {
@@ -91,7 +87,7 @@ export const createStyles = (colors: AppColors) => {
     addButtonRing: {
       ...StyleSheet.absoluteFill,
       borderRadius: TOOLBAR_BUTTON_SIZE / 2,
-      backgroundColor: 'rgba(255, 77, 77, 0.12)',
+      backgroundColor: colors.primaryTint,
     },
     addButton: {
       width: TOOLBAR_BUTTON_SIZE,
@@ -129,9 +125,9 @@ export const createStyles = (colors: AppColors) => {
       minHeight: TOOLBAR_BUTTON_SIZE,
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
+          shadowColor: colors.shadow,
           shadowOffset: {width: 0, height: 2},
-          shadowOpacity: 0.18,
+          shadowOpacity: 0.08,
           shadowRadius: 6,
         },
         android: {elevation: 2},
@@ -161,8 +157,8 @@ export const createStyles = (colors: AppColors) => {
       flexShrink: 0,
     },
     filterButtonActive: {
-      backgroundColor: 'rgba(91, 64, 62, 0.9)',
-      borderColor: 'rgba(255, 84, 81, 0.5)',
+      backgroundColor: colors.primaryTintStrong,
+      borderColor: colors.primaryBorder,
     },
     filterIcon: {
       width: wp(5.3),
@@ -186,16 +182,16 @@ export const createStyles = (colors: AppColors) => {
       overflow: 'hidden',
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
+          shadowColor: colors.shadow,
           shadowOffset: {width: 0, height: 4},
-          shadowOpacity: 0.2,
+          shadowOpacity: 0.1,
           shadowRadius: 10,
         },
         android: {elevation: 3},
       }),
     },
     keywordCardCritical: {
-      borderColor: 'rgba(252, 165, 165, 0.35)',
+      borderColor: colors.primaryBorder,
     },
     criticalAccent: {
       width: wp(1),
@@ -219,7 +215,7 @@ export const createStyles = (colors: AppColors) => {
       flex: 1,
       fontSize: responsiveSize(16),
       fontFamily: fonts.semibold,
-      color: KEYWORD_TEXT,
+      color: colors.accent,
       letterSpacing: responsiveSize(0.1),
     },
     cardActions: {
@@ -253,7 +249,7 @@ export const createStyles = (colors: AppColors) => {
       borderRadius: wp(1),
     },
     statusDotActive: {
-      backgroundColor: STATUS_ACTIVE,
+      backgroundColor: colors.live,
     },
     statusDotInactive: {
       backgroundColor: premium.textMuted,
@@ -264,7 +260,7 @@ export const createStyles = (colors: AppColors) => {
       letterSpacing: responsiveSize(0.8),
     },
     statusTextActive: {
-      color: STATUS_ACTIVE,
+      color: colors.live,
     },
     statusTextInactive: {
       color: premium.textMuted,
@@ -293,7 +289,7 @@ export const createStyles = (colors: AppColors) => {
       textTransform: 'capitalize',
     },
     metaValueCritical: {
-      color: CRITICAL_TEXT,
+      color: colors.primary,
       fontFamily: fonts.bold,
       textTransform: 'uppercase',
       letterSpacing: responsiveSize(0.4),

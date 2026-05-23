@@ -10,7 +10,7 @@ export const createKeywordModalStyles = (colors: AppColors) => {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.72)',
+      backgroundColor: colors.overlay,
       justifyContent: 'center',
       paddingHorizontal: wp(4),
       paddingVertical: hp(3),
@@ -23,9 +23,9 @@ export const createKeywordModalStyles = (colors: AppColors) => {
       overflow: 'hidden',
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
+          shadowColor: colors.shadow,
           shadowOffset: {width: 0, height: 12},
-          shadowOpacity: 0.45,
+          shadowOpacity: 0.15,
           shadowRadius: 28,
         },
         android: {elevation: 14},

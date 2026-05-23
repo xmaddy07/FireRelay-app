@@ -69,7 +69,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   loginCard: {
     borderRadius: wp(2.5),
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
+    borderColor: colors.border,
     paddingHorizontal: wp(5),
     paddingTop: hp(3),
     paddingBottom: hp(2.5),
@@ -99,6 +99,13 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     borderRadius: wp(1.5),
     paddingVertical: hp(2),
     marginVertical: 0,
+  },
+  errorText: {
+    color: colors.primary,
+    fontSize: responsiveSize(12),
+    fontFamily: monoFont,
+    marginBottom: hp(1.5),
+    textAlign: 'center',
   },
   primaryButtonText: {
     color: colors.textOnPrimary,
