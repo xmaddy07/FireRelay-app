@@ -18,6 +18,10 @@ const authSlice = createSlice({
       state.token = action.payload;
       state.isAuthenticated = true;
     },
+    loginWithSession: state => {
+      state.token = undefined;
+      state.isAuthenticated = true;
+    },
     logout: (state) => {
       state.token = undefined;
       state.isAuthenticated = false;

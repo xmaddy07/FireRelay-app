@@ -1,6 +1,6 @@
 import type {ImageSourcePropType} from 'react-native';
 import type {SFSymbol} from 'sf-symbols-typescript';
-import {images} from '../constants';
+import {images} from '../config/constants';
 
 export type TabBarConfig = {
   label: string;
@@ -12,48 +12,45 @@ type IosTabSymbols = {
   active: SFSymbol;
 };
 
-export const userTabLabels: Record<string, string> = {
-  LiveFeed: 'Live Feed',
+export const MAIN_TAB_ROUTES = [
+  'Feed',
+  'LeadLog',
+  'Keywords',
+  'Settings',
+] as const;
+
+export type MainTabRoute = (typeof MAIN_TAB_ROUTES)[number];
+
+export const USER_TAB_ROUTES = ['Feed', 'Settings'] as const satisfies readonly MainTabRoute[];
+
+export const getVisibleTabRoutes = (isAdmin: boolean): MainTabRoute[] =>
+  isAdmin ? [...MAIN_TAB_ROUTES] : [...USER_TAB_ROUTES];
+
+export const MAIN_TAB_LABELS: Record<MainTabRoute, string> = {
+  Feed: 'Live Feed',
   LeadLog: 'Lead Log',
-  KeywordRequest: 'Keyword',
+  Keywords: 'Keywords',
   Settings: 'Settings',
 };
 
-export const adminTabLabels: Record<string, string> = {
-  AdminConsole: 'Admin',
-  SystemStatus: 'Status',
-  Keywords: 'Keywords',
-  Users: 'Users',
-};
+export const getMainTabLabels = (): Record<MainTabRoute, string> => MAIN_TAB_LABELS;
 
-export const userTabConfig: Record<string, TabBarConfig> = {
-  LiveFeed: {label: userTabLabels.LiveFeed, icon: images.home},
-  LeadLog: {label: userTabLabels.LeadLog, icon: images.users},
-  KeywordRequest: {label: userTabLabels.KeywordRequest, icon: images.keyword},
-  Settings: {label: userTabLabels.Settings, icon: images.senders},
-};
+export const getMainTabConfig = (): Record<MainTabRoute, TabBarConfig> => ({
+  Feed: {label: MAIN_TAB_LABELS.Feed, icon: images.home},
+  LeadLog: {label: MAIN_TAB_LABELS.LeadLog, icon: images.users},
+  Keywords: {label: MAIN_TAB_LABELS.Keywords, icon: images.keyword},
+  Settings: {label: MAIN_TAB_LABELS.Settings, icon: images.senders},
+});
 
-export const adminTabConfig: Record<string, TabBarConfig> = {
-  AdminConsole: {label: adminTabLabels.AdminConsole, icon: images.setting},
-  SystemStatus: {label: adminTabLabels.SystemStatus, icon: images.home},
-  Keywords: {label: adminTabLabels.Keywords, icon: images.keyword},
-  Users: {label: adminTabLabels.Users, icon: images.users},
-};
-
-/** SF Symbols for native UITabBar — PNGs are not auto-scaled on iOS. */
-export const userTabIosSymbols: Record<string, IosTabSymbols> = {
-  LiveFeed: {inactive: 'house', active: 'house.fill'},
+export const getMainTabIosSymbols = (): Record<MainTabRoute, IosTabSymbols> => ({
+  Feed: {inactive: 'house', active: 'house.fill'},
   LeadLog: {inactive: 'person.2', active: 'person.2.fill'},
-  KeywordRequest: {inactive: 'text.magnifyingglass', active: 'text.magnifyingglass'},
+  Keywords: {
+    inactive: 'text.magnifyingglass',
+    active: 'text.magnifyingglass',
+  },
   Settings: {inactive: 'paperplane', active: 'paperplane.fill'},
-};
-
-export const adminTabIosSymbols: Record<string, IosTabSymbols> = {
-  AdminConsole: {inactive: 'gearshape', active: 'gearshape.fill'},
-  SystemStatus: {inactive: 'house', active: 'house.fill'},
-  Keywords: {inactive: 'text.magnifyingglass', active: 'text.magnifyingglass'},
-  Users: {inactive: 'person.2', active: 'person.2.fill'},
-};
+});
 
 export const iosTabIcon = (symbols: IosTabSymbols) =>
   ({focused}: {focused: boolean}) =>

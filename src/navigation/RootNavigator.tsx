@@ -4,11 +4,11 @@ import {useNavigation} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
-import LoginScreen from '../screens/auth/LoginScreen';
-import NotificationsScreen from '../screens/main/NotificationsScreen';
+import NotificationsScreen from '../screens/main/notification';
 import {useAppSelector} from '../redux/hooks';
-import {useTheme} from '../theme';
-import TabNavigator from './TabNavigator';
+import {useTheme} from '../config/theme';
+import AuthNavigator from './AuthNavigator';
+import BottomTabs from './BottomTabs';
 import type {RootStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,7 +24,7 @@ const MainWithBackground = () => {
       end={{x: 1, y: 1}}
       style={styles.main}
     >
-      <TabNavigator />
+      <BottomTabs />
     </LinearGradient>
   );
 };
@@ -64,7 +64,7 @@ const RootNavigator = () => {
           />
         </>
       ) : (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Login" component={AuthNavigator} />
       )}
     </Stack.Navigator>
   );

@@ -10,12 +10,15 @@ import {
   persistReducer,
   persistStore,
 } from 'redux-persist';
+import {storageKeys} from '../config/constants/storageKeys';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import themeReducer from './slices/themeSlice';
+import feedReducer from './slices/feedSlice';
+import messageReducer from './slices/messageSlice';
 
 const persistConfig = {
-  key: 'root',
+  key: storageKeys.reduxPersistRoot,
   storage: AsyncStorage,
   whitelist: ['auth', 'user', 'theme'],
 };
@@ -24,6 +27,8 @@ const rootReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
   theme: themeReducer,
+  feed: feedReducer,
+  messages: messageReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

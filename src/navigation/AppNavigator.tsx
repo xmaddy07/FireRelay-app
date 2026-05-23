@@ -1,8 +1,8 @@
 import React, {useMemo} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {useAppSelector} from '../redux/hooks';
-import {useTheme} from '../theme';
-import {createNavigationTheme} from '../theme/navigationTheme';
+import {useTheme} from '../config/theme';
+import {createNavigationTheme} from '../config/theme/navigationTheme';
 import RootNavigator from './RootNavigator';
 
 export const AppNavigator = () => {

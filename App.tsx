@@ -5,7 +5,7 @@ import {Provider} from 'react-redux';
 import {PersistGate} from 'redux-persist/integration/react';
 import {AppNavigator} from './src/navigation/AppNavigator';
 import {persistor, store} from './src/redux/store';
-import {ThemeProvider, useTheme} from './src/theme';
+import {ThemeProvider, useTheme} from './src/context';
 
 const AppShell = () => {
   const {colors, isDark} = useTheme();
