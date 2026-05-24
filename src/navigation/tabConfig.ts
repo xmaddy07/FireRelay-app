@@ -16,6 +16,7 @@ export const MAIN_TAB_ROUTES = [
   'Feed',
   'LeadLog',
   'Keywords',
+  'Senders',
   'Settings',
 ] as const;
 
@@ -30,6 +31,7 @@ export const MAIN_TAB_LABELS: Record<MainTabRoute, string> = {
   Feed: 'Live Feed',
   LeadLog: 'Lead Log',
   Keywords: 'Keywords',
+  Senders: 'Senders',
   Settings: 'Settings',
 };
 
@@ -39,7 +41,8 @@ export const getMainTabConfig = (): Record<MainTabRoute, TabBarConfig> => ({
   Feed: {label: MAIN_TAB_LABELS.Feed, icon: images.home},
   LeadLog: {label: MAIN_TAB_LABELS.LeadLog, icon: images.users},
   Keywords: {label: MAIN_TAB_LABELS.Keywords, icon: images.keyword},
-  Settings: {label: MAIN_TAB_LABELS.Settings, icon: images.senders},
+  Senders: {label: MAIN_TAB_LABELS.Senders, icon: images.senders},
+  Settings: {label: MAIN_TAB_LABELS.Settings, icon: images.setting},
 });
 
 export const getMainTabIosSymbols = (): Record<MainTabRoute, IosTabSymbols> => ({
@@ -49,7 +52,8 @@ export const getMainTabIosSymbols = (): Record<MainTabRoute, IosTabSymbols> => (
     inactive: 'text.magnifyingglass',
     active: 'text.magnifyingglass',
   },
-  Settings: {inactive: 'paperplane', active: 'paperplane.fill'},
+  Senders: {inactive: 'paperplane', active: 'paperplane.fill'},
+  Settings: {inactive: 'gearshape', active: 'gearshape.fill'},
 });
 
 export const iosTabIcon = (symbols: IosTabSymbols) =>

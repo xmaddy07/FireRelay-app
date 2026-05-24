@@ -1,0 +1,61 @@
+export type ApiCountyRef = {
+  id?: string;
+  name?: string;
+  code?: string | null;
+  state?: string | null;
+};
+
+export type ApiAudio = {
+  id: string;
+  county?: string | ApiCountyRef;
+  countyName?: string;
+  talkgroup?: string;
+  talkGroup?: string;
+  talkgroupID?: string;
+  talkgroupId?: string;
+  talkGroupId?: string;
+  maxSeverity?: string;
+  flagged?: boolean;
+  timestamp?: string;
+  path?: string;
+  confidence?: number;
+  keywordMatches?: unknown[];
+  snippet?: string;
+  transcription?: string;
+  transcript?: string;
+  text?: string;
+  keywords?: string[] | string;
+  matchedKeywords?: string[] | string;
+  highlightKeywords?: string[] | string;
+  type?: string;
+  category?: string;
+  severity?: string;
+  priority?: string;
+  starred?: boolean;
+  isFavorite?: boolean;
+  isFavorited?: boolean;
+  hasWarning?: boolean;
+  hasSecure?: boolean;
+  filename?: string;
+  fileName?: string;
+  audioFile?: string;
+  createdAt?: string;
+  recordedAt?: string;
+  date?: string;
+  time?: string;
+  [key: string]: unknown;
+};
+
+export type AudioSearchParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  county?: string;
+  counties?: string;
+  keyword?: string;
+  keywords?: string;
+  keywordPriority?: string;
+  talkgroup?: string;
+  fromDate?: string;
+  toDate?: string;
+};

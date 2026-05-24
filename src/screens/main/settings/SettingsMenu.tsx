@@ -9,7 +9,9 @@ import type {SettingsStackParamList} from '../../../navigation/types';
 import {responsiveHitSlop} from '../../../utils/responsive';
 import {createStyles} from './styles';
 import {useTheme, useThemedStyles} from '../../../config/theme';
+import {ApiError, logout} from '../../../api';
 import {useAppDispatch} from '../../../redux/hooks';
+import {useAuth} from '../../../hooks/useAuth';
 import {authActions} from '../../../redux/slices/authSlice';
 import {userActions} from '../../../redux/slices/userSlice';
 import AnimatedToggle from './components/AnimatedToggle';
@@ -40,6 +42,7 @@ const SettingsMenu = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const dispatch = useAppDispatch();
+  const {token} = useAuth();
   const {colors, glass, isDark, toggleTheme} = useTheme();
   const styles = useThemedStyles(createStyles);
 
@@ -47,9 +50,17 @@ const SettingsMenu = () => {
   const [bellRing, setBellRing] = useState(0);
   const [moonPulse, setMoonPulse] = useState(0);
 
-  const handleLogout = () => {
-    dispatch(authActions.logout());
-    dispatch(userActions.clearUser());
+  const handleLogout = async () => {
+    try {
+      await logout(token);
+    } catch (error) {
+      if (__DEV__ && error instanceof ApiError) {
+        console.warn('[API] logout failed:', error.message);
+      }
+    } finally {
+      dispatch(authActions.logout());
+      dispatch(userActions.clearUser());
+    }
   };
 
   const handlePushToggle = (next: boolean) => {

@@ -1,6 +1,7 @@
 export type FeedItem = {
   id: string;
   county: string;
+  countyId?: string;
   talkgroup: string;
   talkgroupId: string;
   date: string;
@@ -12,6 +13,9 @@ export type FeedItem = {
   starred: boolean;
   hasWarning: boolean;
   hasSecure: boolean;
+  audioFilename?: string;
+  audioUrl?: string;
+  confidence?: number;
 };
 
 export type FeedDetailData = {
@@ -28,6 +32,13 @@ const priorityForSeverity = (severity: FeedItem['severity']) => {
 };
 
 const confidenceForItem = (item: FeedItem) => {
+  if (typeof item.confidence === 'number') {
+    const percent =
+      item.confidence <= 1
+        ? Math.round(item.confidence * 100)
+        : Math.round(item.confidence);
+    return Math.min(100, Math.max(0, percent));
+  }
   let hash = 0;
   for (let i = 0; i < item.id.length; i += 1) {
     hash = (hash << 5) - hash + item.id.charCodeAt(i);

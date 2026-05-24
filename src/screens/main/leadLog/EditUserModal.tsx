@@ -11,13 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import {
-  ALL_COUNTIES,
-  EditUserTab,
-  ROLE_OPTIONS,
-  UserRecord,
-  UserRole,
-} from './types';
+import type {CountyOption} from '../../../api';
+import {ALL_COUNTIES, EditUserTab, ROLE_OPTIONS, UserRecord, UserRole} from './types';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {createPremium} from './styles';
 import {createEditModalStyles} from './editUserModal.styles';
@@ -25,11 +20,18 @@ import {createEditModalStyles} from './editUserModal.styles';
 type Props = {
   visible: boolean;
   user: UserRecord | null;
+  countyOptions?: CountyOption[];
   onClose: () => void;
-  onSave: (user: UserRecord) => void;
+  onSave: (user: UserRecord, countyIds: string[]) => void;
 };
 
-const EditUserModal = ({visible, user, onClose, onSave}: Props) => {
+const EditUserModal = ({
+  visible,
+  user,
+  countyOptions = [],
+  onClose,
+  onSave,
+}: Props) => {
   const {colors} = useTheme();
   const premium = useMemo(() => createPremium(colors), [colors]);
   const s = useThemedStyles(createEditModalStyles);
@@ -37,49 +39,68 @@ const EditUserModal = ({visible, user, onClose, onSave}: Props) => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('admin');
   const [roleOpen, setRoleOpen] = useState(false);
-  const [selectedCounties, setSelectedCounties] = useState<string[]>([]);
+  const [selectedCountyIds, setSelectedCountyIds] = useState<string[]>([]);
   const [countySearch, setCountySearch] = useState('');
+
+  const availableCounties = useMemo(
+    () =>
+      countyOptions.length > 0
+        ? countyOptions
+        : ALL_COUNTIES.map(county => ({
+            id: county.code,
+            name: county.name,
+            code: county.code,
+            state: county.state,
+            established: '',
+          })),
+    [countyOptions],
+  );
 
   useEffect(() => {
     if (user) {
       setEmail(user.email);
       setRole(user.role);
-      setSelectedCounties(user.counties);
+      const ids = availableCounties
+        .filter(county => user.counties.includes(county.name))
+        .map(county => county.id);
+      setSelectedCountyIds(ids);
       setActiveTab('details');
       setRoleOpen(false);
       setCountySearch('');
     }
-  }, [user]);
+  }, [availableCounties, user]);
 
   const filteredCounties = useMemo(() => {
     const query = countySearch.trim().toLowerCase();
     if (!query) {
-      return ALL_COUNTIES;
+      return availableCounties;
     }
-    return ALL_COUNTIES.filter(
+    return availableCounties.filter(
       c =>
         c.name.toLowerCase().includes(query) ||
         c.code.toLowerCase().includes(query) ||
         c.state.toLowerCase().includes(query),
     );
-  }, [countySearch]);
+  }, [availableCounties, countySearch]);
 
   const roleLabel =
     ROLE_OPTIONS.find(option => option.value === role)?.label ?? 'Admin';
 
-  const toggleCounty = (name: string) => {
-    setSelectedCounties(prev =>
-      prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name],
+  const toggleCounty = (countyId: string) => {
+    setSelectedCountyIds(prev =>
+      prev.includes(countyId)
+        ? prev.filter(id => id !== countyId)
+        : [...prev, countyId],
     );
   };
 
   const handleSelectAll = () => {
-    const names = filteredCounties.map(c => c.name);
-    const allSelected = names.every(name => selectedCounties.includes(name));
+    const ids = filteredCounties.map(c => c.id);
+    const allSelected = ids.every(id => selectedCountyIds.includes(id));
     if (allSelected) {
-      setSelectedCounties(prev => prev.filter(name => !names.includes(name)));
+      setSelectedCountyIds(prev => prev.filter(id => !ids.includes(id)));
     } else {
-      setSelectedCounties(prev => [...new Set([...prev, ...names])]);
+      setSelectedCountyIds(prev => [...new Set([...prev, ...ids])]);
     }
   };
 
@@ -87,13 +108,17 @@ const EditUserModal = ({visible, user, onClose, onSave}: Props) => {
     if (!user || !email.trim()) {
       return;
     }
-    onSave({
-      ...user,
-      email: email.trim(),
-      role,
-      counties: selectedCounties,
-    });
-    onClose();
+    onSave(
+      {
+        ...user,
+        email: email.trim(),
+        role,
+        counties: selectedCountyIds
+          .map(id => availableCounties.find(c => c.id === id)?.name)
+          .filter((name): name is string => Boolean(name)),
+      },
+      selectedCountyIds,
+    );
   };
 
   if (!user) {
@@ -249,15 +274,15 @@ const EditUserModal = ({visible, user, onClose, onSave}: Props) => {
                   <View style={s.countyGrid}>
                     <View style={s.countyGridInner}>
                       {filteredCounties.map(county => {
-                        const checked = selectedCounties.includes(county.name);
+                        const checked = selectedCountyIds.includes(county.id);
                         return (
                           <TouchableOpacity
-                            key={county.code}
+                            key={county.id}
                             style={[
                               s.countyItem,
                               checked && s.countyItemSelected,
                             ]}
-                            onPress={() => toggleCounty(county.name)}
+                            onPress={() => toggleCounty(county.id)}
                             activeOpacity={0.8}
                           >
                             <View

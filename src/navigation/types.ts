@@ -8,6 +8,7 @@ export type MainTabParamList = {
   Feed: undefined;
   Keywords: undefined;
   LeadLog: undefined;
+  Senders: undefined;
   Settings: undefined;
 };
 

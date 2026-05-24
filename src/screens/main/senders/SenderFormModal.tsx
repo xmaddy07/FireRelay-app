@@ -9,46 +9,52 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {createPremium} from './styles';
-import {createKeywordModalStyles} from './keywordModal.styles';
-import type {KeywordDescriptionLevel, KeywordRecord} from './types';
+import {createSenderModalStyles} from './senderModal.styles';
+import type {SenderRecord, SenderStatus} from './types';
 
 type Props = {
   visible: boolean;
   mode: 'add' | 'edit';
-  keyword: KeywordRecord | null;
+  sender: SenderRecord | null;
   onClose: () => void;
-  onSubmit: (keyword: KeywordRecord) => void;
+  onSubmit: (sender: SenderRecord) => void;
 };
 
-const deriveDescriptionMeta = (description: string) => {
-  const trimmed = description.trim();
-  const isCritical = trimmed.toUpperCase() === 'CRITICAL';
-  const descriptionLevel: KeywordDescriptionLevel = isCritical
-    ? 'critical'
-    : 'normal';
-  return {description: trimmed, descriptionLevel, isCritical};
+const STATUS_OPTIONS: {label: string; value: SenderStatus}[] = [
+  {label: 'Active', value: 'active'},
+  {label: 'Inactive', value: 'inactive'},
+  {label: 'Disabled', value: 'disabled'},
+];
+
+const generateToken = () => {
+  const chars = '0123456789abcdef';
+  let token = '';
+  for (let i = 0; i < 32; i += 1) {
+    token += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return token;
 };
 
-const KeywordFormModal = ({
+const SenderFormModal = ({
   visible,
   mode,
-  keyword,
+  sender,
   onClose,
   onSubmit,
 }: Props) => {
   const {colors} = useTheme();
   const premium = useMemo(() => createPremium(colors), [colors]);
-  const s = useThemedStyles(createKeywordModalStyles);
+  const s = useThemedStyles(createSenderModalStyles);
 
   const [name, setName] = useState('');
-  const [active, setActive] = useState(true);
+  const [email, setEmail] = useState('');
   const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<SenderStatus>('active');
 
   const isEdit = mode === 'edit';
-  const title = isEdit ? 'Edit Keyword' : 'Add New Keyword';
+  const title = isEdit ? 'Edit Sender' : 'Add Sender';
   const submitLabel = isEdit ? 'Update' : 'Create';
   const canSubmit = name.trim().length > 0;
 
@@ -56,16 +62,18 @@ const KeywordFormModal = ({
     if (!visible) {
       return;
     }
-    if (isEdit && keyword) {
-      setName(keyword.name);
-      setActive(keyword.active);
-      setDescription(keyword.description);
+    if (isEdit && sender) {
+      setName(sender.name);
+      setEmail(sender.email ?? '');
+      setDescription(sender.description ?? '');
+      setStatus(sender.status);
       return;
     }
     setName('');
-    setActive(true);
+    setEmail('');
     setDescription('');
-  }, [visible, isEdit, keyword]);
+    setStatus('active');
+  }, [visible, isEdit, sender]);
 
   const handleSubmit = () => {
     const trimmedName = name.trim();
@@ -73,29 +81,36 @@ const KeywordFormModal = ({
       return;
     }
 
-    const meta = deriveDescriptionMeta(description);
+    const trimmedEmail = email.trim();
+    const domain = trimmedEmail.includes('@')
+      ? trimmedEmail.split('@')[1]
+      : undefined;
 
-    if (isEdit && keyword) {
+    if (isEdit && sender) {
       onSubmit({
-        ...keyword,
+        ...sender,
         name: trimmedName,
-        active,
-        ...meta,
+        email: trimmedEmail || undefined,
+        domain,
+        description: description.trim() || undefined,
+        status,
       });
     } else {
       onSubmit({
-        id: `keyword-${Date.now()}`,
+        id: `sender-${Date.now()}`,
         name: trimmedName,
-        active,
-        severity: null,
+        email: trimmedEmail || undefined,
+        domain,
+        description: description.trim() || undefined,
+        status,
+        token: generateToken(),
         createdAt: new Date().toISOString().slice(0, 10),
-        ...meta,
       });
     }
     onClose();
   };
 
-  if (isEdit && !keyword) {
+  if (isEdit && !sender) {
     return null;
   }
 
@@ -118,32 +133,55 @@ const KeywordFormModal = ({
 
             <View style={s.body}>
               <Text style={s.fieldLabel}>
-                Keyword <Text style={s.required}>*</Text>
+                Name <Text style={s.required}>*</Text>
               </Text>
               <TextInput
                 style={s.textInput}
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter keyword"
+                placeholder="Enter sender name"
+                placeholderTextColor={premium.textMuted}
+                autoCapitalize="words"
+              />
+
+              <Text style={s.fieldLabel}>Email</Text>
+              <TextInput
+                style={s.textInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="sender@domain.com"
                 placeholderTextColor={premium.textMuted}
                 autoCapitalize="none"
                 autoCorrect={false}
+                keyboardType="email-address"
               />
 
-              <TouchableOpacity
-                style={s.activeRow}
-                onPress={() => setActive(prev => !prev)}
-                activeOpacity={0.8}
-              >
-                <View
-                  style={[s.checkbox, active && s.checkboxChecked]}
-                >
-                  {active ? (
-                    <Icon name="check" size={14} color={colors.textOnPrimary} />
-                  ) : null}
-                </View>
-                <Text style={s.activeLabel}>Active</Text>
-              </TouchableOpacity>
+              <Text style={s.fieldLabel}>Status</Text>
+              <View style={s.statusRow}>
+                {STATUS_OPTIONS.map(option => {
+                  const isActive = status === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        s.statusOption,
+                        isActive && s.statusOptionActive,
+                      ]}
+                      onPress={() => setStatus(option.value)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          s.statusOptionText,
+                          isActive && s.statusOptionTextActive,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
               <Text style={s.fieldLabel}>Description</Text>
               <TextInput
@@ -153,7 +191,7 @@ const KeywordFormModal = ({
                 placeholder="Optional description"
                 placeholderTextColor={premium.textMuted}
                 multiline
-                numberOfLines={4}
+                numberOfLines={3}
               />
             </View>
 
@@ -184,4 +222,6 @@ const KeywordFormModal = ({
   );
 };
 
-export default KeywordFormModal;
+export default SenderFormModal;
+
+export {generateToken};

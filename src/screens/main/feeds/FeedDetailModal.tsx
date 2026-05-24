@@ -54,7 +54,12 @@ const FeedDetailModal = ({visible, item, detail, onClose}: Props) => {
     setPlaybackSpeed,
     togglePlay,
     seekBy,
-  } = useFeedAudioPlayer(visible, item?.id);
+  } = useFeedAudioPlayer(
+    visible,
+    item?.id,
+    item?.audioFilename,
+    item?.audioUrl,
+  );
 
   const compact = screenWidth < COMPACT_BREAKPOINT;
   const waveformBarCount = useMemo(

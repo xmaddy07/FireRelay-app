@@ -265,6 +265,50 @@ export const createStyles = (colors: AppColors) => {
     statusTextInactive: {
       color: premium.textMuted,
     },
+    statusDivider: {
+      width: 1,
+      height: hp(1.2),
+      backgroundColor: premium.borderStrong,
+    },
+    severityBadge: {
+      paddingHorizontal: wp(2),
+      paddingVertical: hp(0.25),
+      borderRadius: wp(1.5),
+      borderWidth: 1,
+    },
+    severityBadgeHigh: {
+      backgroundColor: 'rgba(239, 68, 68, 0.12)',
+      borderColor: 'rgba(239, 68, 68, 0.35)',
+    },
+    severityBadgeMedium: {
+      backgroundColor: 'rgba(245, 158, 11, 0.12)',
+      borderColor: 'rgba(245, 158, 11, 0.35)',
+    },
+    severityBadgeLow: {
+      backgroundColor: 'rgba(34, 197, 94, 0.12)',
+      borderColor: 'rgba(34, 197, 94, 0.35)',
+    },
+    severityBadgeDefault: {
+      backgroundColor: premium.surfaceRaised,
+      borderColor: premium.borderStrong,
+    },
+    severityText: {
+      fontSize: responsiveSize(9),
+      fontFamily: fonts.bold,
+      letterSpacing: responsiveSize(0.6),
+    },
+    severityTextHigh: {
+      color: '#EF4444',
+    },
+    severityTextMedium: {
+      color: '#D97706',
+    },
+    severityTextLow: {
+      color: '#16A34A',
+    },
+    severityTextDefault: {
+      color: premium.textMuted,
+    },
     metaRow: {
       flexDirection: 'row',
       gap: wp(4),
@@ -313,6 +357,74 @@ export const createStyles = (colors: AppColors) => {
     },
     listFooter: {
       width: '100%',
+    },
+    loadMoreFooter: {
+      paddingVertical: hp(2),
+      alignItems: 'center',
+    },
+    totalCountRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: hp(0.6),
+      paddingHorizontal: wp(1),
+    },
+    totalCountLabel: {
+      fontSize: responsiveSize(11),
+      fontFamily: fonts.semibold,
+      color: premium.textMuted,
+      letterSpacing: responsiveSize(0.8),
+      textTransform: 'uppercase',
+    },
+    totalCountValue: {
+      fontSize: responsiveSize(14),
+      fontFamily: fonts.bold,
+      color: colors.text,
+    },
+    paginationFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: wp(2),
+      paddingTop: hp(1.2),
+      paddingBottom: hp(0.4),
+    },
+    paginationButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: wp(1.2),
+      paddingVertical: hp(1),
+      paddingHorizontal: wp(3.5),
+      borderRadius: wp(2.5),
+      backgroundColor: premium.surface,
+      borderWidth: 1,
+      borderColor: premium.borderStrong,
+    },
+    paginationButtonDisabled: {
+      opacity: 0.45,
+    },
+    paginationButtonText: {
+      fontSize: responsiveSize(13),
+      fontFamily: fonts.semibold,
+      color: colors.text,
+    },
+    paginationButtonTextDisabled: {
+      color: premium.textMuted,
+    },
+    paginationInfo: {
+      flex: 1,
+      alignItems: 'center',
+      minWidth: 0,
+    },
+    paginationInfoText: {
+      fontSize: responsiveSize(12),
+      fontFamily: fonts.medium,
+      color: premium.textMuted,
+      textAlign: 'center',
+    },
+    paginationInfoPage: {
+      fontFamily: fonts.bold,
+      color: colors.text,
     },
   });
 };

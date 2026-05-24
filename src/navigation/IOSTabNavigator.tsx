@@ -2,6 +2,7 @@ import React, {useMemo} from 'react';
 import {createNativeBottomTabNavigator} from '@react-navigation/bottom-tabs/unstable';
 import LeadLogScreen from '../screens/main/leadLog';
 import KeywordsScreen from '../screens/main/keyword';
+import SendersScreen from '../screens/main/senders';
 import {useTheme} from '../config/theme';
 import SettingsStackNavigator from './SettingsStackNavigator';
 import CountiesScreen from '../screens/main/feeds';
@@ -82,6 +83,11 @@ const IOSTabNavigator = ({isAdmin}: Props) => {
             name="Keywords"
             component={KeywordsScreen}
             options={optionsFor('Keywords')}
+          />
+          <Tab.Screen
+            name="Senders"
+            component={SendersScreen}
+            options={optionsFor('Senders')}
           />
         </>
       ) : null}

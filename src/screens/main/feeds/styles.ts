@@ -104,6 +104,22 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingBottom: hp(2),
     flexGrow: 1,
   },
+  feedLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(8),
+  },
+  feedEmpty: {
+    paddingVertical: hp(6),
+    alignItems: 'center',
+  },
+  feedEmptyText: {
+    fontSize: responsiveSize(14),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
   statusCard: {
     backgroundColor: colors.surface,
     borderRadius: wp(6),

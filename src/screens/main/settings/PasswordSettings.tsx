@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {Text} from 'react-native';
+import {Alert, Text} from 'react-native';
 import {Input, Button} from '../../../components';
+import {ApiError, changePassword} from '../../../api';
+import {useAuth} from '../../../hooks/useAuth';
 import {createStyles} from './styles';
 import {useThemedStyles} from '../../../config/theme';
 import SettingsScreenLayout from './SettingsScreenLayout';
@@ -21,6 +23,8 @@ const validationSchema = Yup.object().shape({
 const PasswordSettings = () => {
   const navigation = useNavigation();
   const styles = useThemedStyles(createStyles);
+  const {token} = useAuth();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const formik = useFormik({
     initialValues: {
@@ -29,8 +33,29 @@ const PasswordSettings = () => {
       confirmPassword: '',
     },
     validationSchema,
-    onSubmit: values => {
-      console.log('Password change values:', values);
+    onSubmit: async (values, {setSubmitting, resetForm}) => {
+      if (!token) {
+        setSubmitError('You must be signed in to change your password.');
+        return;
+      }
+
+      setSubmitError(null);
+      try {
+        await changePassword(token, {
+          oldPassword: values.oldPassword,
+          newPassword: values.newPassword,
+        });
+        Alert.alert('Password updated', 'Your password has been changed.');
+        resetForm();
+      } catch (error) {
+        setSubmitError(
+          error instanceof ApiError
+            ? error.message
+            : 'Unable to change password.',
+        );
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 
@@ -87,10 +112,13 @@ const PasswordSettings = () => {
         style={styles.inputGap}
       />
 
+      {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
+
       <Button
         title="Change Password"
         style={styles.saveButton}
         onPress={formik.handleSubmit as () => void}
+        disabled={formik.isSubmitting}
       />
     </SettingsScreenLayout>
   );
