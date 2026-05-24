@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   Animated,
   Easing,
+  ActivityIndicator,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
@@ -17,43 +18,23 @@ import {images} from '../../../config/constants';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {useAppSelector} from '../../../redux/hooks';
 import {useRole} from '../../../hooks/useRole';
+import {
+  ApiError,
+  assignUserCounties,
+  createUser,
+  deleteUser,
+  listCounties,
+  searchUsers,
+  updateUser,
+  type CountyOption,
+} from '../../../api';
+import {useAuth} from '../../../hooks/useAuth';
 import AddUserModal from './AddUserModal';
 import EditUserModal from './EditUserModal';
 import {hp, responsiveHitSlop, wp} from '../../../utils/responsive';
 import {useOpenNotifications} from '../../../navigation/hooks';
 import {createPremium, createStyles, TAB_BAR_HEIGHT} from './styles';
 import {RoleFilter, UserRecord, UserRole} from './types';
-
-const INITIAL_USERS: UserRecord[] = [
-  {
-    id: '1',
-    email: 'matt.shelton@firerelay.com',
-    role: 'admin',
-    createdAt: '2024-03-12T10:30:00Z',
-    counties: ['Travis', 'Wilco'],
-  },
-  {
-    id: '2',
-    email: 'test@gmail.com',
-    role: 'user',
-    createdAt: '2024-06-01T14:20:00Z',
-    counties: ['Travis'],
-  },
-  {
-    id: '3',
-    email: 'test@firerelay.com',
-    role: 'admin',
-    createdAt: '2024-08-19T09:15:00Z',
-    counties: ['McLennan', 'Harris'],
-  },
-  {
-    id: '4',
-    email: 'evan.mayeux@gmail.com',
-    role: 'admin',
-    createdAt: '2023-11-14T16:45:00Z',
-    counties: ['Travis', 'Wilco', 'McLennan'],
-  },
-];
 
 const ROLE_FILTER_OPTIONS: RoleFilter[] = ['All Roles', 'Admin', 'User'];
 
@@ -224,14 +205,17 @@ const UserListItem = ({
 
 const LeadLogScreen = () => {
   const {isAdmin} = useRole();
+  const {token} = useAuth();
   const openNotifications = useOpenNotifications();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const premium = useMemo(() => createPremium(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const currentEmail =
-    useAppSelector(state => state.user.email) || 'matt.shelton@firerelay.com';
-  const [users, setUsers] = useState<UserRecord[]>(INITIAL_USERS);
+  const currentEmail = useAppSelector(state => state.user.email) ?? '';
+  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [countyOptions, setCountyOptions] = useState<CountyOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const listBottomInset = insets.bottom + TAB_BAR_HEIGHT + hp(2);
   const [searchQuery, setSearchQuery] = useState('');
@@ -329,6 +313,41 @@ const LeadLogScreen = () => {
     animateUserList(filteredUsers);
   }, [filteredUsers]);
 
+  const loadUsers = useCallback(async () => {
+    if (!token || !isAdmin) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [userResults, counties] = await Promise.all([
+        searchUsers(token, {
+          limit: 200,
+          search: searchQuery.trim() || undefined,
+          role:
+            roleFilter === 'All Roles'
+              ? undefined
+              : roleFilter.toLowerCase(),
+        }),
+        listCounties(token),
+      ]);
+      setUsers(userResults);
+      setCountyOptions(counties);
+    } catch (error) {
+      setLoadError(
+        error instanceof ApiError ? error.message : 'Unable to load users.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin, roleFilter, searchQuery, token]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
   const openEditModal = (user: UserRecord) => {
     setEditingUser(user);
     setEditModalVisible(true);
@@ -339,12 +358,56 @@ const LeadLogScreen = () => {
     setEditingUser(null);
   };
 
-  const handleSaveUser = (updated: UserRecord) => {
-    setUsers(prev => prev.map(u => (u.id === updated.id ? updated : u)));
+  const handleSaveUser = async (
+    updated: UserRecord,
+    countyIds: string[],
+  ) => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      const saved = await updateUser(token, updated.id, {
+        email: updated.email,
+        role: updated.role,
+      });
+      await assignUserCounties(token, updated.id, countyIds);
+      const withCounties: UserRecord = {
+        ...saved,
+        counties: countyIds
+          .map(id => countyOptions.find(c => c.id === id)?.name)
+          .filter((name): name is string => Boolean(name)),
+      };
+      setUsers(prev =>
+        prev.map(u => (u.id === updated.id ? withCounties : u)),
+      );
+      closeEditModal();
+    } catch (error) {
+      Alert.alert(
+        'Update failed',
+        error instanceof ApiError ? error.message : 'Unable to update user.',
+      );
+    }
   };
 
-  const handleCreateUser = (user: UserRecord) => {
-    setUsers(prev => [user, ...prev]);
+  const handleCreateUser = async (user: UserRecord) => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      const created = await createUser(token, {
+        email: user.email,
+        role: user.role,
+      });
+      setUsers(prev => [created, ...prev]);
+      setAddModalVisible(false);
+    } catch (error) {
+      Alert.alert(
+        'Create failed',
+        error instanceof ApiError ? error.message : 'Unable to create user.',
+      );
+    }
   };
 
   const handleDeleteUser = (user: UserRecord) => {
@@ -356,8 +419,21 @@ const LeadLogScreen = () => {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {
-          setUsers(prev => prev.filter(u => u.id !== user.id));
+        onPress: async () => {
+          if (!token) {
+            return;
+          }
+          try {
+            await deleteUser(token, user.id);
+            setUsers(prev => prev.filter(u => u.id !== user.id));
+          } catch (error) {
+            Alert.alert(
+              'Delete failed',
+              error instanceof ApiError
+                ? error.message
+                : 'Unable to delete user.',
+            );
+          }
         },
       },
     ]);
@@ -513,9 +589,13 @@ const LeadLogScreen = () => {
         ListFooterComponent={<View style={styles.listFooter} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              No users match your filters.
-            </Text>
+            {loading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={styles.emptyStateText}>
+                {loadError ?? 'No users match your filters.'}
+              </Text>
+            )}
           </View>
         }
       />
@@ -531,6 +611,7 @@ const LeadLogScreen = () => {
           <EditUserModal
             visible={editModalVisible}
             user={editingUser}
+            countyOptions={countyOptions}
             onClose={closeEditModal}
             onSave={handleSaveUser}
           />

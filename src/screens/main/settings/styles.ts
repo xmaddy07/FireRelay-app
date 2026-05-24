@@ -222,63 +222,93 @@ export const createStyles = (colors: AppColors) => {
     // width: wp(60),
     marginTop: hp(1),
   },
-  subscriptionList: {
-    gap: hp(1.5),
+  subscriptionIntro: {
+    gap: hp(1),
+    marginBottom: hp(2.2),
   },
-  subscriptionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: wp(2),
-    padding: wp(4),
+  subscriptionHeroTitle: {
+    fontSize: responsiveSize(22),
+    fontFamily: fonts.bold,
+    color: colors.text,
+    letterSpacing: responsiveSize(-0.2),
+  },
+  subscriptionHeroDesc: {
+    fontSize: responsiveSize(14),
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+    lineHeight: responsiveSize(21),
+    maxWidth: '92%',
+  },
+  subscriptionSummaryChip: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: wp(2),
+    marginTop: hp(0.6),
+    paddingHorizontal: wp(3.2),
+    paddingVertical: hp(0.85),
+    borderRadius: wp(5),
+    backgroundColor: colors.primaryTint,
     borderWidth: 1,
-    borderColor: colors.menuItemBorder,
+    borderColor: colors.primaryBorder,
   },
-  subscriptionContent: {
+  subscriptionSummaryDot: {
+    width: wp(2),
+    height: wp(2),
+    borderRadius: wp(1),
+    backgroundColor: colors.live,
+  },
+  subscriptionSummaryText: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.bold,
+    color: colors.primary,
+    letterSpacing: responsiveSize(0.8),
+    textTransform: 'uppercase',
+  },
+  subscriptionGlassCard: {
+    borderRadius: wp(5),
+    overflow: 'hidden',
+    ...cardShadow,
+  },
+  subscriptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: hp(2.1),
+    paddingHorizontal: wp(4),
+    gap: wp(3),
+  },
+  severityIconBox: {
+    width: wp(11),
+    height: wp(11),
+    borderRadius: wp(2.8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  subscriptionTextBlock: {
     flex: 1,
-    marginRight: wp(4),
+    minWidth: 0,
+    marginRight: wp(1),
   },
   subscriptionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: wp(2),
-    marginBottom: hp(0.6),
+    marginBottom: hp(0.45),
   },
   severityBadge: {
     paddingHorizontal: wp(2.2),
     paddingVertical: hp(0.35),
     borderRadius: wp(1.2),
-  },
-  severityBadgeCritical: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-  },
-  severityBadgeHigh: {
-    backgroundColor: 'rgba(249, 115, 22, 0.15)',
-  },
-  severityBadgeMedium: {
-    backgroundColor: 'rgba(234, 179, 8, 0.18)',
-  },
-  severityBadgeLow: {
-    backgroundColor: 'rgba(148, 163, 184, 0.2)',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   severityBadgeText: {
-    fontSize: responsiveSize(11),
-    fontFamily: fonts.semibold,
-    letterSpacing: responsiveSize(0.2),
-  },
-  severityBadgeTextCritical: {
-    color: '#B91C1C',
-  },
-  severityBadgeTextHigh: {
-    color: '#C2410C',
-  },
-  severityBadgeTextMedium: {
-    color: '#A16207',
-  },
-  severityBadgeTextLow: {
-    color: '#475569',
+    fontSize: responsiveSize(10),
+    fontFamily: fonts.bold,
+    letterSpacing: responsiveSize(0.6),
+    textTransform: 'uppercase',
   },
   subscriptionTitle: {
     color: colors.text,
@@ -290,17 +320,32 @@ export const createStyles = (colors: AppColors) => {
     color: colors.textSecondary,
     fontSize: responsiveSize(13),
     fontFamily: fonts.regular,
-    lineHeight: responsiveSize(18),
+    lineHeight: responsiveSize(19),
+  },
+  subscriptionStatus: {
+    marginTop: hp(0.55),
+    fontSize: responsiveSize(10),
+    fontFamily: fonts.bold,
+    color: colors.live,
+    letterSpacing: responsiveSize(0.7),
+    textTransform: 'uppercase',
+  },
+  subscriptionStatusOff: {
+    color: colors.textMuted,
   },
   saveButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: hp(3),
+    marginTop: hp(3.2),
   },
   savePreferencesButton: {
     marginTop: 0,
     marginVertical: 0,
-    minWidth: wp(44),
+    width: '100%',
+  },
+  errorText: {
+    marginTop: hp(1),
+    color: '#F87171',
+    fontSize: responsiveSize(13),
+    fontFamily: fonts.regular,
   },
 });
 };

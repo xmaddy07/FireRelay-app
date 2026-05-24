@@ -21,3 +21,18 @@ export type ApiErrorBody = {
   error?: string;
   statusCode?: number;
 };
+
+export type ChangePasswordRequest = {
+  oldPassword: string;
+  newPassword: string;
+};
+
+export type ChangeEmailRequest = {
+  newEmail: string;
+};
+
+export type ConfirmEmailChangeRequest = {
+  token: string;
+};
+
+export type UpdateProfileRequest = Record<string, unknown>;

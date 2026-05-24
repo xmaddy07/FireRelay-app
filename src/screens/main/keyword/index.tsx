@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Animated,
   Easing,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
@@ -26,36 +27,53 @@ import {
   createStyles,
   TAB_BAR_HEIGHT,
 } from './styles';
+import {
+  ApiError,
+  createKeyword,
+  deleteKeyword,
+  searchKeywords,
+  updateKeyword,
+} from '../../../api';
+import {useAuth} from '../../../hooks/useAuth';
+import KeywordFiltersBottomSheet from './KeywordFiltersBottomSheet';
 import KeywordFormModal from './KeywordFormModal';
-import type {KeywordRecord} from './types';
+import {applyKeywordFilters, isDefaultKeywordFilters} from './keywordFilters';
+import {
+  DEFAULT_KEYWORD_FILTERS,
+  KEYWORDS_PAGE_SIZE,
+  type KeywordFilters,
+  type KeywordRecord,
+  type KeywordSeverity,
+} from './types';
 
-const INITIAL_KEYWORDS: KeywordRecord[] = [
-  {
-    id: '1',
-    name: 'a lot of smoke',
-    active: true,
-    description: 'medium',
-    descriptionLevel: 'normal',
-    createdAt: '2025-09-21',
-  },
-  {
-    id: '2',
-    name: 'attic fire',
-    active: true,
-    description: 'CRITICAL',
-    descriptionLevel: 'critical',
-    createdAt: '2025-09-21',
-    isCritical: true,
-  },
-  {
-    id: '3',
-    name: 'bell',
-    active: false,
-    description: 'negative',
-    descriptionLevel: 'normal',
-    createdAt: '2025-09-18',
-  },
-];
+const getSeverityStyles = (
+  severity: KeywordSeverity | null,
+  styles: ReturnType<typeof createStyles>,
+) => {
+  switch (severity?.toUpperCase()) {
+    case 'HIGH':
+    case 'CRITICAL':
+      return {
+        badge: [styles.severityBadge, styles.severityBadgeHigh],
+        text: [styles.severityText, styles.severityTextHigh],
+      };
+    case 'MEDIUM':
+      return {
+        badge: [styles.severityBadge, styles.severityBadgeMedium],
+        text: [styles.severityText, styles.severityTextMedium],
+      };
+    case 'LOW':
+      return {
+        badge: [styles.severityBadge, styles.severityBadgeLow],
+        text: [styles.severityText, styles.severityTextLow],
+      };
+    default:
+      return {
+        badge: [styles.severityBadge, styles.severityBadgeDefault],
+        text: [styles.severityText, styles.severityTextDefault],
+      };
+  }
+};
 
 const formatCreatedDate = (iso: string) => {
   const date = new Date(iso);
@@ -85,6 +103,7 @@ const KeywordListItem = ({
   const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const isCritical = item.isCritical || item.descriptionLevel === 'critical';
+  const severityStyles = getSeverityStyles(item.severity, styles);
 
   const entranceStyle = {
     opacity: entranceAnim,
@@ -169,6 +188,14 @@ const KeywordListItem = ({
             >
               {item.active ? 'ACTIVE' : 'INACTIVE'}
             </Text>
+            {item.severity ? (
+              <>
+                <View style={styles.statusDivider} />
+                <View style={severityStyles.badge}>
+                  <Text style={severityStyles.text}>{item.severity}</Text>
+                </View>
+              </>
+            ) : null}
           </View>
 
           <View style={styles.metaRow}>
@@ -202,15 +229,32 @@ const KeywordListItem = ({
 
 const KeywordsScreen = () => {
   const openNotifications = useOpenNotifications();
+  const {token} = useAuth();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const premium = useMemo(() => createPremium(colors), [colors]);
   const insets = useSafeAreaInsets();
 
-  const [keywords, setKeywords] = useState<KeywordRecord[]>(INITIAL_KEYWORDS);
+  const [keywords, setKeywords] = useState<KeywordRecord[]>([]);
+  const [allKeywords, setAllKeywords] = useState<KeywordRecord[]>([]);
+  const [searchResults, setSearchResults] = useState<KeywordRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [searchPage, setSearchPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchTotalCount, setSearchTotalCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [appliedFilters, setAppliedFilters] =
+    useState<KeywordFilters>(DEFAULT_KEYWORD_FILTERS);
   const [editingKeyword, setEditingKeyword] = useState<KeywordRecord | null>(
     null,
   );
@@ -222,18 +266,7 @@ const KeywordsScreen = () => {
   const addButtonPulse = useRef(new Animated.Value(0)).current;
   const addButtonPress = useRef(new Animated.Value(1)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
-
-  const filteredKeywords = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return keywords;
-    }
-    return keywords.filter(
-      keyword =>
-        keyword.name.toLowerCase().includes(query) ||
-        keyword.description.toLowerCase().includes(query),
-    );
-  }, [keywords, searchQuery]);
+  const animatedIdsRef = useRef<Set<string>>(new Set());
 
   const getItemAnim = (id: string) => {
     if (!itemAnimsRef.current[id]) {
@@ -242,15 +275,19 @@ const KeywordsScreen = () => {
     return itemAnimsRef.current[id];
   };
 
-  const animateKeywordList = (items: KeywordRecord[]) => {
-    const anims = items.map(item => {
+  const animateNewKeywordItems = (items: KeywordRecord[]) => {
+    const newItems = items.filter(item => !animatedIdsRef.current.has(item.id));
+    if (newItems.length === 0) {
+      return;
+    }
+
+    const anims = newItems.map(item => {
+      animatedIdsRef.current.add(item.id);
       const anim = getItemAnim(item.id);
       anim.setValue(0);
       return anim;
     });
-    if (anims.length === 0) {
-      return;
-    }
+
     Animated.stagger(
       70,
       anims.map(anim =>
@@ -312,9 +349,323 @@ const KeywordsScreen = () => {
     return () => pulseLoop.stop();
   }, [headerAnim, searchAnim, addButtonAnim, addButtonPulse]);
 
+  const isSearching = debouncedSearch.length > 0;
+  const hasActiveFilters = !isDefaultKeywordFilters(appliedFilters);
+
+  const filterKeywordsByQuery = useCallback(
+    (items: KeywordRecord[], query: string) => {
+      const normalized = query.trim().toLowerCase();
+      if (!normalized) {
+        return items;
+      }
+      return items.filter(
+        keyword =>
+          keyword.name.toLowerCase().includes(normalized) ||
+          (keyword.description !== '—' &&
+            keyword.description.toLowerCase().includes(normalized)) ||
+          (keyword.severity?.toLowerCase().includes(normalized) ?? false),
+      );
+    },
+    [],
+  );
+
+  const clientSearchResults = useMemo(() => {
+    if (!isSearching) {
+      return [];
+    }
+    return filterKeywordsByQuery(allKeywords, debouncedSearch);
+  }, [allKeywords, debouncedSearch, filterKeywordsByQuery, isSearching]);
+
+  const baseDisplayKeywords = useMemo(() => {
+    if (!isSearching) {
+      if (hasActiveFilters && allKeywords.length > 0) {
+        return allKeywords;
+      }
+      return keywords;
+    }
+    const searchSource =
+      searchResults.length > 0
+        ? searchResults
+        : allKeywords.length > 0
+          ? allKeywords
+          : clientSearchResults;
+    return filterKeywordsByQuery(searchSource, debouncedSearch);
+  }, [
+    allKeywords,
+    clientSearchResults,
+    debouncedSearch,
+    filterKeywordsByQuery,
+    hasActiveFilters,
+    isSearching,
+    keywords,
+    searchResults,
+  ]);
+
+  const displayKeywords = useMemo(
+    () => applyKeywordFilters(baseDisplayKeywords, appliedFilters),
+    [appliedFilters, baseDisplayKeywords],
+  );
+
+  const displayHasMore =
+    hasActiveFilters && !isSearching ? false : isSearching ? searchHasMore : hasMore;
+
+  const displayTotalCount = useMemo(() => {
+    if (hasActiveFilters) {
+      return displayKeywords.length;
+    }
+    if (isSearching) {
+      return searchTotalCount > 0
+        ? searchTotalCount
+        : clientSearchResults.length;
+    }
+    return totalCount;
+  }, [
+    clientSearchResults.length,
+    displayKeywords.length,
+    hasActiveFilters,
+    isSearching,
+    searchTotalCount,
+    totalCount,
+  ]);
+
+  const isListLoading = isSearching ? searchLoading : loading;
+
   useEffect(() => {
-    animateKeywordList(filteredKeywords);
-  }, [filteredKeywords]);
+    animateNewKeywordItems(displayKeywords);
+  }, [displayKeywords]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const mergeKeywords = useCallback(
+    (existing: KeywordRecord[], incoming: KeywordRecord[]) => {
+      const map = new Map(existing.map(item => [item.id, item]));
+      incoming.forEach(item => map.set(item.id, item));
+      return Array.from(map.values());
+    },
+    [],
+  );
+
+  const loadAllKeywords = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+    try {
+      const merged: KeywordRecord[] = [];
+      let pageNum = 1;
+      let more = true;
+      const pageSize = 50;
+
+      const seenIds = new Set<string>();
+
+      while (more && pageNum <= 40) {
+        const result = await searchKeywords(token, {
+          page: pageNum,
+          limit: pageSize,
+        });
+        result.items.forEach(item => {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            merged.push(item);
+          }
+        });
+        if (result.totalFromApi && pageNum === 1) {
+          setTotalCount(result.total);
+        }
+        more = result.hasMore;
+        pageNum += 1;
+        if (result.items.length === 0) {
+          break;
+        }
+      }
+
+      setAllKeywords(merged);
+      if (!merged.length) {
+        return;
+      }
+      setTotalCount(prev => (prev > 0 ? prev : merged.length));
+    } catch {
+      // Keep the last known cache when prefetch is unavailable.
+    }
+  }, [token]);
+
+  const loadKeywords = useCallback(
+    async (pageToLoad: number, append: boolean) => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      setLoadError(null);
+
+      try {
+        const result = await searchKeywords(token, {
+          page: pageToLoad,
+          limit: KEYWORDS_PAGE_SIZE,
+        });
+
+        if (!append) {
+          animatedIdsRef.current.clear();
+        }
+
+        setKeywords(prev => {
+          if (!append) {
+            return result.items;
+          }
+          const existingIds = new Set(prev.map(item => item.id));
+          const nextItems = result.items.filter(
+            item => !existingIds.has(item.id),
+          );
+          return [...prev, ...nextItems];
+        });
+        setAllKeywords(current => mergeKeywords(current, result.items));
+        setPage(pageToLoad);
+        setHasMore(result.hasMore);
+        if (result.totalFromApi) {
+          setTotalCount(result.total);
+        }
+      } catch (error) {
+        if (!append) {
+          setKeywords([]);
+        }
+        setLoadError(
+          error instanceof ApiError
+            ? error.message
+            : 'Unable to load keywords.',
+        );
+      } finally {
+        if (append) {
+          setLoadingMore(false);
+        } else {
+          setLoading(false);
+        }
+      }
+    },
+    [mergeKeywords, token],
+  );
+
+  const loadSearchResults = useCallback(
+    async (pageToLoad: number, append: boolean) => {
+      if (!token || !debouncedSearch) {
+        return;
+      }
+
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setSearchLoading(true);
+      }
+      setLoadError(null);
+
+      try {
+        const result = await searchKeywords(token, {
+          page: pageToLoad,
+          limit: KEYWORDS_PAGE_SIZE,
+          search: debouncedSearch,
+        });
+
+        if (!append) {
+          animatedIdsRef.current.clear();
+        }
+
+        setSearchResults(prev => {
+          if (!append) {
+            return result.items;
+          }
+          const existingIds = new Set(prev.map(item => item.id));
+          const nextItems = result.items.filter(
+            item => !existingIds.has(item.id),
+          );
+          return [...prev, ...nextItems];
+        });
+        setAllKeywords(current => mergeKeywords(current, result.items));
+        setSearchPage(pageToLoad);
+        setSearchHasMore(result.hasMore);
+        setSearchTotalCount(
+          result.totalFromApi ? result.total : result.items.length,
+        );
+      } catch (error) {
+        if (!append) {
+          setSearchResults([]);
+        }
+        setLoadError(
+          error instanceof ApiError
+            ? error.message
+            : 'Unable to search keywords.',
+        );
+      } finally {
+        if (append) {
+          setLoadingMore(false);
+        } else {
+          setSearchLoading(false);
+        }
+      }
+    },
+    [debouncedSearch, mergeKeywords, token],
+  );
+
+  useEffect(() => {
+    if (isSearching) {
+      return;
+    }
+    animatedIdsRef.current.clear();
+    setPage(1);
+    setHasMore(true);
+    setSearchResults([]);
+    setSearchTotalCount(0);
+    loadKeywords(1, false);
+  }, [isSearching, loadKeywords]);
+
+  useEffect(() => {
+    if (!isSearching) {
+      return;
+    }
+    animatedIdsRef.current.clear();
+    setSearchPage(1);
+    setSearchHasMore(true);
+    setSearchResults([]);
+    void loadSearchResults(1, false);
+  }, [debouncedSearch, isSearching, loadSearchResults]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    void loadAllKeywords();
+  }, [loadAllKeywords, token]);
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+  };
+
+  const handleLoadMore = useCallback(() => {
+    if (isListLoading || loadingMore || !displayHasMore) {
+      return;
+    }
+    if (isSearching) {
+      void loadSearchResults(searchPage + 1, true);
+      return;
+    }
+    void loadKeywords(page + 1, true);
+  }, [
+    displayHasMore,
+    isListLoading,
+    isSearching,
+    loadKeywords,
+    loadSearchResults,
+    loadingMore,
+    page,
+    searchPage,
+  ]);
 
   const handleEdit = (keyword: KeywordRecord) => {
     setEditingKeyword(keyword);
@@ -327,8 +678,25 @@ const KeywordsScreen = () => {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {
-          setKeywords(prev => prev.filter(k => k.id !== keyword.id));
+        onPress: async () => {
+          if (!token) {
+            return;
+          }
+          try {
+            await deleteKeyword(token, keyword.id);
+            setKeywords(prev => prev.filter(k => k.id !== keyword.id));
+            setAllKeywords(prev => prev.filter(k => k.id !== keyword.id));
+            if (!isSearching) {
+              setTotalCount(prev => Math.max(0, prev - 1));
+            }
+          } catch (error) {
+            Alert.alert(
+              'Delete failed',
+              error instanceof ApiError
+                ? error.message
+                : 'Unable to delete keyword.',
+            );
+          }
         },
       },
     ]);
@@ -343,18 +711,60 @@ const KeywordsScreen = () => {
     setEditingKeyword(null);
   };
 
-  const handleCreateKeyword = (keyword: KeywordRecord) => {
-    setKeywords(prev => [keyword, ...prev]);
+  const handleCreateKeyword = async (keyword: KeywordRecord) => {
+    if (!token) {
+      return;
+    }
+    try {
+      await createKeyword(token, keyword);
+      setAddModalVisible(false);
+      setPage(1);
+      setHasMore(true);
+      await loadKeywords(1, false);
+      await loadAllKeywords();
+    } catch (error) {
+      Alert.alert(
+        'Create failed',
+        error instanceof ApiError ? error.message : 'Unable to create keyword.',
+      );
+    }
   };
 
-  const handleUpdateKeyword = (keyword: KeywordRecord) => {
-    setKeywords(prev =>
-      prev.map(item => (item.id === keyword.id ? keyword : item)),
-    );
+  const handleUpdateKeyword = async (keyword: KeywordRecord) => {
+    if (!token) {
+      return;
+    }
+    try {
+      const updated = await updateKeyword(token, keyword);
+      setKeywords(prev =>
+        prev.map(item => (item.id === keyword.id ? updated : item)),
+      );
+      setAllKeywords(prev =>
+        prev.map(item => (item.id === keyword.id ? updated : item)),
+      );
+      setSearchResults(prev =>
+        prev.map(item => (item.id === keyword.id ? updated : item)),
+      );
+      closeEditModal();
+    } catch (error) {
+      Alert.alert(
+        'Update failed',
+        error instanceof ApiError ? error.message : 'Unable to update keyword.',
+      );
+    }
   };
 
   const handleFilterPress = () => {
-    Alert.alert('Filters', 'Keyword filters — coming soon.');
+    setFilterSheetVisible(true);
+  };
+
+  const handleApplyFilters = (filters: KeywordFilters) => {
+    setAppliedFilters(filters);
+    setLoadError(null);
+    animatedIdsRef.current.clear();
+    if (!isDefaultKeywordFilters(filters) && allKeywords.length === 0 && token) {
+      void loadAllKeywords();
+    }
   };
 
   const headerStyle = {
@@ -472,19 +882,25 @@ const KeywordsScreen = () => {
             placeholder="Search keywords..."
             placeholderTextColor={premium.textMuted}
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearchChange}
             autoCapitalize="none"
             autoCorrect={false}
           />
           <TouchableOpacity
-            style={styles.filterButton}
+            style={[
+              styles.filterButton,
+              hasActiveFilters && styles.filterButtonActive,
+            ]}
             onPress={handleFilterPress}
             activeOpacity={0.8}
             hitSlop={responsiveHitSlop(1.4)}
           >
             <Image
               source={images.filter}
-              style={styles.filterIcon}
+              style={[
+                styles.filterIcon,
+                hasActiveFilters && styles.filterIconActive,
+              ]}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -506,14 +922,36 @@ const KeywordsScreen = () => {
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
+
+      <View style={styles.totalCountRow}>
+        <Text style={styles.totalCountLabel}>
+          {isSearching || hasActiveFilters
+            ? 'Matching Keywords'
+            : 'Total Keywords'}
+        </Text>
+        <Text style={styles.totalCountValue}>
+          {isListLoading && displayTotalCount === 0
+            ? '—'
+            : displayTotalCount.toLocaleString()}
+        </Text>
+      </View>
     </View>
   );
+
+  const listFooter =
+    loadingMore && displayHasMore ? (
+      <View style={styles.loadMoreFooter}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    ) : (
+      <View style={styles.listFooter} />
+    );
 
   return (
     <View style={styles.container}>
       <FlatList
         style={styles.list}
-        data={filteredKeywords}
+        data={displayKeywords}
         keyExtractor={item => item.id}
         renderItem={renderKeywordCard}
         ListHeaderComponent={listHeader}
@@ -523,12 +961,21 @@ const KeywordsScreen = () => {
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        ListFooterComponent={<View style={styles.listFooter} />}
+        ListFooterComponent={listFooter}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.35}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              No keywords match your search.
-            </Text>
+            {isListLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={styles.emptyStateText}>
+                {loadError ??
+                  (isSearching
+                    ? 'No keywords match your search.'
+                    : 'No keywords found.')}
+              </Text>
+            )}
           </View>
         }
       />
@@ -547,6 +994,13 @@ const KeywordsScreen = () => {
         keyword={editingKeyword}
         onClose={closeEditModal}
         onSubmit={handleUpdateKeyword}
+      />
+
+      <KeywordFiltersBottomSheet
+        visible={filterSheetVisible}
+        onClose={() => setFilterSheetVisible(false)}
+        onApply={handleApplyFilters}
+        appliedFilters={appliedFilters}
       />
     </View>
   );

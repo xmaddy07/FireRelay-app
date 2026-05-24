@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   FlatList,
   Pressable,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { createStyles } from './styles';
@@ -22,6 +23,15 @@ import AdvancedFiltersBottomSheet, {
 import LinearGradient from 'react-native-linear-gradient';
 import {images} from '../../../config/constants';
 import { responsiveHitSlop } from '../../../utils/responsive';
+import {
+  addAudioFavorite,
+  ApiError,
+  listCounties,
+  markAudioViewed,
+  removeAudioFavorite,
+  searchAudio,
+} from '../../../api';
+import {useAuth} from '../../../hooks/useAuth';
 import FeedDetailModal from './FeedDetailModal';
 import FeedSnippetText from './FeedSnippetText';
 import {buildFeedDetail, type FeedItem} from './feedTypes';
@@ -48,7 +58,39 @@ type AdvancedFeedFilters = {
   toDate: string;
 };
 
-type County = { name: string; code: string; est: string };
+type County = { id?: string; name: string; code: string; est: string };
+
+const abbreviateCountyLabel = (name: string) => {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return '—';
+  }
+  if (words.length === 1) {
+    return words[0].slice(0, 4).toUpperCase();
+  }
+  return words
+    .map(word => word[0])
+    .join('')
+    .slice(0, 4)
+    .toUpperCase();
+};
+
+const deriveCountiesFromFeed = (items: FeedItem[]): County[] => {
+  const map = new Map<string, County>();
+  items.forEach(item => {
+    const key = item.countyId ?? item.county;
+    if (!key || map.has(key)) {
+      return;
+    }
+    map.set(key, {
+      id: item.countyId,
+      name: item.county,
+      code: abbreviateCountyLabel(item.county),
+      est: '',
+    });
+  });
+  return Array.from(map.values());
+};
 
 const PRIORITY_SEVERITY: Record<string, FeedItem['severity']> = {
   High: 'critical',
@@ -144,111 +186,6 @@ const advancedFiltersToSheet = (
     recordsMatched: 0,
   };
 };
-
-const counties: County[] = [
-  { name: 'Travis', code: 'TX-TRA', est: '1840' },
-  { name: 'Wilco', code: 'TX-WIL', est: '1848' },
-  { name: 'McLennan', code: 'TX-MCL', est: '1850' },
-];
-
-const mockFeedItems: FeedItem[] = [
-  {
-    id: 'f1',
-    county: 'Travis',
-    talkgroup: 'F-COM E. F-COM W.',
-    talkgroupId: '1122 1142',
-    date: '05/20/2026',
-    time: '05:22:29',
-    snippet:
-      'From the structure fire, the first due Engine 7 and arriving unit B1 from the area is still attempting to initiate fire suppression ops. We\'re still having problems with the broken water line but we\'re going to try and fight this fire with what we have.',
-    highlightKeywords: ['structure fire', 'broken water'],
-    type: 'fire',
-    severity: 'critical',
-    starred: false,
-    hasWarning: true,
-    hasSecure: true,
-  },
-  {
-    id: 'f2',
-    county: 'Travis',
-    talkgroup: 'F-COM W. F-COM E.',
-    talkgroupId: '1122 1142',
-    date: '05/20/2026',
-    time: '05:18:10',
-    snippet:
-      'Pulling a rear third line. Scene secure. We have knocked out the fire and our heavy rescue in line 29 is going to be the only unit on scene for a while.',
-    highlightKeywords: [],
-    type: 'fire',
-    severity: 'info',
-    starred: false,
-    hasWarning: true,
-    hasSecure: true,
-  },
-  {
-    id: 'f3',
-    county: 'Travis',
-    talkgroup: 'AFD Locution',
-    talkgroupId: '1147',
-    date: '05/20/2026',
-    time: '05:17:46',
-    snippet:
-      'Engine 23 broken water pipe at 4500 block of Burnet Road. Requesting water department and additional engine company for traffic control.',
-    highlightKeywords: ['broken water'],
-    type: 'fire',
-    severity: 'warning',
-    starred: true,
-    hasWarning: true,
-    hasSecure: true,
-  },
-  {
-    id: 'f4',
-    county: 'Travis',
-    talkgroup: 'AFD Location',
-    talkgroupId: '1147',
-    date: '05/20/2026',
-    time: '05:22:29',
-    snippet:
-      'Medic 4 on scene of a 2-vehicle collision requesting backup for traffic control on I-35 frontage road.',
-    highlightKeywords: [],
-    type: 'medical',
-    severity: 'warning',
-    starred: false,
-    hasWarning: true,
-    hasSecure: true,
-  },
-  {
-    id: 'f5',
-    county: 'Wilco',
-    talkgroup: 'WCSO Dispatch',
-    talkgroupId: '2214',
-    date: '05/20/2026',
-    time: '05:17:46',
-    snippet:
-      'Engine 23 broken water pipe at 4500 block of Burnet Road. Requesting water department response.',
-    highlightKeywords: ['broken water'],
-    type: 'fire',
-    severity: 'warning',
-    starred: false,
-    hasWarning: true,
-    hasSecure: true,
-  },
-  {
-    id: 'f6',
-    county: 'Travis',
-    talkgroup: 'F-COM E. F-COM W.',
-    talkgroupId: '1122 1142',
-    date: '05/20/2026',
-    time: '05:14:02',
-    snippet:
-      'Command advising all units the structure fire is now under control. Rehab sector established on the B side.',
-    highlightKeywords: ['structure fire'],
-    type: 'fire',
-    severity: 'info',
-    starred: true,
-    hasWarning: true,
-    hasSecure: true,
-  },
-];
 
 const CountyCard = ({
   county,
@@ -465,7 +402,9 @@ const FeedListItem = ({
             <Text style={[styles.feedBadgeText, badgeTextStyle]}>{badgeLabel}</Text>
           </View>
           <Text style={styles.feedCountyText} numberOfLines={1}>
-            {item.county.toUpperCase()} COUNTY
+            {/\bcounty\b/i.test(item.county)
+              ? item.county.toUpperCase()
+              : `${item.county.toUpperCase()} COUNTY`}
           </Text>
         </View>
         <View style={styles.feedTimeColumn}>
@@ -511,9 +450,13 @@ const FeedListItem = ({
 
 const CountiesScreen = () => {
   const openNotifications = useOpenNotifications();
+  const {token} = useAuth();
   const {colors, glass} = useTheme();
   const styles = useThemedStyles(createStyles);
-  const [feedItems, setFeedItems] = useState<FeedItem[]>(mockFeedItems);
+  const [counties, setCounties] = useState<County[]>([]);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+  const [feedError, setFeedError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFeedFilters | null>(null);
@@ -521,8 +464,8 @@ const CountiesScreen = () => {
 
   // Entrance animations
   const listEntranceAnim = useRef(new Animated.Value(0)).current;
-  const cardFades = useRef(counties.map(() => new Animated.Value(0))).current;
-  const cardSlides = useRef(counties.map(() => new Animated.Value(24))).current;
+  const cardFades = useRef<Animated.Value[]>([]);
+  const cardSlides = useRef<Animated.Value[]>([]);
   const feedItemAnimsRef = useRef<Record<string, Animated.Value>>({});
   const hasMountedRef = useRef(false);
 
@@ -554,7 +497,94 @@ const CountiesScreen = () => {
     ).start();
   };
 
+  const loadCounties = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      const countyResults = await listCounties(token);
+      const mappedCounties: County[] = countyResults.map(county => ({
+        id: county.id,
+        name: county.name,
+        code: county.code?.trim() || abbreviateCountyLabel(county.name),
+        est: county.established || '',
+      }));
+      setCounties(mappedCounties);
+      cardFades.current = mappedCounties.map(() => new Animated.Value(0));
+      cardSlides.current = mappedCounties.map(() => new Animated.Value(24));
+    } catch (error) {
+      if (__DEV__ && error instanceof ApiError) {
+        console.warn('[API] counties load failed:', error.message);
+      }
+    }
+  }, [token]);
+
+  const loadFeed = useCallback(async () => {
+    if (!token) {
+      setLoadingFeed(false);
+      return;
+    }
+
+    setLoadingFeed(true);
+    setFeedError(null);
+    try {
+      const audioResults = await searchAudio(token, {
+        limit: 100,
+        counties: advancedFilters?.counties.length
+          ? advancedFilters.counties.join(',')
+          : undefined,
+        keywordPriority:
+          advancedFilters?.keywordPriority &&
+          advancedFilters.keywordPriority !== 'All'
+            ? advancedFilters.keywordPriority
+            : undefined,
+        keywords: advancedFilters?.keywords || undefined,
+        talkgroup: advancedFilters?.talkgroup || undefined,
+        fromDate: advancedFilters?.fromDate || undefined,
+        toDate: advancedFilters?.toDate || undefined,
+      });
+
+      setFeedItems(audioResults);
+      setCounties(prev => {
+        const fromFeed = deriveCountiesFromFeed(audioResults);
+        if (fromFeed.length === 0) {
+          return prev;
+        }
+        const map = new Map<string, County>();
+        [...prev, ...fromFeed].forEach(county => {
+          const key = county.id ?? county.name;
+          map.set(key, county);
+        });
+        const merged = Array.from(map.values());
+        cardFades.current = merged.map(() => new Animated.Value(1));
+        cardSlides.current = merged.map(() => new Animated.Value(0));
+        return merged;
+      });
+      animateFeedList(audioResults);
+      hasMountedRef.current = true;
+    } catch (error) {
+      setFeedError(
+        error instanceof ApiError ? error.message : 'Unable to load feed.',
+      );
+    } finally {
+      setLoadingFeed(false);
+    }
+  }, [advancedFilters, token]);
+
   useEffect(() => {
+    loadCounties();
+  }, [loadCounties]);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  useEffect(() => {
+    if (counties.length === 0) {
+      return;
+    }
+
     Animated.sequence([
       Animated.timing(listEntranceAnim, {
         toValue: 1,
@@ -563,7 +593,7 @@ const CountiesScreen = () => {
       }),
       Animated.stagger(
         90,
-        cardFades.map((fade, i) =>
+        cardFades.current.map((fade, i) =>
           Animated.parallel([
             Animated.spring(fade, {
               toValue: 1,
@@ -571,7 +601,7 @@ const CountiesScreen = () => {
               tension: 60,
               useNativeDriver: true,
             }),
-            Animated.spring(cardSlides[i], {
+            Animated.spring(cardSlides.current[i], {
               toValue: 0,
               friction: 7,
               tension: 60,
@@ -580,11 +610,8 @@ const CountiesScreen = () => {
           ]),
         ),
       ),
-    ]).start(() => {
-      animateFeedList(mockFeedItems);
-      hasMountedRef.current = true;
-    });
-  }, []);
+    ]).start();
+  }, [counties.length, listEntranceAnim]);
 
   const handleCountyPress = (county: County) => {
     setAdvancedFilters(prev => {
@@ -598,12 +625,46 @@ const CountiesScreen = () => {
     });
   };
 
-  const handleToggleStar = (itemId: string) => {
+  const handleToggleStar = async (itemId: string) => {
+    if (!token) {
+      return;
+    }
+
+    const target = feedItems.find(item => item.id === itemId);
+    if (!target) {
+      return;
+    }
+
+    const nextStarred = !target.starred;
     setFeedItems(prev =>
       prev.map(item =>
-        item.id === itemId ? { ...item, starred: !item.starred } : item
+        item.id === itemId ? { ...item, starred: nextStarred } : item
       )
     );
+
+    try {
+      if (nextStarred) {
+        await addAudioFavorite(token, itemId);
+      } else {
+        await removeAudioFavorite(token, itemId);
+      }
+    } catch (error) {
+      setFeedItems(prev =>
+        prev.map(item =>
+          item.id === itemId ? { ...item, starred: !nextStarred } : item
+        )
+      );
+      if (__DEV__ && error instanceof ApiError) {
+        console.warn('[API] favorite toggle failed:', error.message);
+      }
+    }
+  };
+
+  const handleFeedPress = (item: FeedItem) => {
+    setSelectedFeedItem(item);
+    if (token) {
+      markAudioViewed(token, item.id).catch(() => undefined);
+    }
   };
 
   const hasAdvancedFilters =
@@ -649,7 +710,7 @@ const CountiesScreen = () => {
       item={item}
       entranceAnim={getFeedItemAnim(item.id)}
       onToggleStar={handleToggleStar}
-      onPress={setSelectedFeedItem}
+      onPress={handleFeedPress}
     />
   );
 
@@ -669,10 +730,10 @@ const CountiesScreen = () => {
       >
         {counties.map((county, index) => (
           <CountyCard
-            key={county.name}
+            key={county.id ?? county.name}
             county={county}
-            fadeAnim={cardFades[index]}
-            slideAnim={cardSlides[index]}
+            fadeAnim={cardFades.current[index] ?? new Animated.Value(1)}
+            slideAnim={cardSlides.current[index] ?? new Animated.Value(0)}
             isSelected={selectedCountyNames.includes(county.name)}
             onPress={() => handleCountyPress(county)}
           />
@@ -742,19 +803,32 @@ const CountiesScreen = () => {
 
         {renderCountiesStrip()}
 
-        <FlatList
-          style={styles.feedList}
-          data={filteredFeed}
-          renderItem={renderFeedItem}
-          keyExtractor={item => item.id}
-          extraData={feedListKey}
-          contentContainerStyle={styles.feedListContent}
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews
-          initialNumToRender={8}
-          maxToRenderPerBatch={6}
-          windowSize={7}
-        />
+        {loadingFeed && feedItems.length === 0 ? (
+          <View style={styles.feedLoading}>
+            <ActivityIndicator color={colors.primary} size="large" />
+          </View>
+        ) : (
+          <FlatList
+            style={styles.feedList}
+            data={filteredFeed}
+            renderItem={renderFeedItem}
+            keyExtractor={item => item.id}
+            extraData={feedListKey}
+            contentContainerStyle={styles.feedListContent}
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews
+            initialNumToRender={8}
+            maxToRenderPerBatch={6}
+            windowSize={7}
+            ListEmptyComponent={
+              <View style={styles.feedEmpty}>
+                <Text style={styles.feedEmptyText}>
+                  {feedError ?? 'No feed items match your filters.'}
+                </Text>
+              </View>
+            }
+          />
+        )}
       </View>
 
       <AdvancedFiltersBottomSheet

@@ -10,6 +10,7 @@ export const routes = {
     feed: 'Feed',
     keywords: 'Keywords',
     leadLog: 'LeadLog',
+    senders: 'Senders',
     settings: 'Settings',
   },
 } as const;

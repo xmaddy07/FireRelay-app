@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import Sound from 'react-native-sound';
+import {getAudioFileUrl} from '../../../api';
 import {getFeedAudioUri} from '../../../assets/audio';
 import type {PlaybackSpeed} from './PlaybackSpeedControl';
 
@@ -10,6 +11,8 @@ const POSITION_POLL_MS = 250;
 export const useFeedAudioPlayer = (
   visible: boolean,
   itemId: string | undefined,
+  audioFilename?: string,
+  audioUrl?: string,
 ) => {
   const soundRef = useRef<Sound | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -37,7 +40,9 @@ export const useFeedAudioPlayer = (
       return;
     }
 
-    const uri = getFeedAudioUri(itemId);
+    const uri =
+      audioUrl ??
+      (audioFilename ? getAudioFileUrl(audioFilename) : getFeedAudioUri(itemId));
     if (!uri) {
       return;
     }
@@ -67,7 +72,7 @@ export const useFeedAudioPlayer = (
     });
 
     return releaseSound;
-  }, [visible, itemId, releaseSound]);
+  }, [visible, itemId, audioFilename, audioUrl, releaseSound]);
 
   useEffect(() => {
     if (!visible || !isLoaded) {

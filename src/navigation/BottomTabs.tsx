@@ -6,6 +6,7 @@ import {
 } from '@react-navigation/bottom-tabs';
 import LeadLogScreen from '../screens/main/leadLog';
 import KeywordsScreen from '../screens/main/keyword';
+import SendersScreen from '../screens/main/senders';
 import {TAB_BAR_HEIGHT} from '../utils/responsive';
 import {useRole} from '../hooks/useRole';
 import AndroidTabBar from './AndroidTabBar';
@@ -37,6 +38,7 @@ const AndroidTabNavigator = ({isAdmin}: {isAdmin: boolean}) => {
         <>
           <AndroidTab.Screen name="LeadLog" component={LeadLogScreen} />
           <AndroidTab.Screen name="Keywords" component={KeywordsScreen} />
+          <AndroidTab.Screen name="Senders" component={SendersScreen} />
         </>
       ) : null}
       <AndroidTab.Screen name="Settings" component={SettingsStackNavigator} />
