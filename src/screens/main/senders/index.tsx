@@ -23,6 +23,8 @@ import {
   ApiError,
   createSender,
   deleteSender,
+  getSenderById,
+  listSenders,
   regenerateSenderToken,
   searchSenders,
   updateSender,
@@ -72,6 +74,7 @@ type StatCardProps = {
 type SenderListItemProps = {
   item: SenderRecord;
   entranceAnim: Animated.Value;
+  editLoading: boolean;
   onRegenerate: (sender: SenderRecord) => void;
   onEdit: (sender: SenderRecord) => void;
   onDelete: (sender: SenderRecord) => void;
@@ -111,6 +114,7 @@ const StatCard = ({
 const SenderListItem = ({
   item,
   entranceAnim,
+  editLoading,
   onRegenerate,
   onEdit,
   onDelete,
@@ -248,11 +252,20 @@ const SenderListItem = ({
               style={[styles.cardActionButton, styles.cardActionEdit]}
               onPress={() => onEdit(item)}
               activeOpacity={0.75}
+              disabled={editLoading}
             >
-              <Icon name="edit-2" size={13} color="#059669" />
-              <Text style={[styles.cardActionText, styles.cardActionTextEdit]}>
-                Edit
-              </Text>
+              {editLoading ? (
+                <ActivityIndicator size="small" color="#059669" />
+              ) : (
+                <>
+                  <Icon name="edit-2" size={13} color="#059669" />
+                  <Text
+                    style={[styles.cardActionText, styles.cardActionTextEdit]}
+                  >
+                    Edit
+                  </Text>
+                </>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.cardActionButton, styles.cardActionDelete]}
@@ -275,7 +288,7 @@ const SenderListItem = ({
 
 const SendersScreen = () => {
   const openNotifications = useOpenNotifications();
-  const {token} = useAuth();
+  const {token, isAuthenticated} = useAuth();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const premium = useMemo(() => createPremium(colors), [colors]);
@@ -290,6 +303,7 @@ const SendersScreen = () => {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingSender, setEditingSender] = useState<SenderRecord | null>(null);
+  const [editLoadingId, setEditLoadingId] = useState<string | null>(null);
 
   const listBottomInset = insets.bottom + TAB_BAR_HEIGHT + hp(2);
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -314,8 +328,7 @@ const SendersScreen = () => {
       const matchesSearch =
         !query ||
         sender.name.toLowerCase().includes(query) ||
-        sender.email?.toLowerCase().includes(query) ||
-        sender.domain?.toLowerCase().includes(query);
+        sender.description?.toLowerCase().includes(query);
       const matchesStatus = !status || sender.status === status;
       return matchesSearch && matchesStatus;
     });
@@ -386,8 +399,9 @@ const SendersScreen = () => {
   }, [visibleSenders]);
 
   const loadSenders = useCallback(async () => {
-    if (!token) {
+    if (!isAuthenticated) {
       setLoading(false);
+      setLoadError('Please sign in to view senders.');
       return;
     }
 
@@ -395,11 +409,16 @@ const SendersScreen = () => {
     setLoadError(null);
     try {
       const status = filterToStatus(statusFilter);
-      const results = await searchSenders(token, {
+      const params = {
         limit: 200,
         search: searchQuery.trim() || undefined,
         status: status ?? undefined,
-      });
+      };
+
+      let results = await listSenders(token, params);
+      if (results.length === 0) {
+        results = await searchSenders(token, params);
+      }
       setSenders(results);
     } catch (error) {
       setLoadError(
@@ -408,7 +427,7 @@ const SendersScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, statusFilter, token]);
+  }, [isAuthenticated, searchQuery, statusFilter, token]);
 
   useEffect(() => {
     loadSenders();
@@ -423,9 +442,25 @@ const SendersScreen = () => {
     );
   }, [filteredSenders.length, hasMore]);
 
-  const handleEdit = (sender: SenderRecord) => {
-    setEditingSender(sender);
-    setEditModalVisible(true);
+  const handleEdit = async (sender: SenderRecord) => {
+    if (!isAuthenticated) {
+      return;
+    }
+    setEditLoadingId(sender.id);
+    try {
+      const fresh = await getSenderById(token, sender.id);
+      setEditingSender(fresh);
+      setEditModalVisible(true);
+    } catch (error) {
+      Alert.alert(
+        'Unable to load sender',
+        error instanceof ApiError
+          ? error.message
+          : 'Could not fetch sender details.',
+      );
+    } finally {
+      setEditLoadingId(null);
+    }
   };
 
   const handleDelete = (sender: SenderRecord) => {
@@ -435,7 +470,7 @@ const SendersScreen = () => {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          if (!token) {
+          if (!isAuthenticated) {
             return;
           }
           try {
@@ -463,13 +498,14 @@ const SendersScreen = () => {
         {
           text: 'Regenerate',
           onPress: async () => {
-            if (!token) {
+            if (!isAuthenticated) {
               return;
             }
             try {
-              const updated = await regenerateSenderToken(token, sender.id);
+              await regenerateSenderToken(token, sender.id);
+              const fresh = await getSenderById(token, sender.id);
               setSenders(prev =>
-                prev.map(item => (item.id === sender.id ? updated : item)),
+                prev.map(item => (item.id === sender.id ? fresh : item)),
               );
             } catch (error) {
               Alert.alert(
@@ -500,12 +536,12 @@ const SendersScreen = () => {
   };
 
   const handleCreateSender = async (sender: SenderRecord) => {
-    if (!token) {
+    if (!isAuthenticated) {
       return;
     }
     try {
-      const created = await createSender(token, sender);
-      setSenders(prev => [created, ...prev]);
+      await createSender(token, sender);
+      await loadSenders();
       setAddModalVisible(false);
     } catch (error) {
       Alert.alert(
@@ -516,13 +552,14 @@ const SendersScreen = () => {
   };
 
   const handleUpdateSender = async (sender: SenderRecord) => {
-    if (!token) {
+    if (!isAuthenticated) {
       return;
     }
     try {
-      const updated = await updateSender(token, sender);
+      await updateSender(token, sender);
+      const fresh = await getSenderById(token, sender.id);
       setSenders(prev =>
-        prev.map(item => (item.id === sender.id ? updated : item)),
+        prev.map(item => (item.id === sender.id ? fresh : item)),
       );
       closeEditModal();
     } catch (error) {
@@ -561,6 +598,7 @@ const SendersScreen = () => {
     <SenderListItem
       item={item}
       entranceAnim={getItemAnim(item.id)}
+      editLoading={editLoadingId === item.id}
       onRegenerate={handleRegenerate}
       onEdit={handleEdit}
       onDelete={handleDelete}
@@ -659,7 +697,7 @@ const SendersScreen = () => {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search senders by name, email or domain..."
+            placeholder="Search senders by name or description..."
             placeholderTextColor={premium.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -669,7 +707,6 @@ const SendersScreen = () => {
         </View>
 
         <View style={styles.filterRow}>
-          <Text style={styles.statusFilterLabel}>Status</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -747,7 +784,12 @@ const SendersScreen = () => {
               <ActivityIndicator color={colors.primary} />
             ) : (
               <Text style={styles.emptyStateText}>
-                {loadError ?? 'No senders match your search.'}
+                {loadError ??
+                  (senders.length === 0 &&
+                  !searchQuery.trim() &&
+                  statusFilter === 'All Status'
+                    ? 'No senders yet. Tap Add Sender to create one.'
+                    : 'No senders match your search.')}
               </Text>
             )}
           </View>

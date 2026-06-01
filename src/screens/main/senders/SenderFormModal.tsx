@@ -28,15 +28,6 @@ const STATUS_OPTIONS: {label: string; value: SenderStatus}[] = [
   {label: 'Disabled', value: 'disabled'},
 ];
 
-const generateToken = () => {
-  const chars = '0123456789abcdef';
-  let token = '';
-  for (let i = 0; i < 32; i += 1) {
-    token += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return token;
-};
-
 const SenderFormModal = ({
   visible,
   mode,
@@ -49,7 +40,6 @@ const SenderFormModal = ({
   const s = useThemedStyles(createSenderModalStyles);
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<SenderStatus>('active');
 
@@ -64,13 +54,11 @@ const SenderFormModal = ({
     }
     if (isEdit && sender) {
       setName(sender.name);
-      setEmail(sender.email ?? '');
       setDescription(sender.description ?? '');
       setStatus(sender.status);
       return;
     }
     setName('');
-    setEmail('');
     setDescription('');
     setStatus('active');
   }, [visible, isEdit, sender]);
@@ -81,32 +69,18 @@ const SenderFormModal = ({
       return;
     }
 
-    const trimmedEmail = email.trim();
-    const domain = trimmedEmail.includes('@')
-      ? trimmedEmail.split('@')[1]
-      : undefined;
+    const payload: SenderRecord = {
+      id: sender?.id ?? '',
+      name: trimmedName,
+      description: description.trim() || undefined,
+      status,
+      token: sender?.token ?? '',
+      createdAt: sender?.createdAt ?? new Date().toISOString(),
+      email: sender?.email,
+      domain: sender?.domain,
+    };
 
-    if (isEdit && sender) {
-      onSubmit({
-        ...sender,
-        name: trimmedName,
-        email: trimmedEmail || undefined,
-        domain,
-        description: description.trim() || undefined,
-        status,
-      });
-    } else {
-      onSubmit({
-        id: `sender-${Date.now()}`,
-        name: trimmedName,
-        email: trimmedEmail || undefined,
-        domain,
-        description: description.trim() || undefined,
-        status,
-        token: generateToken(),
-        createdAt: new Date().toISOString().slice(0, 10),
-      });
-    }
+    onSubmit(payload);
     onClose();
   };
 
@@ -142,18 +116,6 @@ const SenderFormModal = ({
                 placeholder="Enter sender name"
                 placeholderTextColor={premium.textMuted}
                 autoCapitalize="words"
-              />
-
-              <Text style={s.fieldLabel}>Email</Text>
-              <TextInput
-                style={s.textInput}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="sender@domain.com"
-                placeholderTextColor={premium.textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
               />
 
               <Text style={s.fieldLabel}>Status</Text>
@@ -223,5 +185,3 @@ const SenderFormModal = ({
 };
 
 export default SenderFormModal;
-
-export {generateToken};

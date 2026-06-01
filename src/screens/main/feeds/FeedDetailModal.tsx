@@ -121,7 +121,7 @@ const FeedDetailModal = ({visible, item, detail, onClose}: Props) => {
                 colors={[...colors.playerGradient]}
                 start={{x: 0, y: 0}}
                 end={{x: 0.5, y: 1}}
-                style={StyleSheet.absoluteFill}
+                style={[StyleSheet.absoluteFill, {borderRadius: wp(4) - 1}]}
                 pointerEvents="none"
               />
               <View style={styles.playerCardContent}>

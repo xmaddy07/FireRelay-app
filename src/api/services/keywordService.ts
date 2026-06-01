@@ -34,8 +34,6 @@ export async function searchKeywords(
     page,
     limit,
     search: searchTerm,
-    q: searchTerm,
-    keyword: searchTerm,
   });
   const payload = await authorizedRequest<unknown>(
     token,

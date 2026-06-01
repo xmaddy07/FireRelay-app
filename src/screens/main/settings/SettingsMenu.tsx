@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, TouchableOpacity, Image} from 'react-native';
+import {View, Text, TouchableOpacity, Image, Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {images} from '../../../config/constants';
@@ -50,17 +50,34 @@ const SettingsMenu = () => {
   const [bellRing, setBellRing] = useState(0);
   const [moonPulse, setMoonPulse] = useState(0);
 
-  const handleLogout = async () => {
-    try {
-      await logout(token);
-    } catch (error) {
-      if (__DEV__ && error instanceof ApiError) {
-        console.warn('[API] logout failed:', error.message);
-      }
-    } finally {
-      dispatch(authActions.logout());
-      dispatch(userActions.clearUser());
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout(token);
+            } catch (error) {
+              if (__DEV__ && error instanceof ApiError) {
+                console.warn('[API] logout failed:', error.message);
+              }
+            } finally {
+              dispatch(authActions.logout());
+              dispatch(userActions.clearUser());
+            }
+          },
+        },
+      ],
+      {cancelable: true},
+    );
   };
 
   const handlePushToggle = (next: boolean) => {

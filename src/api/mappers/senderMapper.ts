@@ -1,6 +1,6 @@
 import type {SenderRecord, SenderStatus} from '../../screens/main/senders/types';
-import type {ApiSender} from '../types/sender';
-import {pickString} from '../utils';
+import type {ApiSender, CreateSenderPayload} from '../types/sender';
+import {pickBoolean, pickString} from '../utils';
 
 const mapStatus = (status?: string): SenderStatus => {
   const normalized = (status ?? 'active').toLowerCase();
@@ -10,6 +10,20 @@ const mapStatus = (status?: string): SenderStatus => {
   return 'active';
 };
 
+const mapStatusFromApi = (record: Record<string, unknown>): SenderStatus => {
+  const status = pickString(record, ['status']);
+  if (status) {
+    return mapStatus(status);
+  }
+  const isActive = pickBoolean(record, ['isActive', 'is_active']);
+  if (isActive === false) {
+    return 'inactive';
+  }
+  return 'active';
+};
+
+const statusToIsActive = (status: SenderStatus): boolean => status === 'active';
+
 export const mapSenderToRecord = (sender: ApiSender): SenderRecord => {
   const record = sender as Record<string, unknown>;
   const email = pickString(record, ['email']);
@@ -18,11 +32,11 @@ export const mapSenderToRecord = (sender: ApiSender): SenderRecord => {
     (email?.includes('@') ? email.split('@')[1] : undefined);
 
   return {
-    id: sender.id,
+    id: pickString(record, ['id', '_id']) ?? '',
     name: pickString(record, ['name']) ?? 'Unnamed sender',
     email,
     domain,
-    status: mapStatus(pickString(record, ['status'])),
+    status: mapStatusFromApi(record),
     token:
       pickString(record, ['token', 'apiToken']) ?? '',
     description: pickString(record, ['description']),
@@ -32,11 +46,12 @@ export const mapSenderToRecord = (sender: ApiSender): SenderRecord => {
   };
 };
 
-export const mapRecordToCreatePayload = (sender: SenderRecord) => ({
+export const mapRecordToCreatePayload = (
+  sender: SenderRecord,
+): CreateSenderPayload => ({
   name: sender.name,
-  email: sender.email,
   description: sender.description,
-  status: sender.status,
+  isActive: statusToIsActive(sender.status),
 });
 
 export const mapRecordToUpdatePayload = (sender: SenderRecord) =>

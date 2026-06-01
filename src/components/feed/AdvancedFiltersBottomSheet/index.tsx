@@ -15,8 +15,23 @@ import { createStyles } from './styles';
 import { useTheme, useThemedStyles } from '../../../config/theme';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Octicons from 'react-native-vector-icons/Octicons';
+import { useAuth } from '../../../hooks/useAuth';
+import { searchAudioWithPagination } from '../../../api';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const convertToApiDate = (displayDate: string): string | undefined => {
+  if (!displayDate) {
+    return undefined;
+  }
+  const parts = displayDate.split(' ');
+  const datePart = parts[0];
+  const timePart = parts[1] || '00:00';
+  const [d, m, y] = datePart.split('/').map(Number);
+  const [hr, min] = timePart.split(':').map(Number);
+  const date = new Date(y, m - 1, d, hr, min);
+  return isNaN(date.getTime()) ? undefined : date.toISOString();
+};
 
 export type FilterState = {
   counties: string[];
@@ -37,7 +52,7 @@ const DEFAULT_FILTER_STATE: FilterState = {
   keywords: '',
   talkgroup: '',
   alertStatus: 'Flagged',
-  recordsMatched: 1088,
+  recordsMatched: 0,
 };
 
 type AppliedFilters = Omit<FilterState, 'alertStatus' | 'recordsMatched'>;
@@ -47,6 +62,7 @@ type Props = {
   onClose: () => void;
   onApply?: (filters: FilterState) => void;
   appliedFilters?: AppliedFilters | null;
+  availableCounties?: string[];
 };
 
 const AdvancedFiltersBottomSheet = ({
@@ -54,8 +70,9 @@ const AdvancedFiltersBottomSheet = ({
   onClose,
   onApply,
   appliedFilters,
+  availableCounties = [],
 }: Props) => {
-  const {colors, glass, isDark} = useTheme();
+  const {colors, isDark} = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
@@ -69,6 +86,49 @@ const AdvancedFiltersBottomSheet = ({
   // Date picker state
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [activeDateField, setActiveDateField] = useState<'fromDate' | 'toDate'>('fromDate');
+
+  const { token } = useAuth();
+  const [loadingCount, setLoadingCount] = useState(false);
+
+  useEffect(() => {
+    if (!visible || !token) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingCount(true);
+      try {
+        const result = await searchAudioWithPagination(token, {
+          limit: 1, // Only need the total count
+          counties: filters.counties.length ? filters.counties.join(',') : undefined,
+          keywordPriority: filters.keywordPriority && filters.keywordPriority !== 'All' ? filters.keywordPriority : undefined,
+          keywords: filters.keywords || undefined,
+          talkgroup: filters.talkgroup || undefined,
+          fromDate: convertToApiDate(filters.fromDate) || undefined,
+          toDate: convertToApiDate(filters.toDate) || undefined,
+        });
+        setFilters(prev => ({
+          ...prev,
+          recordsMatched: result.total,
+        }));
+      } catch (error) {
+        console.warn('Failed to update records matched count:', error);
+      } finally {
+        setLoadingCount(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    visible,
+    token,
+    filters.counties,
+    filters.keywordPriority,
+    filters.keywords,
+    filters.talkgroup,
+    filters.fromDate,
+    filters.toDate,
+  ]);
 
   useEffect(() => {
     if (visible) {
@@ -200,9 +260,15 @@ const AdvancedFiltersBottomSheet = ({
 
               {/* Records matched info */}
               <View style={styles.recordsInfoContainer}>
-                <Text style={styles.recordsMatchedText}>
-                  {filters.recordsMatched.toLocaleString()} RECORDS MATCHED
-                </Text>
+                {loadingCount ? (
+                  <Text style={styles.recordsMatchedTextCalculating}>
+                    CALCULATING...
+                  </Text>
+                ) : (
+                  <Text style={styles.recordsMatchedText}>
+                    {filters.recordsMatched.toLocaleString()} RECORDS MATCHED
+                  </Text>
+                )}
               </View>
 
               <ScrollView
@@ -247,7 +313,7 @@ const AdvancedFiltersBottomSheet = ({
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>County</Text>
                   <View style={styles.presetsContainer}>
-                    {['Travis', 'Wilco', 'McLennan'].map(countyName => {
+                    {availableCounties.map(countyName => {
                       const isActive = filters.counties.includes(countyName);
                       return (
                         <TouchableOpacity

@@ -3,6 +3,9 @@ import type {ApiAudio} from '../types/audio';
 import {authorizedRequest, unwrapList} from '../utils';
 
 const extractAudioId = (entry: unknown): string | undefined => {
+  if (typeof entry === 'string') {
+    return entry;
+  }
   if (!entry || typeof entry !== 'object') {
     return undefined;
   }
@@ -10,6 +13,9 @@ const extractAudioId = (entry: unknown): string | undefined => {
   const record = entry as Record<string, unknown>;
   if (typeof record.audioId === 'string') {
     return record.audioId;
+  }
+  if (typeof record.audio_id === 'string') {
+    return record.audio_id;
   }
   if (typeof record.id === 'string') {
     return record.id;

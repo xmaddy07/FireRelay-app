@@ -11,6 +11,7 @@ import {
   Easing,
   Image,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
@@ -265,6 +266,7 @@ const KeywordsScreen = () => {
   const addButtonAnim = useRef(new Animated.Value(0)).current;
   const addButtonPulse = useRef(new Animated.Value(0)).current;
   const addButtonPress = useRef(new Animated.Value(1)).current;
+  const filterToClearAnim = useRef(new Animated.Value(0)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
   const animatedIdsRef = useRef<Set<string>>(new Set());
 
@@ -349,32 +351,43 @@ const KeywordsScreen = () => {
     return () => pulseLoop.stop();
   }, [headerAnim, searchAnim, addButtonAnim, addButtonPulse]);
 
+  const hasSearchText = searchQuery.length > 0;
+  useEffect(() => {
+    Animated.timing(filterToClearAnim, {
+      toValue: hasSearchText ? 1 : 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [hasSearchText, filterToClearAnim]);
+
+  const filterOpacity = filterToClearAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+  const filterScale = filterToClearAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.3],
+  });
+  const filterRotate = filterToClearAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-90deg'],
+  });
+
+  const clearOpacity = filterToClearAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+  const clearScale = filterToClearAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 1],
+  });
+  const clearRotate = filterToClearAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['90deg', '0deg'],
+  });
+
   const isSearching = debouncedSearch.length > 0;
   const hasActiveFilters = !isDefaultKeywordFilters(appliedFilters);
-
-  const filterKeywordsByQuery = useCallback(
-    (items: KeywordRecord[], query: string) => {
-      const normalized = query.trim().toLowerCase();
-      if (!normalized) {
-        return items;
-      }
-      return items.filter(
-        keyword =>
-          keyword.name.toLowerCase().includes(normalized) ||
-          (keyword.description !== '—' &&
-            keyword.description.toLowerCase().includes(normalized)) ||
-          (keyword.severity?.toLowerCase().includes(normalized) ?? false),
-      );
-    },
-    [],
-  );
-
-  const clientSearchResults = useMemo(() => {
-    if (!isSearching) {
-      return [];
-    }
-    return filterKeywordsByQuery(allKeywords, debouncedSearch);
-  }, [allKeywords, debouncedSearch, filterKeywordsByQuery, isSearching]);
 
   const baseDisplayKeywords = useMemo(() => {
     if (!isSearching) {
@@ -383,18 +396,9 @@ const KeywordsScreen = () => {
       }
       return keywords;
     }
-    const searchSource =
-      searchResults.length > 0
-        ? searchResults
-        : allKeywords.length > 0
-          ? allKeywords
-          : clientSearchResults;
-    return filterKeywordsByQuery(searchSource, debouncedSearch);
+    return searchResults;
   }, [
     allKeywords,
-    clientSearchResults,
-    debouncedSearch,
-    filterKeywordsByQuery,
     hasActiveFilters,
     isSearching,
     keywords,
@@ -414,13 +418,10 @@ const KeywordsScreen = () => {
       return displayKeywords.length;
     }
     if (isSearching) {
-      return searchTotalCount > 0
-        ? searchTotalCount
-        : clientSearchResults.length;
+      return searchTotalCount;
     }
     return totalCount;
   }, [
-    clientSearchResults.length,
     displayKeywords.length,
     hasActiveFilters,
     isSearching,
@@ -686,7 +687,10 @@ const KeywordsScreen = () => {
             await deleteKeyword(token, keyword.id);
             setKeywords(prev => prev.filter(k => k.id !== keyword.id));
             setAllKeywords(prev => prev.filter(k => k.id !== keyword.id));
-            if (!isSearching) {
+            setSearchResults(prev => prev.filter(k => k.id !== keyword.id));
+            if (isSearching) {
+              setSearchTotalCount(prev => Math.max(0, prev - 1));
+            } else {
               setTotalCount(prev => Math.max(0, prev - 1));
             }
           } catch (error) {
@@ -718,9 +722,15 @@ const KeywordsScreen = () => {
     try {
       await createKeyword(token, keyword);
       setAddModalVisible(false);
-      setPage(1);
-      setHasMore(true);
-      await loadKeywords(1, false);
+      if (isSearching) {
+        setSearchPage(1);
+        setSearchHasMore(true);
+        await loadSearchResults(1, false);
+      } else {
+        setPage(1);
+        setHasMore(true);
+        await loadKeywords(1, false);
+      }
       await loadAllKeywords();
     } catch (error) {
       Alert.alert(
@@ -886,24 +896,60 @@ const KeywordsScreen = () => {
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <TouchableOpacity
+          <View
             style={[
               styles.filterButton,
-              hasActiveFilters && styles.filterButtonActive,
+              hasActiveFilters && !hasSearchText && styles.filterButtonActive,
+              { overflow: 'hidden' }
             ]}
-            onPress={handleFilterPress}
-            activeOpacity={0.8}
-            hitSlop={responsiveHitSlop(1.4)}
           >
-            <Image
-              source={images.filter}
+            <Animated.View
               style={[
-                styles.filterIcon,
-                hasActiveFilters && styles.filterIconActive,
+                StyleSheet.absoluteFill,
+                {
+                  opacity: filterOpacity,
+                  transform: [{ scale: filterScale }, { rotate: filterRotate }],
+                },
               ]}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+              pointerEvents={hasSearchText ? 'none' : 'auto'}
+            >
+              <TouchableOpacity
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                onPress={handleFilterPress}
+                activeOpacity={0.8}
+                hitSlop={responsiveHitSlop(1.4)}
+              >
+                <Image
+                  source={images.filter}
+                  style={[
+                    styles.filterIcon,
+                    hasActiveFilters && styles.filterIconActive,
+                  ]}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </Animated.View>
+
+            <Animated.View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  opacity: clearOpacity,
+                  transform: [{ scale: clearScale }, { rotate: clearRotate }],
+                },
+              ]}
+              pointerEvents={hasSearchText ? 'auto' : 'none'}
+            >
+              <TouchableOpacity
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                onPress={() => handleSearchChange('')}
+                activeOpacity={0.8}
+                hitSlop={responsiveHitSlop(1.4)}
+              >
+                <Icon name="x" size={18} color={premium.textMuted} />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </View>
 
         <Animated.View style={[styles.addButtonWrap, addButtonStyle]}>

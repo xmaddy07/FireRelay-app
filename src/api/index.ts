@@ -16,7 +16,13 @@ export {
   confirmEmailChange,
 } from './services/authService';
 
-export {searchAudio, getAudioById, getAudioContext} from './services/audioService';
+export {
+  searchAudio,
+  getAudioById,
+  getAudioContext,
+  searchAudioWithPagination,
+  type AudioSearchResult,
+} from './services/audioService';
 export {
   addAudioFavorite,
   getFavoriteAudioIds,
@@ -34,7 +40,9 @@ export {
 } from './services/keywordService';
 
 export {
+  listSenders,
   searchSenders,
+  getSenderById,
   createSender,
   updateSender,
   deleteSender,
