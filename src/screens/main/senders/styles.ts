@@ -219,12 +219,6 @@ export const createStyles = (colors: AppColors) => {
       alignItems: 'center',
       gap: wp(2),
     },
-    statusFilterLabel: {
-      fontSize: responsiveSize(12),
-      fontFamily: fonts.semibold,
-      color: premium.textMuted,
-      flexShrink: 0,
-    },
     statusChipsScroll: {
       flex: 1,
     },

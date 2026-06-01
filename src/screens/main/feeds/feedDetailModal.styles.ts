@@ -55,7 +55,6 @@ export const createFeedDetailModalStyles = (colors: AppColors) =>
       position: 'relative',
       borderRadius: wp(4),
       marginBottom: hp(1.6),
-      overflow: 'hidden',
       borderWidth: 1,
       borderColor: colors.primaryBorder,
       width: '100%',

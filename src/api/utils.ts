@@ -30,10 +30,9 @@ export async function authorizedRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const authToken = requireToken(token);
   const {data} = await apiRequestWithAuth<T>(path, {
     ...options,
-    token: authToken,
+    token,
   });
   return data;
 }
@@ -56,7 +55,12 @@ export const unwrapList = <T>(payload: unknown): T[] => {
   }
 
   const list =
-    record.data ?? record.items ?? record.results ?? record.keywords;
+    record.data ??
+    record.items ??
+    record.results ??
+    record.keywords ??
+    record.senders ??
+    record.users;
   if (Array.isArray(list)) {
     return list as T[];
   }
@@ -65,6 +69,21 @@ export const unwrapList = <T>(payload: unknown): T[] => {
   }
 
   return [];
+};
+
+export const unwrapEntity = <T>(payload: unknown): T => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return payload as T;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const nested =
+    record.data ?? record.sender ?? record.item ?? record.result;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    return nested as T;
+  }
+
+  return payload as T;
 };
 
 export type UnwrappedPagination<T> = {

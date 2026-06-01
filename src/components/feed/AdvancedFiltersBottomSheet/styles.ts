@@ -74,6 +74,13 @@ export const createStyles = (colors: AppColors) =>
       letterSpacing: responsiveSize(0.5),
       fontFamily: fonts.semibold,
     },
+    recordsMatchedTextCalculating: {
+      fontSize: responsiveSize(12),
+      color: colors.textSecondary,
+      letterSpacing: responsiveSize(0.5),
+      fontFamily: fonts.semibold,
+      opacity: 0.6,
+    },
     scrollContainer: {
       paddingHorizontal: wp(4),
       maxHeight: '70%',

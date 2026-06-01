@@ -2,16 +2,17 @@ import React, {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {Alert, Text} from 'react-native';
+import {Text} from 'react-native';
 import {Input, Button} from '../../../components';
 import {ApiError, changePassword} from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
 import {createStyles} from './styles';
 import {useThemedStyles} from '../../../config/theme';
 import SettingsScreenLayout from './SettingsScreenLayout';
+import SuccessPopup from './components/SuccessPopup';
 
 const validationSchema = Yup.object().shape({
-  oldPassword: Yup.string().required('Old password is required'),
+  currentPassword: Yup.string().required('Current password is required'),
   newPassword: Yup.string()
     .min(6, 'New password must be at least 6 characters')
     .required('New password is required'),
@@ -25,10 +26,11 @@ const PasswordSettings = () => {
   const styles = useThemedStyles(createStyles);
   const {token} = useAuth();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const formik = useFormik({
     initialValues: {
-      oldPassword: '',
+      currentPassword: '',
       newPassword: '',
       confirmPassword: '',
     },
@@ -42,11 +44,11 @@ const PasswordSettings = () => {
       setSubmitError(null);
       try {
         await changePassword(token, {
-          oldPassword: values.oldPassword,
+          currentPassword: values.currentPassword,
           newPassword: values.newPassword,
         });
-        Alert.alert('Password updated', 'Your password has been changed.');
         resetForm();
+        setShowSuccess(true);
       } catch (error) {
         setSubmitError(
           error instanceof ApiError
@@ -68,16 +70,16 @@ const PasswordSettings = () => {
       <Text style={styles.sectionTitle}>Change Password</Text>
 
       <Input
-        label="Old Password"
-        value={formik.values.oldPassword}
-        onChangeText={formik.handleChange('oldPassword')}
-        onBlur={formik.handleBlur('oldPassword')}
+        label="Current Password"
+        value={formik.values.currentPassword}
+        onChangeText={formik.handleChange('currentPassword')}
+        onBlur={formik.handleBlur('currentPassword')}
         error={
-          formik.touched.oldPassword && formik.errors.oldPassword
-            ? formik.errors.oldPassword
+          formik.touched.currentPassword && formik.errors.currentPassword
+            ? formik.errors.currentPassword
             : undefined
         }
-        placeholder="Enter old password"
+        placeholder="Enter current password"
         secureTextEntry
         style={styles.inputGap}
       />
@@ -119,6 +121,13 @@ const PasswordSettings = () => {
         style={styles.saveButton}
         onPress={formik.handleSubmit as () => void}
         disabled={formik.isSubmitting}
+      />
+
+      <SuccessPopup
+        visible={showSuccess}
+        title="Password updated"
+        message="Your password has been changed successfully."
+        onDismiss={() => setShowSuccess(false)}
       />
     </SettingsScreenLayout>
   );

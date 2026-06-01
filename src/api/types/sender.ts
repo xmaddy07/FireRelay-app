@@ -22,9 +22,8 @@ export type SenderSearchParams = {
 
 export type CreateSenderPayload = {
   name: string;
-  email?: string;
   description?: string;
-  status?: string;
+  isActive: boolean;
 };
 
 export type UpdateSenderPayload = Partial<CreateSenderPayload>;

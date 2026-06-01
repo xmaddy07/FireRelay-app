@@ -92,44 +92,11 @@ const deriveCountiesFromFeed = (items: FeedItem[]): County[] => {
   return Array.from(map.values());
 };
 
+
 const PRIORITY_SEVERITY: Record<string, FeedItem['severity']> = {
   High: 'critical',
   Medium: 'warning',
   Low: 'info',
-};
-
-const matchesFeedFilters = (item: FeedItem, filters: AdvancedFeedFilters): boolean => {
-  if (filters.counties.length > 0 && !filters.counties.includes(item.county)) {
-    return false;
-  }
-  if (filters.keywordPriority !== 'All') {
-    if (filters.keywordPriority === 'Nada') {
-      if (item.type !== 'general') return false;
-    } else {
-      const targetSeverity = PRIORITY_SEVERITY[filters.keywordPriority];
-      if (targetSeverity && item.severity !== targetSeverity) {
-        return false;
-      }
-    }
-  }
-  if (filters.keywords) {
-    const query = filters.keywords.toLowerCase();
-    const inSnippet = item.snippet.toLowerCase().includes(query);
-    const inTalkgroup = item.talkgroup.toLowerCase().includes(query);
-    const inHighlights = item.highlightKeywords.some(k =>
-      k.toLowerCase().includes(query),
-    );
-    if (!inSnippet && !inTalkgroup && !inHighlights) {
-      return false;
-    }
-  }
-  if (
-    filters.talkgroup &&
-    !item.talkgroup.toLowerCase().includes(filters.talkgroup.toLowerCase())
-  ) {
-    return false;
-  }
-  return true;
 };
 
 const DEFAULT_ADVANCED_FILTERS: AdvancedFeedFilters = {
@@ -325,7 +292,6 @@ const FeedListItem = ({
   onToggleStar: (id: string) => void;
   onPress: (item: FeedItem) => void;
 }) => {
-  const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -448,6 +414,19 @@ const FeedListItem = ({
   );
 };
 
+const convertToApiDate = (displayDate: string): string | undefined => {
+  if (!displayDate) {
+    return undefined;
+  }
+  const parts = displayDate.split(' ');
+  const datePart = parts[0];
+  const timePart = parts[1] || '00:00';
+  const [d, m, y] = datePart.split('/').map(Number);
+  const [hr, min] = timePart.split(':').map(Number);
+  const date = new Date(y, m - 1, d, hr, min);
+  return isNaN(date.getTime()) ? undefined : date.toISOString();
+};
+
 const CountiesScreen = () => {
   const openNotifications = useOpenNotifications();
   const {token} = useAuth();
@@ -458,9 +437,17 @@ const CountiesScreen = () => {
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFeedFilters | null>(null);
   const [selectedFeedItem, setSelectedFeedItem] = useState<FeedItem | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Entrance animations
   const listEntranceAnim = useRef(new Animated.Value(0)).current;
@@ -469,14 +456,14 @@ const CountiesScreen = () => {
   const feedItemAnimsRef = useRef<Record<string, Animated.Value>>({});
   const hasMountedRef = useRef(false);
 
-  const getFeedItemAnim = (id: string) => {
+  const getFeedItemAnim = useCallback((id: string) => {
     if (!feedItemAnimsRef.current[id]) {
       feedItemAnimsRef.current[id] = new Animated.Value(0);
     }
     return feedItemAnimsRef.current[id];
-  };
+  }, []);
 
-  const animateFeedList = (items: FeedItem[]) => {
+  const animateFeedList = useCallback((items: FeedItem[]) => {
     const anims = items.map(item => {
       const anim = getFeedItemAnim(item.id);
       anim.setValue(0);
@@ -495,7 +482,7 @@ const CountiesScreen = () => {
         }),
       ),
     ).start();
-  };
+  }, [getFeedItemAnim]);
 
   const loadCounties = useCallback(async () => {
     if (!token) {
@@ -541,8 +528,9 @@ const CountiesScreen = () => {
             : undefined,
         keywords: advancedFilters?.keywords || undefined,
         talkgroup: advancedFilters?.talkgroup || undefined,
-        fromDate: advancedFilters?.fromDate || undefined,
-        toDate: advancedFilters?.toDate || undefined,
+        fromDate: advancedFilters?.fromDate ? convertToApiDate(advancedFilters.fromDate) : undefined,
+        toDate: advancedFilters?.toDate ? convertToApiDate(advancedFilters.toDate) : undefined,
+        search: debouncedSearchQuery || undefined,
       });
 
       setFeedItems(audioResults);
@@ -570,7 +558,7 @@ const CountiesScreen = () => {
     } finally {
       setLoadingFeed(false);
     }
-  }, [advancedFilters, token]);
+  }, [advancedFilters, token, debouncedSearchQuery, animateFeedList]);
 
   useEffect(() => {
     loadCounties();
@@ -673,23 +661,18 @@ const CountiesScreen = () => {
   const selectedCountyNames = advancedFilters?.counties ?? [];
 
   const filteredFeed = useMemo(() => {
-    const base = advancedFilters
-      ? feedItems.filter(item => matchesFeedFilters(item, advancedFilters))
-      : feedItems;
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return base;
+    if (!advancedFilters?.keywordPriority || advancedFilters.keywordPriority === 'All') {
+      return feedItems;
     }
-    return base.filter(
-      item =>
-        item.snippet.toLowerCase().includes(query) ||
-        item.county.toLowerCase().includes(query) ||
-        item.talkgroup.toLowerCase().includes(query) ||
-        item.highlightKeywords.some(keyword =>
-          keyword.toLowerCase().includes(query),
-        ),
-    );
-  }, [feedItems, advancedFilters, searchQuery]);
+    return feedItems.filter(item => {
+      if (advancedFilters.keywordPriority === 'Nada') {
+        return item.type === 'general';
+      } else {
+        const targetSeverity = PRIORITY_SEVERITY[advancedFilters.keywordPriority];
+        return targetSeverity ? item.severity === targetSeverity : true;
+      }
+    });
+  }, [feedItems, advancedFilters?.keywordPriority]);
 
   const sheetAppliedFilters = advancedFiltersToSheet(advancedFilters);
 
@@ -698,7 +681,7 @@ const CountiesScreen = () => {
   useEffect(() => {
     if (!hasMountedRef.current) return;
     animateFeedList(filteredFeed);
-  }, [feedListKey]);
+  }, [feedListKey, animateFeedList, filteredFeed]);
 
   const selectedFeedDetail = useMemo(
     () => (selectedFeedItem ? buildFeedDetail(selectedFeedItem) : null),
@@ -835,6 +818,7 @@ const CountiesScreen = () => {
         visible={filterSheetVisible}
         onClose={() => setFilterSheetVisible(false)}
         appliedFilters={sheetAppliedFilters}
+        availableCounties={counties.map(c => c.name)}
         onApply={filters => {
           const next = sheetFiltersToAdvanced(filters);
           setAdvancedFilters(isFeedFiltersEmpty(next) ? null : next);
