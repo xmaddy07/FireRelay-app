@@ -995,12 +995,13 @@ const KeywordsScreen = () => {
 
   return (
     <View style={styles.container}>
+      {listHeader}
+
       <FlatList
         style={styles.list}
         data={displayKeywords}
         keyExtractor={item => item.id}
         renderItem={renderKeywordCard}
-        ListHeaderComponent={listHeader}
         contentContainerStyle={[
           styles.listContent,
           {paddingBottom: listBottomInset},

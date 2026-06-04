@@ -14,6 +14,11 @@ export const endpoints = {
     search: '/users/search',
     byId: (id: string) => `/users/${id}`,
     counties: (id: string) => `/users/${id}/counties`,
+    sessions: (id: string) => `/users/${id}/sessions`,
+    sessionById: (userId: string, sessionId: string) =>
+      `/users/${userId}/sessions/${sessionId}`,
+    forcePasswordReset: (id: string) => `/users/${id}/force-password-reset`,
+    talkgroupAccess: (id: string) => `/users/${id}/talkgroup-access`,
     county: (userId: string, countyId: string) =>
       `/users/${userId}/counties/${countyId}`,
     byRole: (role: string) => `/users/by-role/${role}`,
@@ -33,6 +38,11 @@ export const endpoints = {
     file: (filename: string) => `/audio/file/${encodeURIComponent(filename)}`,
     context: (id: string) => `/audio/${id}/context`,
     byId: (id: string) => `/audio/${id}`,
+    notes: (audioId: string) => `/audio/${audioId}/notes`,
+  },
+  audioNotes: {
+    root: '/audio-notes',
+    byId: (id: string) => `/audio-notes/${id}`,
   },
   keywords: {
     root: '/keywords',

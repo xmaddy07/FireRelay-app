@@ -12,8 +12,18 @@ import {
   Pressable,
   TextInput,
   ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { createStyles } from './styles';
 import { useTheme, useThemedStyles } from '../../../config/theme';
 import {useOpenNotifications} from '../../../navigation/hooks';
@@ -32,9 +42,17 @@ import {
   searchAudio,
 } from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
+import {useAppSelector} from '../../../redux/hooks';
+import {
+  loadFeedFilters,
+  saveFeedFilters,
+} from '../../../services/storage/feedFiltersStorage';
 import FeedDetailModal from './FeedDetailModal';
+import FeedCardNotesPanel from './FeedCardNotesPanel';
+import FeedCardMetadataPanel from './FeedCardMetadataPanel';
 import FeedSnippetText from './FeedSnippetText';
 import {buildFeedDetail, type FeedItem} from './feedTypes';
+import {filterDisplayDateToApi} from '../../../utils/filterDate';
 
 const ALERT_BORDER_CONFIG = {
   critical: {
@@ -51,11 +69,11 @@ const ALERT_BORDER_CONFIG = {
 
 type AdvancedFeedFilters = {
   counties: string[];
-  keywordPriority: string;
   keywords: string;
   talkgroup: string;
   fromDate: string;
   toDate: string;
+  alertStatus: 'All' | 'Flagged';
 };
 
 type County = { id?: string; name: string; code: string; est: string };
@@ -93,24 +111,18 @@ const deriveCountiesFromFeed = (items: FeedItem[]): County[] => {
 };
 
 
-const PRIORITY_SEVERITY: Record<string, FeedItem['severity']> = {
-  High: 'critical',
-  Medium: 'warning',
-  Low: 'info',
-};
-
 const DEFAULT_ADVANCED_FILTERS: AdvancedFeedFilters = {
   counties: [],
-  keywordPriority: 'All',
   fromDate: '',
   toDate: '',
   keywords: '',
   talkgroup: '',
+  alertStatus: 'All',
 };
 
 const isFeedFiltersEmpty = (filters: AdvancedFeedFilters) =>
   filters.counties.length === 0 &&
-  filters.keywordPriority === 'All' &&
+  filters.alertStatus === 'All' &&
   !filters.fromDate &&
   !filters.toDate &&
   !filters.keywords &&
@@ -120,19 +132,19 @@ const sheetFiltersToAdvanced = (
   filters: Pick<
     SheetFilterState,
     | 'counties'
-    | 'keywordPriority'
     | 'fromDate'
     | 'toDate'
     | 'keywords'
     | 'talkgroup'
+    | 'alertStatus'
   >,
 ): AdvancedFeedFilters => ({
   counties: [...filters.counties],
-  keywordPriority: filters.keywordPriority,
   fromDate: filters.fromDate,
   toDate: filters.toDate,
   keywords: filters.keywords,
   talkgroup: filters.talkgroup,
+  alertStatus: filters.alertStatus,
 });
 
 const advancedFiltersToSheet = (
@@ -144,12 +156,11 @@ const advancedFiltersToSheet = (
 
   return {
     counties: [...filters.counties],
-    keywordPriority: filters.keywordPriority,
     fromDate: filters.fromDate,
     toDate: filters.toDate,
     keywords: filters.keywords,
     talkgroup: filters.talkgroup,
-    alertStatus: 'Flagged',
+    alertStatus: filters.alertStatus,
     recordsMatched: 0,
   };
 };
@@ -231,6 +242,11 @@ const CountyCard = ({
 
 const FEED_SNIPPET_MAX_LINES = 2;
 
+type FeedExpandedPanel = {
+  id: string;
+  type: 'notes' | 'metadata';
+};
+
 const AnimatedAlertFeedCard = ({
   severity,
   children,
@@ -286,32 +302,44 @@ const FeedListItem = ({
   entranceAnim,
   onToggleStar,
   onPress,
+  expandedPanel,
+  onToggleNotes,
+  onToggleMetadata,
+  token,
+  currentUserId,
+  isAdmin,
 }: {
   item: FeedItem;
   entranceAnim: Animated.Value;
   onToggleStar: (id: string) => void;
   onPress: (item: FeedItem) => void;
+  expandedPanel: FeedExpandedPanel | null;
+  onToggleNotes: (id: string) => void;
+  onToggleMetadata: (id: string) => void;
+  token?: string;
+  currentUserId?: string;
+  isAdmin?: boolean;
 }) => {
+  const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  let badgeStyle = styles.feedBadgeGeneral;
-  let badgeTextStyle = styles.feedBadgeGeneralText;
   let badgeLabel = 'GENERAL';
 
   if (item.type === 'fire') {
-    badgeStyle = styles.feedBadgeFire;
-    badgeTextStyle = styles.feedBadgeFireText;
     badgeLabel = 'FIRE';
   } else if (item.type === 'medical') {
-    badgeStyle = styles.feedBadgeMedical;
-    badgeTextStyle = styles.feedBadgeMedicalText;
     badgeLabel = 'MEDICAL';
   } else if (item.type === 'police') {
-    badgeStyle = styles.feedBadgePolice;
-    badgeTextStyle = styles.feedBadgePoliceText;
     badgeLabel = 'POLICE';
   }
+
+  const severityColorStyle =
+    item.severity === 'critical'
+      ? styles.feedBadgeSeverityCritical
+      : item.severity === 'warning'
+        ? styles.feedBadgeSeverityWarning
+        : styles.feedBadgeSeverityInfo;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -345,8 +373,13 @@ const FeedListItem = ({
   };
 
   const isHighAlert = item.severity === 'critical' || item.severity === 'warning';
+  const notesExpanded =
+    expandedPanel?.id === item.id && expandedPanel.type === 'notes';
+  const metadataExpanded =
+    expandedPanel?.id === item.id && expandedPanel.type === 'metadata';
+  const isCardExpanded = notesExpanded || metadataExpanded;
 
-  const cardContent = (
+  const cardInner = (
     <>
       <View style={styles.feedItemHeader}>
         <Pressable
@@ -364,8 +397,10 @@ const FeedListItem = ({
           </Text>
         </Pressable>
         <View style={styles.feedItemBadgeContainer}>
-          <View style={[styles.feedBadge, badgeStyle]}>
-            <Text style={[styles.feedBadgeText, badgeTextStyle]}>{badgeLabel}</Text>
+          <View style={[styles.feedBadge, severityColorStyle]}>
+            <Text style={[styles.feedBadgeText, styles.feedBadgeSeverityText]}>
+              {badgeLabel}
+            </Text>
           </View>
           <Text style={styles.feedCountyText} numberOfLines={1}>
             {/\bcounty\b/i.test(item.county)
@@ -373,63 +408,110 @@ const FeedListItem = ({
               : `${item.county.toUpperCase()} COUNTY`}
           </Text>
         </View>
+        <View style={styles.feedCardHeaderActions}>
+          <Pressable
+            style={[
+              styles.feedCardActionButton,
+              metadataExpanded && styles.feedCardActionButtonActive,
+            ]}
+            onPress={() => onToggleMetadata(item.id)}
+            hitSlop={responsiveHitSlop(2)}
+          >
+            <Icon
+              name="eye"
+              size={14}
+              color={metadataExpanded ? colors.primary : colors.textMuted}
+            />
+          </Pressable>
+          <Pressable
+            style={[
+              styles.feedCardActionButton,
+              notesExpanded && styles.feedCardActionButtonActive,
+            ]}
+            onPress={() => onToggleNotes(item.id)}
+            hitSlop={responsiveHitSlop(2)}
+          >
+            <Icon
+              name="file-text"
+              size={14}
+              color={notesExpanded ? colors.primary : colors.textMuted}
+            />
+          </Pressable>
+        </View>
         <View style={styles.feedTimeColumn}>
           <Text style={styles.feedTimeText}>{item.time}</Text>
           <Text style={styles.feedMetaText}>{item.date}</Text>
         </View>
       </View>
 
-      <View style={styles.feedTalkgroupRow}>
-        <Text style={styles.feedTalkgroupText} numberOfLines={1}>
-          {item.talkgroup} (ID: {item.talkgroupId})
-        </Text>
-      </View>
-
-      <FeedSnippetText
-        snippet={item.snippet}
-        highlightKeywords={item.highlightKeywords}
-        numberOfLines={FEED_SNIPPET_MAX_LINES}
-      />
-    </>
-  );
-
-  return (
-    <Animated.View style={slideStyle}>
       <Pressable
+        style={styles.feedCardBodyPressable}
         onPress={() => onPress(item)}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
-        {isHighAlert ? (
-          <AnimatedAlertFeedCard
-            severity={item.severity === 'critical' ? 'critical' : 'warning'}
-          >
-            {cardContent}
-          </AnimatedAlertFeedCard>
-        ) : (
-          <View style={styles.feedItemCard}>{cardContent}</View>
-        )}
+        <View style={styles.feedTalkgroupRow}>
+          <View style={styles.feedTalkgroupPill}>
+            <Text style={styles.feedTalkgroupText} numberOfLines={1}>
+              {item.talkgroup}
+            </Text>
+          </View>
+          <View style={[styles.feedSeverityPill, severityColorStyle]}>
+            <Text style={[styles.feedSeverityPillText, styles.feedBadgeSeverityText]}>
+              {item.maxSeverityLabel}
+            </Text>
+          </View>
+        </View>
+
+        <FeedSnippetText
+          snippet={item.snippet}
+          highlightKeywords={item.highlightKeywords}
+          severity={item.severity}
+          numberOfLines={FEED_SNIPPET_MAX_LINES}
+        />
       </Pressable>
+
+      <FeedCardMetadataPanel item={item} expanded={metadataExpanded} />
+
+      <FeedCardNotesPanel
+        audioId={item.id}
+        expanded={notesExpanded}
+        token={token}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+      />
+    </>
+  );
+
+  const cardShell = isHighAlert ? (
+    <AnimatedAlertFeedCard
+      severity={item.severity === 'critical' ? 'critical' : 'warning'}
+    >
+      {cardInner}
+    </AnimatedAlertFeedCard>
+  ) : (
+    <View style={styles.feedItemCard}>{cardInner}</View>
+  );
+
+  return (
+    <Animated.View
+      style={[
+        slideStyle,
+        isCardExpanded ? styles.feedCardWrapperExpanded : styles.feedCardWrapper,
+      ]}
+    >
+      {cardShell}
     </Animated.View>
   );
-};
-
-const convertToApiDate = (displayDate: string): string | undefined => {
-  if (!displayDate) {
-    return undefined;
-  }
-  const parts = displayDate.split(' ');
-  const datePart = parts[0];
-  const timePart = parts[1] || '00:00';
-  const [d, m, y] = datePart.split('/').map(Number);
-  const [hr, min] = timePart.split(':').map(Number);
-  const date = new Date(y, m - 1, d, hr, min);
-  return isNaN(date.getTime()) ? undefined : date.toISOString();
 };
 
 const CountiesScreen = () => {
   const openNotifications = useOpenNotifications();
   const {token} = useAuth();
+  const userKey =
+    useAppSelector(state => state.user.id ?? state.user.email) ?? '';
+  const currentUserId = useAppSelector(state => state.user.id);
+  const isAdmin = useAppSelector(state => state.user.role) === 'admin';
   const {colors, glass} = useTheme();
   const styles = useThemedStyles(createStyles);
   const [counties, setCounties] = useState<County[]>([]);
@@ -440,7 +522,46 @@ const CountiesScreen = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFeedFilters | null>(null);
+  const [filtersReady, setFiltersReady] = useState(false);
   const [selectedFeedItem, setSelectedFeedItem] = useState<FeedItem | null>(null);
+  const [expandedPanel, setExpandedPanel] = useState<FeedExpandedPanel | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!userKey) {
+      setAdvancedFilters(null);
+      setFiltersReady(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setFiltersReady(false);
+    (async () => {
+      const saved = await loadFeedFilters(userKey);
+      if (cancelled) {
+        return;
+      }
+      setAdvancedFilters(saved && !isFeedFiltersEmpty(saved) ? saved : null);
+      setFiltersReady(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userKey]);
+
+  useEffect(() => {
+    if (!filtersReady || !userKey) {
+      return;
+    }
+    const toSave =
+      advancedFilters && !isFeedFiltersEmpty(advancedFilters)
+        ? advancedFilters
+        : null;
+    void saveFeedFilters(userKey, toSave);
+  }, [advancedFilters, userKey, filtersReady]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -454,22 +575,33 @@ const CountiesScreen = () => {
   const cardFades = useRef<Animated.Value[]>([]);
   const cardSlides = useRef<Animated.Value[]>([]);
   const feedItemAnimsRef = useRef<Record<string, Animated.Value>>({});
-  const hasMountedRef = useRef(false);
+  const hasPlayedFeedEntranceRef = useRef(false);
+  const hasPlayedCountiesEntranceRef = useRef(false);
 
   const getFeedItemAnim = useCallback((id: string) => {
     if (!feedItemAnimsRef.current[id]) {
-      feedItemAnimsRef.current[id] = new Animated.Value(0);
+      feedItemAnimsRef.current[id] = new Animated.Value(
+        hasPlayedFeedEntranceRef.current ? 1 : 0,
+      );
     }
     return feedItemAnimsRef.current[id];
   }, []);
 
-  const animateFeedList = useCallback((items: FeedItem[]) => {
+  const settleFeedItemAnims = useCallback((items: FeedItem[]) => {
+    if (items.length === 0) {
+      return;
+    }
+
+    if (hasPlayedFeedEntranceRef.current) {
+      items.forEach(item => getFeedItemAnim(item.id).setValue(1));
+      return;
+    }
+
     const anims = items.map(item => {
       const anim = getFeedItemAnim(item.id);
       anim.setValue(0);
       return anim;
     });
-    if (anims.length === 0) return;
 
     Animated.stagger(
       55,
@@ -481,7 +613,9 @@ const CountiesScreen = () => {
           useNativeDriver: true,
         }),
       ),
-    ).start();
+    ).start(() => {
+      hasPlayedFeedEntranceRef.current = true;
+    });
   }, [getFeedItemAnim]);
 
   const loadCounties = useCallback(async () => {
@@ -516,26 +650,32 @@ const CountiesScreen = () => {
     setLoadingFeed(true);
     setFeedError(null);
     try {
+      const alertStatus = advancedFilters?.alertStatus ?? 'All';
       const audioResults = await searchAudio(token, {
         limit: 100,
         counties: advancedFilters?.counties.length
           ? advancedFilters.counties.join(',')
           : undefined,
-        keywordPriority:
-          advancedFilters?.keywordPriority &&
-          advancedFilters.keywordPriority !== 'All'
-            ? advancedFilters.keywordPriority
-            : undefined,
         keywords: advancedFilters?.keywords || undefined,
         talkgroup: advancedFilters?.talkgroup || undefined,
-        fromDate: advancedFilters?.fromDate ? convertToApiDate(advancedFilters.fromDate) : undefined,
-        toDate: advancedFilters?.toDate ? convertToApiDate(advancedFilters.toDate) : undefined,
+        fromDate: advancedFilters?.fromDate
+          ? filterDisplayDateToApi(advancedFilters.fromDate)
+          : undefined,
+        toDate: advancedFilters?.toDate
+          ? filterDisplayDateToApi(advancedFilters.toDate)
+          : undefined,
         search: debouncedSearchQuery || undefined,
+        flagged: alertStatus === 'Flagged' ? true : undefined,
       });
 
-      setFeedItems(audioResults);
+      const filteredResults =
+        alertStatus === 'Flagged'
+          ? audioResults.filter(item => item.hasWarning)
+          : audioResults;
+
+      setFeedItems(filteredResults);
       setCounties(prev => {
-        const fromFeed = deriveCountiesFromFeed(audioResults);
+        const fromFeed = deriveCountiesFromFeed(filteredResults);
         if (fromFeed.length === 0) {
           return prev;
         }
@@ -549,8 +689,7 @@ const CountiesScreen = () => {
         cardSlides.current = merged.map(() => new Animated.Value(0));
         return merged;
       });
-      animateFeedList(audioResults);
-      hasMountedRef.current = true;
+      settleFeedItemAnims(filteredResults);
     } catch (error) {
       setFeedError(
         error instanceof ApiError ? error.message : 'Unable to load feed.',
@@ -558,20 +697,32 @@ const CountiesScreen = () => {
     } finally {
       setLoadingFeed(false);
     }
-  }, [advancedFilters, token, debouncedSearchQuery, animateFeedList]);
+  }, [advancedFilters, token, debouncedSearchQuery, settleFeedItemAnims]);
 
   useEffect(() => {
     loadCounties();
   }, [loadCounties]);
 
   useEffect(() => {
+    if (!filtersReady) {
+      return;
+    }
     loadFeed();
-  }, [loadFeed]);
+  }, [loadFeed, filtersReady]);
 
   useEffect(() => {
     if (counties.length === 0) {
       return;
     }
+
+    if (hasPlayedCountiesEntranceRef.current) {
+      listEntranceAnim.setValue(1);
+      cardFades.current.forEach(fade => fade.setValue(1));
+      cardSlides.current.forEach(slide => slide.setValue(0));
+      return;
+    }
+
+    hasPlayedCountiesEntranceRef.current = true;
 
     Animated.sequence([
       Animated.timing(listEntranceAnim, {
@@ -660,28 +811,25 @@ const CountiesScreen = () => {
 
   const selectedCountyNames = advancedFilters?.counties ?? [];
 
-  const filteredFeed = useMemo(() => {
-    if (!advancedFilters?.keywordPriority || advancedFilters.keywordPriority === 'All') {
-      return feedItems;
-    }
-    return feedItems.filter(item => {
-      if (advancedFilters.keywordPriority === 'Nada') {
-        return item.type === 'general';
-      } else {
-        const targetSeverity = PRIORITY_SEVERITY[advancedFilters.keywordPriority];
-        return targetSeverity ? item.severity === targetSeverity : true;
-      }
-    });
-  }, [feedItems, advancedFilters?.keywordPriority]);
-
   const sheetAppliedFilters = advancedFiltersToSheet(advancedFilters);
 
-  const feedListKey = filteredFeed.map(item => item.id).join(',');
+  const feedListKey = `${feedItems.map(item => item.id).join(',')}:${expandedPanel?.id ?? ''}:${expandedPanel?.type ?? ''}`;
 
-  useEffect(() => {
-    if (!hasMountedRef.current) return;
-    animateFeedList(filteredFeed);
-  }, [feedListKey, animateFeedList, filteredFeed]);
+  const handleToggleNotes = useCallback((id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedPanel(prev =>
+      prev?.id === id && prev.type === 'notes' ? null : {id, type: 'notes'},
+    );
+  }, []);
+
+  const handleToggleMetadata = useCallback((id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedPanel(prev =>
+      prev?.id === id && prev.type === 'metadata'
+        ? null
+        : {id, type: 'metadata'},
+    );
+  }, []);
 
   const selectedFeedDetail = useMemo(
     () => (selectedFeedItem ? buildFeedDetail(selectedFeedItem) : null),
@@ -694,6 +842,12 @@ const CountiesScreen = () => {
       entranceAnim={getFeedItemAnim(item.id)}
       onToggleStar={handleToggleStar}
       onPress={handleFeedPress}
+      expandedPanel={expandedPanel}
+      onToggleNotes={handleToggleNotes}
+      onToggleMetadata={handleToggleMetadata}
+      token={token}
+      currentUserId={currentUserId}
+      isAdmin={isAdmin}
     />
   );
 
@@ -786,32 +940,32 @@ const CountiesScreen = () => {
 
         {renderCountiesStrip()}
 
-        {loadingFeed && feedItems.length === 0 ? (
-          <View style={styles.feedLoading}>
-            <ActivityIndicator color={colors.primary} size="large" />
-          </View>
-        ) : (
-          <FlatList
-            style={styles.feedList}
-            data={filteredFeed}
-            renderItem={renderFeedItem}
-            keyExtractor={item => item.id}
-            extraData={feedListKey}
-            contentContainerStyle={styles.feedListContent}
-            showsVerticalScrollIndicator={false}
-            removeClippedSubviews
-            initialNumToRender={8}
-            maxToRenderPerBatch={6}
-            windowSize={7}
-            ListEmptyComponent={
+        <FlatList
+          style={styles.feedList}
+          data={feedItems}
+          renderItem={renderFeedItem}
+          keyExtractor={item => item.id}
+          extraData={feedListKey}
+          contentContainerStyle={styles.feedListContent}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
+          maxToRenderPerBatch={6}
+          windowSize={7}
+          ListEmptyComponent={
+            loadingFeed ? (
+              <View style={styles.feedLoading}>
+                <ActivityIndicator color={colors.primary} size="large" />
+              </View>
+            ) : (
               <View style={styles.feedEmpty}>
                 <Text style={styles.feedEmptyText}>
                   {feedError ?? 'No feed items match your filters.'}
                 </Text>
               </View>
-            }
-          />
-        )}
+            )
+          }
+        />
       </View>
 
       <AdvancedFiltersBottomSheet
@@ -821,7 +975,11 @@ const CountiesScreen = () => {
         availableCounties={counties.map(c => c.name)}
         onApply={filters => {
           const next = sheetFiltersToAdvanced(filters);
-          setAdvancedFilters(isFeedFiltersEmpty(next) ? null : next);
+          const applied = isFeedFiltersEmpty(next) ? null : next;
+          setAdvancedFilters(applied);
+          if (userKey) {
+            void saveFeedFilters(userKey, applied);
+          }
         }}
       />
 

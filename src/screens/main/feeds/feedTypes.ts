@@ -1,3 +1,8 @@
+export type FeedKeywordMatch = {
+  keyword: string;
+  severity: string;
+};
+
 export type FeedItem = {
   id: string;
   county: string;
@@ -6,8 +11,11 @@ export type FeedItem = {
   talkgroupId: string;
   date: string;
   time: string;
+  timestamp?: string;
   snippet: string;
   highlightKeywords: string[];
+  matchedKeywords: FeedKeywordMatch[];
+  maxSeverityLabel: string;
   type: 'fire' | 'medical' | 'police' | 'general';
   severity: 'critical' | 'warning' | 'info';
   starred: boolean;
@@ -16,6 +24,17 @@ export type FeedItem = {
   audioFilename?: string;
   audioUrl?: string;
   confidence?: number;
+};
+
+export type FeedMetadataView = {
+  confidencePercent: number;
+  channelId: string;
+  talkgroup: string;
+  county: string;
+  maxSeverityLabel: string;
+  maxSeverityTone: FeedItem['severity'];
+  createdAtLabel: string;
+  matchedKeywords: FeedKeywordMatch[];
 };
 
 export type FeedDetailData = {
@@ -77,4 +96,59 @@ export const buildFeedDetail = (item: FeedItem): FeedDetailData => ({
   talkgroupShort: talkgroupShortForItem(item),
   priority: priorityForSeverity(item.severity),
   confidencePercent: confidenceForItem(item),
+});
+
+const formatSeverityLabel = (raw?: string, fallback?: FeedItem['severity']) => {
+  const value = (raw ?? '').trim().toUpperCase();
+  if (value.includes('CRITICAL') || value.includes('HIGH')) {
+    return 'High';
+  }
+  if (value.includes('MEDIUM') || value.includes('WARNING')) {
+    return 'Medium';
+  }
+  if (value.includes('LOW')) {
+    return 'Low';
+  }
+  if (fallback) {
+    return priorityForSeverity(fallback);
+  }
+  return 'Normal';
+};
+
+const formatCreatedLabel = (item: FeedItem) => {
+  if (item.timestamp) {
+    const parsed = new Date(item.timestamp);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      });
+    }
+  }
+  return `${item.date} ${item.time}`;
+};
+
+const countyDisplayName = (county: string) =>
+  county.replace(/\s+county\b/i, '').trim() || county;
+
+export const buildFeedMetadata = (item: FeedItem): FeedMetadataView => ({
+  confidencePercent: confidenceForItem(item),
+  channelId: item.talkgroupId,
+  talkgroup: item.talkgroup,
+  county: countyDisplayName(item.county),
+  maxSeverityLabel: item.maxSeverityLabel,
+  maxSeverityTone: item.severity,
+  createdAtLabel: formatCreatedLabel(item),
+  matchedKeywords:
+    item.matchedKeywords.length > 0
+      ? item.matchedKeywords
+      : item.highlightKeywords.map(keyword => ({
+          keyword,
+          severity: item.maxSeverityLabel,
+        })),
 });

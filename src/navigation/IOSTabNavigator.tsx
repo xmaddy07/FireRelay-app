@@ -3,7 +3,7 @@ import {createNativeBottomTabNavigator} from '@react-navigation/bottom-tabs/unst
 import LeadLogScreen from '../screens/main/leadLog';
 import KeywordsScreen from '../screens/main/keyword';
 import SendersScreen from '../screens/main/senders';
-import {useTheme} from '../config/theme';
+import {fonts, useTheme} from '../config/theme';
 import SettingsStackNavigator from './SettingsStackNavigator';
 import CountiesScreen from '../screens/main/feeds';
 import {
@@ -55,7 +55,7 @@ const IOSTabNavigator = ({isAdmin}: Props) => {
         tabBarInactiveTintColor,
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '500',
+          fontFamily: fonts.medium,
         },
         tabBarBlurEffect: isDark
           ? 'systemChromeMaterialDark'

@@ -763,12 +763,13 @@ const SendersScreen = () => {
 
   return (
     <View style={styles.container}>
+      {listHeader}
+
       <FlatList
         style={styles.list}
         data={visibleSenders}
         keyExtractor={item => item.id}
         renderItem={renderSenderCard}
-        ListHeaderComponent={listHeader}
         ListFooterComponent={listFooter}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.35}

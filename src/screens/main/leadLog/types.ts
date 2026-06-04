@@ -1,4 +1,8 @@
+import type {FeedSeverityLevel} from '../../api/types/user';
+
 export type UserRole = 'admin' | 'user';
+
+export type UserPresenceStatus = 'online' | 'away' | 'offline';
 
 export type UserRecord = {
   id: string;
@@ -6,6 +10,11 @@ export type UserRecord = {
   role: UserRole;
   createdAt: string;
   counties: string[];
+  lastSeenAt: string | null;
+  activeSessionCount: number;
+  presenceStatus: UserPresenceStatus;
+  /** null or [] = all severities; non-empty = restricted */
+  allowedSeverities: FeedSeverityLevel[] | null;
 };
 
 export type RoleFilter = 'All Roles' | 'Admin' | 'User';

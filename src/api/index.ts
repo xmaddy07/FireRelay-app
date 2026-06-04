@@ -29,6 +29,14 @@ export {
   removeAudioFavorite,
 } from './services/audioFavoriteService';
 export {markAudioViewed} from './services/audioViewService';
+export {
+  createAudioNote,
+  listAudioNotes,
+  listAudioNotesByAudioIds,
+  updateAudioNote,
+  deleteAudioNote,
+} from './services/audioNoteService';
+export type {AudioNoteRecord} from './types/audioNote';
 
 export {
   searchKeywords,
@@ -54,9 +62,23 @@ export type {CountyOption} from './services/countyService';
 
 export {
   searchUsers,
+  getUserById,
   createUser,
   updateUser,
   deleteUser,
   getUserCounties,
   assignUserCounties,
+  listUserSessions,
+  enrichUsersWithSessionSummaries,
+  summarizeUserSessions,
+  revokeUserSession,
+  forcePasswordReset,
+  getUserTalkgroupAccess,
+  assignUserTalkgroupAccess,
+} from './services/userService';
+export type {FeedSeverityLevel} from './types/user';
+export {normalizeFeedSeverityLevel, parseAllowedSeverities} from './mappers/userMapper';
+export type {
+  UserSessionRecord,
+  UserTalkgroupAccessRecord,
 } from './services/userService';

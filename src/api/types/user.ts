@@ -33,12 +33,49 @@ export type CreateUserPayload = {
   password?: string;
 };
 
+export type FeedSeverityLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
 export type UpdateUserPayload = {
   email?: string;
   role?: string;
   password?: string;
+  /** null or [] = unrestricted; non-empty = restricted to these max severities */
+  allowedSeverities?: FeedSeverityLevel[] | null;
 };
 
 export type AssignCountiesPayload = {
   countyIds: string[];
 };
+
+export type ApiUserSession = {
+  id: string;
+  userId?: string;
+  deviceInfo?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  lastSeenAt?: string;
+  expiresAt?: string;
+  revokedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+};
+
+export type ApiUserTalkgroupAccess = {
+  id: string;
+  userId?: string;
+  countyId?: string;
+  talkgroupID?: string;
+  talkgroup?: string;
+  county?: unknown;
+  [key: string]: unknown;
+};
+
+export type AssignTalkgroupAccessRequest = {
+  access: Array<{
+    countyId: string;
+    talkgroupID: string;
+    talkgroup?: string;
+  }>;
+};
+

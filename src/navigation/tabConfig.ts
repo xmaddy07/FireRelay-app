@@ -28,8 +28,8 @@ export const getVisibleTabRoutes = (isAdmin: boolean): MainTabRoute[] =>
   isAdmin ? [...MAIN_TAB_ROUTES] : [...USER_TAB_ROUTES];
 
 export const MAIN_TAB_LABELS: Record<MainTabRoute, string> = {
-  Feed: 'Live Feed',
-  LeadLog: 'Lead Log',
+  Feed: 'Feed',
+  LeadLog: 'Users',
   Keywords: 'Keywords',
   Senders: 'Senders',
   Settings: 'Settings',

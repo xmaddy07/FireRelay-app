@@ -307,6 +307,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   // Top Counties Horizontal Scroll Section Styles
   countiesHorizontalContainer: {
     marginBottom: hp(0.8),
+    minHeight: hp(6.5),
     maxHeight: hp(6.5),
   },
   horizontalScrollContent: {
@@ -448,7 +449,6 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     borderRadius: wp(3),
     paddingHorizontal: wp(2.8),
     paddingVertical: hp(0.75),
-    marginBottom: hp(0.55),
     borderWidth: 1,
     borderColor: colors.menuItemBorder,
     elevation: 2,
@@ -483,29 +483,17 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     fontFamily: fonts.bold,
     letterSpacing: responsiveSize(0.4),
   },
-  feedBadgeFire: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+  feedBadgeSeverityCritical: {
+    backgroundColor: colors.primary,
   },
-  feedBadgeFireText: {
-    color: colors.primary,
+  feedBadgeSeverityWarning: {
+    backgroundColor: colors.warning,
   },
-  feedBadgeMedical: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+  feedBadgeSeverityInfo: {
+    backgroundColor: colors.textMuted,
   },
-  feedBadgeMedicalText: {
-    color: colors.primary,
-  },
-  feedBadgePolice: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-  },
-  feedBadgePoliceText: {
-    color: colors.warning,
-  },
-  feedBadgeGeneral: {
-    backgroundColor: 'rgba(107, 114, 128, 0.15)',
-  },
-  feedBadgeGeneralText: {
-    color: colors.textMuted,
+  feedBadgeSeverityText: {
+    color: colors.textOnPrimary,
   },
   feedCountyText: {
     flex: 1,
@@ -525,14 +513,38 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   feedTalkgroupRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp(0.25),
+    flexWrap: 'wrap',
+    gap: wp(1.5),
+    marginBottom: hp(0.3),
+  },
+  feedTalkgroupPill: {
+    alignSelf: 'flex-start',
+    flexShrink: 1,
+    maxWidth: '72%',
+    backgroundColor: colors.surfaceInset,
+    borderRadius: wp(2),
+    paddingVertical: hp(0.3),
+    paddingHorizontal: wp(2.2),
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
   },
   feedTalkgroupText: {
-    flex: 1,
-    fontSize: responsiveSize(11.5),
+    fontSize: responsiveSize(11),
     fontFamily: fonts.semibold,
     color: colors.accent,
-    marginRight: wp(1.5),
+  },
+  feedSeverityPill: {
+    borderRadius: wp(4),
+    paddingHorizontal: wp(2.4),
+    paddingVertical: hp(0.28),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedSeverityPillText: {
+    fontSize: responsiveSize(9),
+    fontFamily: fonts.bold,
+    color: colors.textOnPrimary,
+    letterSpacing: responsiveSize(0.3),
   },
   feedSnippetText: {
     fontSize: responsiveSize(11),
@@ -542,7 +554,15 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   feedSnippetHighlight: {
     fontFamily: fonts.bold,
+  },
+  feedSnippetHighlightCritical: {
     color: colors.primary,
+  },
+  feedSnippetHighlightWarning: {
+    color: colors.warning,
+  },
+  feedSnippetHighlightInfo: {
+    color: colors.textMuted,
   },
 
   feedStarButton: {
@@ -565,5 +585,274 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.textMuted,
     fontFamily: fonts.semibold,
     marginTop: hp(0.1),
+  },
+  feedCardWrapper: {
+    marginBottom: hp(0.55),
+  },
+  feedCardWrapperExpanded: {
+    marginBottom: hp(0.8),
+  },
+  feedCardActionButton: {
+    width: wp(7),
+    height: wp(7),
+    borderRadius: wp(2),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceInset,
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
+    marginRight: wp(1),
+  },
+  feedCardActionButtonActive: {
+    backgroundColor: colors.primaryTint,
+    borderColor: colors.primaryBorder,
+  },
+  feedCardHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: wp(1),
+  },
+  feedCardBodyPressable: {
+    width: '100%',
+  },
+  feedNotesPanel: {
+    borderTopWidth: 1,
+    borderTopColor: colors.menuItemBorder,
+    marginTop: hp(0.6),
+    paddingTop: hp(0.8),
+    paddingHorizontal: wp(0.5),
+    paddingBottom: hp(0.4),
+    backgroundColor: colors.surfaceInset,
+    borderBottomLeftRadius: wp(2.5),
+    borderBottomRightRadius: wp(2.5),
+  },
+  feedNotesPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: hp(0.6),
+    gap: wp(2),
+  },
+  feedNotesPanelTitle: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.bold,
+    color: colors.text,
+    letterSpacing: responsiveSize(0.5),
+    textTransform: 'uppercase',
+  },
+  feedNotesPanelHint: {
+    fontSize: responsiveSize(9),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+    flex: 1,
+    textAlign: 'right',
+  },
+  feedNotesInput: {
+    minHeight: hp(7),
+    maxHeight: hp(12),
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: wp(2),
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.9),
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.regular,
+    color: colors.text,
+    marginBottom: hp(0.6),
+  },
+  feedNotesSaveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: wp(1.2),
+    backgroundColor: colors.primary,
+    borderRadius: wp(2),
+    paddingVertical: hp(0.75),
+    marginBottom: hp(0.7),
+  },
+  feedNotesSaveButtonDisabled: {
+    opacity: 0.45,
+  },
+  feedNotesSaveButtonText: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.semibold,
+    color: colors.textOnPrimary,
+  },
+  feedNotesLoading: {
+    marginVertical: hp(0.5),
+  },
+  feedNotesEmptyText: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+    marginBottom: hp(0.3),
+  },
+  feedNotesList: {
+    gap: hp(0.5),
+  },
+  feedNoteCard: {
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
+    borderRadius: wp(2),
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.7),
+  },
+  feedNoteCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: hp(0.3),
+    gap: wp(2),
+  },
+  feedNoteMetaColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+  feedNoteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+  },
+  feedNoteDate: {
+    fontSize: responsiveSize(9),
+    fontFamily: fonts.semibold,
+    color: colors.textMuted,
+  },
+  feedNoteAuthor: {
+    fontSize: responsiveSize(9),
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+    marginTop: hp(0.1),
+  },
+  feedNotesEditInput: {
+    minHeight: hp(6),
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: wp(2),
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.7),
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.regular,
+    color: colors.text,
+    marginBottom: hp(0.5),
+  },
+  feedNotesEditSaveButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: wp(2),
+    paddingVertical: hp(0.6),
+    marginBottom: hp(0.2),
+  },
+  feedNoteBody: {
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.regular,
+    color: colors.text,
+    lineHeight: responsiveSize(16),
+  },
+  feedMetadataPanel: {
+    borderTopWidth: 1,
+    borderTopColor: colors.menuItemBorder,
+    marginTop: hp(0.6),
+    paddingTop: hp(1),
+    paddingHorizontal: wp(1),
+    paddingBottom: hp(0.6),
+    backgroundColor: colors.surfaceElevated,
+    borderBottomLeftRadius: wp(2.5),
+    borderBottomRightRadius: wp(2.5),
+  },
+  feedMetadataPanelTitle: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.bold,
+    color: colors.accent,
+    letterSpacing: responsiveSize(0.8),
+    textTransform: 'uppercase',
+    marginBottom: hp(0.8),
+  },
+  feedMetadataTable: {
+    gap: hp(0.55),
+  },
+  feedMetadataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: wp(3),
+  },
+  feedMetadataLabel: {
+    flex: 1,
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+  feedMetadataValue: {
+    flex: 1.2,
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.semibold,
+    color: colors.text,
+    textAlign: 'right',
+  },
+  metadataSeverityBadge: {
+    borderRadius: wp(4),
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.25),
+    minWidth: wp(16),
+    alignItems: 'center',
+  },
+  metadataSeverityCritical: {
+    backgroundColor: colors.primary,
+  },
+  metadataSeverityWarning: {
+    backgroundColor: colors.warning,
+  },
+  metadataSeverityInfo: {
+    backgroundColor: colors.textMuted,
+  },
+  metadataSeverityBadgeText: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.bold,
+    color: colors.textOnPrimary,
+  },
+  feedMetadataDivider: {
+    height: 1,
+    backgroundColor: colors.menuItemBorder,
+    marginVertical: hp(0.9),
+  },
+  feedMetadataKeywordsTitle: {
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.bold,
+    color: colors.text,
+    marginBottom: hp(0.5),
+  },
+  feedMetadataKeywordsEmpty: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+  feedMetadataKeywordList: {
+    gap: hp(0.5),
+  },
+  metadataKeywordPill: {
+    alignSelf: 'flex-start',
+    borderRadius: wp(4),
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.55),
+    maxWidth: '100%',
+  },
+  metadataKeywordPillCritical: {
+    backgroundColor: colors.primary,
+  },
+  metadataKeywordPillWarning: {
+    backgroundColor: colors.warning,
+  },
+  metadataKeywordPillInfo: {
+    backgroundColor: colors.textMuted,
+  },
+  metadataKeywordPillText: {
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.semibold,
+    color: colors.textOnPrimary,
   },
 });

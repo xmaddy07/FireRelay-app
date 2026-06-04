@@ -34,13 +34,15 @@ export const createStyles = (colors: AppColors) => {
     },
     listContent: {
       paddingHorizontal: wp(4),
-      paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(1),
-      gap: hp(1.4),
+      paddingTop: hp(0.6),
+      gap: hp(1),
       flexGrow: 1,
     },
     listHeader: {
-      paddingBottom: hp(1),
-      gap: hp(1.4),
+      paddingHorizontal: wp(4),
+      paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(1),
+      paddingBottom: hp(0.8),
+      gap: hp(1.1),
     },
     screenHeader: {
       flexDirection: 'row',
@@ -137,9 +139,9 @@ export const createStyles = (colors: AppColors) => {
       borderRadius: wp(3),
       borderWidth: 1,
       borderColor: premium.border,
-      paddingVertical: hp(1.4),
+      paddingVertical: hp(1.1),
       paddingHorizontal: wp(3.2),
-      gap: hp(0.6),
+      gap: hp(0.45),
       ...Platform.select({
         ios: {
           shadowColor: colors.shadow,
@@ -180,7 +182,7 @@ export const createStyles = (colors: AppColors) => {
       color: premium.textMuted,
     },
     statValue: {
-      fontSize: responsiveSize(24),
+      fontSize: responsiveSize(22),
       fontFamily: fonts.bold,
       color: colors.text,
     },
@@ -190,7 +192,7 @@ export const createStyles = (colors: AppColors) => {
       color: premium.textMuted,
     },
     filtersSection: {
-      gap: hp(1),
+      gap: hp(0.8),
     },
     searchBar: {
       flexDirection: 'row',
@@ -212,7 +214,7 @@ export const createStyles = (colors: AppColors) => {
       fontSize: responsiveSize(14),
       fontFamily: fonts.regular,
       color: colors.text,
-      paddingVertical: Platform.OS === 'ios' ? hp(1.1) : hp(0.9),
+      paddingVertical: Platform.OS === 'ios' ? hp(0.9) : hp(0.7),
     },
     filterRow: {
       flexDirection: 'row',
@@ -277,9 +279,9 @@ export const createStyles = (colors: AppColors) => {
       }),
     },
     senderCardBody: {
-      paddingVertical: hp(1.5),
-      paddingHorizontal: wp(3.5),
-      gap: hp(1.1),
+      paddingVertical: hp(1.2),
+      paddingHorizontal: wp(3.2),
+      gap: hp(0.8),
     },
     cardHeaderRow: {
       flexDirection: 'row',
@@ -289,7 +291,7 @@ export const createStyles = (colors: AppColors) => {
     },
     senderName: {
       flex: 1,
-      fontSize: responsiveSize(16),
+      fontSize: responsiveSize(15),
       fontFamily: fonts.bold,
       color: colors.text,
     },
@@ -298,7 +300,7 @@ export const createStyles = (colors: AppColors) => {
       alignItems: 'center',
       gap: wp(1.5),
       paddingHorizontal: wp(2.5),
-      paddingVertical: hp(0.35),
+      paddingVertical: hp(0.25),
       borderRadius: wp(5),
       borderWidth: 1,
       flexShrink: 0,
@@ -344,12 +346,12 @@ export const createStyles = (colors: AppColors) => {
     },
     metaRow: {
       flexDirection: 'row',
-      gap: wp(3),
+      gap: wp(2.5),
     },
     metaColumn: {
       flex: 1,
       minWidth: 0,
-      gap: hp(0.3),
+      gap: hp(0.2),
     },
     metaLabel: {
       fontSize: responsiveSize(9),
@@ -359,7 +361,7 @@ export const createStyles = (colors: AppColors) => {
       textTransform: 'uppercase',
     },
     metaValue: {
-      fontSize: responsiveSize(13),
+      fontSize: responsiveSize(12.5),
       fontFamily: fonts.medium,
       color: colors.text,
     },
@@ -374,8 +376,8 @@ export const createStyles = (colors: AppColors) => {
       gap: wp(2),
     },
     copyButton: {
-      width: wp(7.5),
-      height: wp(7.5),
+      width: wp(6.8),
+      height: wp(6.8),
       borderRadius: wp(1.8),
       alignItems: 'center',
       justifyContent: 'center',
@@ -387,15 +389,15 @@ export const createStyles = (colors: AppColors) => {
     cardActionsRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: wp(2),
-      paddingTop: hp(0.4),
+      gap: wp(1.6),
+      paddingTop: hp(0.2),
     },
     cardActionButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: wp(1.2),
-      paddingHorizontal: wp(2.8),
-      paddingVertical: hp(0.7),
+      paddingHorizontal: wp(2.4),
+      paddingVertical: hp(0.55),
       borderRadius: wp(2),
       borderWidth: 1,
       backgroundColor: premium.surfaceRaised,

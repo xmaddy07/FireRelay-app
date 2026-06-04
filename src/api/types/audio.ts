@@ -58,4 +58,5 @@ export type AudioSearchParams = {
   talkgroup?: string;
   fromDate?: string;
   toDate?: string;
+  flagged?: boolean;
 };

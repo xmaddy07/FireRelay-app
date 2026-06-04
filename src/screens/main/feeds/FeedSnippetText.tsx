@@ -2,6 +2,7 @@ import React from 'react';
 import {Text, TextStyle, StyleProp} from 'react-native';
 import {useThemedStyles} from '../../../config/theme';
 import {createStyles} from './styles';
+import type {FeedItem} from './feedTypes';
 
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -9,14 +10,29 @@ const escapeRegExp = (value: string) =>
 type Props = {
   snippet: string;
   highlightKeywords: string[];
+  severity?: FeedItem['severity'];
   numberOfLines?: number;
   textStyle?: StyleProp<TextStyle>;
   highlightStyle?: StyleProp<TextStyle>;
 };
 
+const severityHighlightStyle = (
+  severity: FeedItem['severity'],
+  styles: ReturnType<typeof createStyles>,
+) => {
+  if (severity === 'critical') {
+    return styles.feedSnippetHighlightCritical;
+  }
+  if (severity === 'warning') {
+    return styles.feedSnippetHighlightWarning;
+  }
+  return styles.feedSnippetHighlightInfo;
+};
+
 const FeedSnippetText = ({
   snippet,
   highlightKeywords,
+  severity = 'info',
   numberOfLines,
   textStyle,
   highlightStyle,
@@ -49,7 +65,11 @@ const FeedSnippetText = ({
           return (
             <Text
               key={`${part}-${index}`}
-              style={[styles.feedSnippetHighlight, highlightStyle]}
+              style={[
+                styles.feedSnippetHighlight,
+                severityHighlightStyle(severity, styles),
+                highlightStyle,
+              ]}
             >
               {part}
             </Text>
