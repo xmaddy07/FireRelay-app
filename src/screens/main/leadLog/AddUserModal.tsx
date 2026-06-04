@@ -51,6 +51,10 @@ const AddUserModal = ({visible, onClose, onCreate}: Props) => {
       role,
       createdAt: new Date().toISOString(),
       counties: [],
+      lastSeenAt: null,
+      activeSessionCount: 0,
+      presenceStatus: 'offline',
+      allowedSeverities: null,
     });
     onClose();
   };

@@ -3,11 +3,13 @@ import {
   View,
   Text,
   Modal,
-  Pressable,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import LinearGradient from 'react-native-linear-gradient';
@@ -34,14 +36,26 @@ const formatTime = (totalSeconds: number) => {
 };
 
 const severityBadgeLabel: Record<FeedItem['severity'], string> = {
-  critical: 'CRITICAL ALERT',
-  warning: 'WARNING ALERT',
+  critical: 'CRITICAL',
+  warning: 'WARNING',
   info: 'ALERT',
+};
+
+const typeBadgeLabel: Record<FeedItem['type'], string> = {
+  fire: 'FIRE',
+  medical: 'MEDICAL',
+  police: 'POLICE',
+  general: 'GENERAL',
 };
 
 const COMPACT_BREAKPOINT = 340;
 
-const FeedDetailModal = ({visible, item, detail, onClose}: Props) => {
+const FeedDetailModal = ({
+  visible,
+  item,
+  detail,
+  onClose,
+}: Props) => {
   const {width: screenWidth} = useWindowDimensions();
   const {colors} = useTheme();
   const styles = useThemedStyles(createFeedDetailModalStyles);
@@ -95,28 +109,80 @@ const FeedDetailModal = ({visible, item, detail, onClose}: Props) => {
         ? [styles.criticalBadgeText, styles.warningBadgeText]
         : [styles.criticalBadgeText, styles.infoBadgeText];
 
+  const countyLabel = /\bcounty\b/i.test(item.county)
+    ? item.county
+    : `${item.county} County`;
+
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="fade"
+      animationType="slide"
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.card} onPress={e => e.stopPropagation()}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-            bounces={false}
-          >
-            <View style={styles.playerCard}>
+      <SafeAreaView style={styles.fullScreen}>
+        <KeyboardAvoidingView
+          style={styles.fullScreen}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.screenHeader}>
+            <LinearGradient
+              colors={[
+                colors.primaryTintStrong,
+                colors.modalSurface,
+                colors.modalSurface,
+              ]}
+              start={{x: 0, y: 0}}
+              end={{x: 0, y: 1}}
+              style={styles.screenHeaderGradient}
+              pointerEvents="none"
+            />
+            <View style={styles.screenHeaderContent}>
               <TouchableOpacity
-                style={styles.closeButton}
+                style={styles.backButton}
                 onPress={onClose}
                 hitSlop={responsiveHitSlop(2)}
+                activeOpacity={0.7}
               >
-                <Icon name="x" size={18} color={colors.textMuted} />
+                <Icon name="chevron-left" size={22} color={colors.primary} />
+                <Text style={styles.backButtonLabel}>Feed</Text>
               </TouchableOpacity>
+
+              <View style={styles.screenHeaderMain}>
+                <View style={styles.headerIconWrap}>
+                  <Icon name="radio" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.screenHeaderText}>
+                  <Text style={styles.screenHeaderEyebrow}>
+                    {typeBadgeLabel[item.type]} DISPATCH
+                  </Text>
+                  <Text style={styles.screenHeaderTitle} numberOfLines={1}>
+                    {detail.title}
+                  </Text>
+                  <Text style={styles.screenHeaderSubtitle} numberOfLines={1}>
+                    {countyLabel} · {item.date} · {item.time}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[badgeStyle, styles.headerSeverityPill]}>
+                <Text
+                  style={[badgeTextStyle, styles.headerSeverityText]}
+                  numberOfLines={1}
+                >
+                  {severityBadgeLabel[item.severity]}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.playerCard}>
               <LinearGradient
                 colors={[...colors.playerGradient]}
                 start={{x: 0, y: 0}}
@@ -212,10 +278,7 @@ const FeedDetailModal = ({visible, item, detail, onClose}: Props) => {
                       {borderRadius: playButtonSize / 2 + 3},
                     ]}
                   >
-                    <TouchableOpacity
-                      onPress={togglePlay}
-                      activeOpacity={0.9}
-                    >
+                    <TouchableOpacity onPress={togglePlay} activeOpacity={0.9}>
                       <LinearGradient
                         colors={[colors.primary, colors.primaryDark]}
                         start={{x: 0, y: 0}}
@@ -294,16 +357,17 @@ const FeedDetailModal = ({visible, item, detail, onClose}: Props) => {
 
             <View style={styles.feedContentCard}>
               <Text style={styles.feedTalkgroupText} numberOfLines={2}>
-                {item.talkgroup} (ID: {item.talkgroupId})
+                {item.talkgroup}
               </Text>
               <FeedSnippetText
                 snippet={item.snippet}
                 highlightKeywords={item.highlightKeywords}
+                severity={item.severity}
               />
             </View>
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 };

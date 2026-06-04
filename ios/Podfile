@@ -8,10 +8,29 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
+# Firebase iOS SDK still needs static frameworks; RNFB pods are linked as static
+# libraries below to avoid "non-modular header inside framework module" with prebuilt RN.
+$RNFirebaseAsStaticFramework = false
+
+RNFB_STATIC_LIBRARY_PODS = %w[RNFBApp RNFBMessaging].freeze
+
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
+else
+  use_frameworks! :linkage => :static
+end
+
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    next unless RNFB_STATIC_LIBRARY_PODS.include?(pod.name)
+
+    Pod::UI.puts "Linking #{pod.name} as static library (RN + Firebase workaround)".green
+    def pod.build_type
+      Pod::BuildType.static_library
+    end
+  end
 end
 
 target 'FireRelay' do
@@ -34,6 +53,14 @@ target 'FireRelay' do
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |build_config|
         build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+
+        if RNFB_STATIC_LIBRARY_PODS.include?(target.name)
+          build_config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+          other_cflags = build_config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
+          unless other_cflags.to_s.include?('-Wno-non-modular-include-in-framework-module')
+            build_config.build_settings['OTHER_CFLAGS'] = "#{other_cflags} -Wno-non-modular-include-in-framework-module"
+          end
+        end
       end
     end
 

@@ -1,7 +1,7 @@
 import {API_BASE_URL} from '../../config/env';
 import {endpoints} from '../endpoints';
 import type {ApiAudio} from '../types/audio';
-import type {FeedItem} from '../../screens/main/feeds/feedTypes';
+import type {FeedItem, FeedKeywordMatch} from '../../screens/main/feeds/feedTypes';
 import {pickBoolean, pickString} from '../utils';
 
 type ApiCountyRef = {
@@ -167,12 +167,69 @@ const resolveAudioSource = (record: Record<string, unknown>) => {
   };
 };
 
+const formatMatchSeverity = (raw?: string) => {
+  const value = (raw ?? '').trim().toUpperCase();
+  if (value.includes('CRITICAL') || value.includes('HIGH')) {
+    return 'High';
+  }
+  if (value.includes('MEDIUM') || value.includes('WARNING')) {
+    return 'Medium';
+  }
+  if (value.includes('LOW')) {
+    return 'Low';
+  }
+  return 'Normal';
+};
+
+const collectKeywordMatches = (
+  record: Record<string, unknown>,
+): FeedKeywordMatch[] => {
+  const matches = record.keywordMatches;
+  if (!Array.isArray(matches)) {
+    return [];
+  }
+
+  const parsed = matches
+    .map(entry => {
+      const matchRecord = toRecord(entry);
+      if (!matchRecord) {
+        return null;
+      }
+      const keyword = pickString(matchRecord, ['keyword', 'name', 'text']);
+      if (!keyword) {
+        return null;
+      }
+      return {
+        keyword: keyword.trim(),
+        severity: formatMatchSeverity(
+          pickString(matchRecord, ['severity', 'priority', 'level', 'maxSeverity']),
+        ),
+      };
+    })
+    .filter((entry): entry is FeedKeywordMatch => Boolean(entry));
+
+  const seen = new Set<string>();
+  return parsed.filter(entry => {
+    const key = `${entry.keyword.toLowerCase()}|${entry.severity}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
 const collectHighlightKeywords = (record: Record<string, unknown>): string[] => {
   const fromKeywords = toStringArray(record.keywords);
-  const fromMatches = toStringArray(record.keywordMatches);
+  const fromMatches = collectKeywordMatches(record).map(match => match.keyword);
   const merged = [...fromKeywords, ...fromMatches];
   return [...new Set(merged.map(keyword => keyword.trim()).filter(Boolean))];
 };
+
+const pickMaxSeverityLabel = (record: Record<string, unknown>) =>
+  formatMatchSeverity(
+    pickString(record, ['maxSeverity', 'severity', 'priority', 'keywordPriority']),
+  );
 
 export const getAudioFileUrl = (filename: string) =>
   `${API_BASE_URL}${endpoints.audio.file(filename)}`;
@@ -185,7 +242,9 @@ export const mapAudioToFeedItem = (
   const timestamp =
     pickString(record, ['timestamp', 'createdAt', 'recordedAt']) ?? undefined;
   const {date, time} = formatDateParts(timestamp);
+  const matchedKeywords = collectKeywordMatches(record);
   const highlightKeywords = collectHighlightKeywords(record);
+  const maxSeverityLabel = pickMaxSeverityLabel(record);
   const talkgroup =
     pickString(record, ['talkgroup', 'talkGroup']) ?? 'Unknown';
   const talkgroupId =
@@ -209,6 +268,7 @@ export const mapAudioToFeedItem = (
     talkgroupId,
     date,
     time,
+    timestamp,
     snippet:
       pickString(record, [
         'transcription',
@@ -217,6 +277,8 @@ export const mapAudioToFeedItem = (
         'text',
       ]) ?? '',
     highlightKeywords,
+    matchedKeywords,
+    maxSeverityLabel,
     type: mapType(record, talkgroup, highlightKeywords),
     severity: mapSeverity(record),
     starred,

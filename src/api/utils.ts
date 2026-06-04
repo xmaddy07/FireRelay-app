@@ -96,7 +96,7 @@ export type UnwrappedPagination<T> = {
   totalFromApi: boolean;
 };
 
-const pickNumber = (
+export const pickNumber = (
   source: Record<string, unknown>,
   keys: string[],
 ): number | undefined => {

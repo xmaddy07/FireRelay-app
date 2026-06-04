@@ -34,11 +34,13 @@ export const createStyles = (colors: AppColors) => {
     },
     listContent: {
       paddingHorizontal: wp(4),
-      paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(1),
+      paddingTop: hp(0.6),
       gap: hp(1.6),
       flexGrow: 1,
     },
     listHeader: {
+      paddingHorizontal: wp(4),
+      paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(1),
       paddingBottom: hp(1.4),
       gap: hp(1.6),
     },

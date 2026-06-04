@@ -1,10 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Platform, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
 import NotificationsScreen from '../screens/main/notification';
+import SplashAnimatedScreen from '../screens/auth/splashanimated';
 import {useAppSelector} from '../redux/hooks';
 import {useTheme} from '../config/theme';
 import AuthNavigator from './AuthNavigator';
@@ -37,8 +38,13 @@ const NotificationsModalScreen = () => {
 };
 
 const RootNavigator = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const {colors} = useTheme();
+
+  if (showSplash) {
+    return <SplashAnimatedScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   return (
     <Stack.Navigator

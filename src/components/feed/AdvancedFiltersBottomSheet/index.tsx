@@ -17,45 +17,39 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import Octicons from 'react-native-vector-icons/Octicons';
 import { useAuth } from '../../../hooks/useAuth';
 import { searchAudioWithPagination } from '../../../api';
+import {
+  filterDisplayDateToApi,
+  formatFilterDisplayDate,
+  parseFilterDisplayDate,
+} from '../../../utils/filterDate';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const convertToApiDate = (displayDate: string): string | undefined => {
-  if (!displayDate) {
-    return undefined;
-  }
-  const parts = displayDate.split(' ');
-  const datePart = parts[0];
-  const timePart = parts[1] || '00:00';
-  const [d, m, y] = datePart.split('/').map(Number);
-  const [hr, min] = timePart.split(':').map(Number);
-  const date = new Date(y, m - 1, d, hr, min);
-  return isNaN(date.getTime()) ? undefined : date.toISOString();
-};
+export type FeedAlertStatus = 'All' | 'Flagged';
 
 export type FilterState = {
   counties: string[];
-  keywordPriority: string;
   fromDate: string;
   toDate: string;
   keywords: string;
   talkgroup: string;
-  alertStatus: string;
+  alertStatus: FeedAlertStatus;
   recordsMatched: number;
 };
 
+const ALERT_STATUS_TABS: FeedAlertStatus[] = ['All', 'Flagged'];
+
 const DEFAULT_FILTER_STATE: FilterState = {
   counties: [],
-  keywordPriority: 'All',
   fromDate: '',
   toDate: '',
   keywords: '',
   talkgroup: '',
-  alertStatus: 'Flagged',
+  alertStatus: 'All',
   recordsMatched: 0,
 };
 
-type AppliedFilters = Omit<FilterState, 'alertStatus' | 'recordsMatched'>;
+type AppliedFilters = Omit<FilterState, 'recordsMatched'>;
 
 type Props = {
   visible: boolean;
@@ -83,8 +77,8 @@ const AdvancedFiltersBottomSheet = ({
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Date picker state
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pickerDate, setPickerDate] = useState(new Date());
   const [activeDateField, setActiveDateField] = useState<'fromDate' | 'toDate'>('fromDate');
 
   const { token } = useAuth();
@@ -101,11 +95,11 @@ const AdvancedFiltersBottomSheet = ({
         const result = await searchAudioWithPagination(token, {
           limit: 1, // Only need the total count
           counties: filters.counties.length ? filters.counties.join(',') : undefined,
-          keywordPriority: filters.keywordPriority && filters.keywordPriority !== 'All' ? filters.keywordPriority : undefined,
           keywords: filters.keywords || undefined,
           talkgroup: filters.talkgroup || undefined,
-          fromDate: convertToApiDate(filters.fromDate) || undefined,
-          toDate: convertToApiDate(filters.toDate) || undefined,
+          fromDate: filterDisplayDateToApi(filters.fromDate) || undefined,
+          toDate: filterDisplayDateToApi(filters.toDate) || undefined,
+          flagged: filters.alertStatus === 'Flagged' ? true : undefined,
         });
         setFilters(prev => ({
           ...prev,
@@ -123,11 +117,11 @@ const AdvancedFiltersBottomSheet = ({
     visible,
     token,
     filters.counties,
-    filters.keywordPriority,
     filters.keywords,
     filters.talkgroup,
     filters.fromDate,
     filters.toDate,
+    filters.alertStatus,
   ]);
 
   useEffect(() => {
@@ -136,6 +130,7 @@ const AdvancedFiltersBottomSheet = ({
       setFilters({
         ...DEFAULT_FILTER_STATE,
         ...(applied ?? {}),
+        alertStatus: applied?.alertStatus ?? DEFAULT_FILTER_STATE.alertStatus,
         counties: applied?.counties ? [...applied.counties] : [],
       });
       setShowModal(true);
@@ -182,26 +177,18 @@ const AdvancedFiltersBottomSheet = ({
     });
   };
 
-  const formatDate = (date: Date) => {
-    const d = String(date.getDate()).padStart(2, '0');
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const y = date.getFullYear();
-    const hr = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    return `${d}/${m}/${y} ${hr}:${min}`;
-  };
-
   const openDatePicker = (field: 'fromDate' | 'toDate') => {
     setActiveDateField(field);
+    setPickerDate(parseFilterDisplayDate(filters[field]) ?? new Date());
     setDatePickerOpen(true);
   };
 
   const handleDateConfirm = (date: Date) => {
     setDatePickerOpen(false);
-    setFilters({
-      ...filters,
-      [activeDateField]: formatDate(date),
-    });
+    setFilters(prev => ({
+      ...prev,
+      [activeDateField]: formatFilterDisplayDate(date),
+    }));
   };
 
   const handleReset = () => {
@@ -275,6 +262,37 @@ const AdvancedFiltersBottomSheet = ({
                 style={styles.scrollContainer}
                 showsVerticalScrollIndicator={false}
               >
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Alerts</Text>
+                  <View style={styles.priorityContainer}>
+                    {ALERT_STATUS_TABS.map(status => {
+                      const isActive = filters.alertStatus === status;
+                      return (
+                        <TouchableOpacity
+                          key={status}
+                          style={[
+                            styles.priorityOption,
+                            isActive && styles.priorityOptionActive,
+                          ]}
+                          onPress={() =>
+                            setFilters(prev => ({ ...prev, alertStatus: status }))
+                          }
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.priorityOptionText,
+                              isActive && styles.priorityOptionTextActive,
+                            ]}
+                          >
+                            {status}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
                 <View style={styles.searchRowSection}>
                   <View style={styles.searchRowField}>
                     <Text style={styles.label}>Keywords</Text>
@@ -338,35 +356,6 @@ const AdvancedFiltersBottomSheet = ({
                     })}
                   </View>
 
-                  <Text style={styles.sectionTitle}>Keyword Priority</Text>
-                  <View style={styles.priorityContainer}>
-                    {['All', 'High', 'Medium', 'Low', 'Nada'].map(priority => {
-                      const isActive = filters.keywordPriority === priority;
-                      return (
-                        <TouchableOpacity
-                          key={priority}
-                          style={[
-                            styles.priorityOption,
-                            isActive && styles.priorityOptionActive,
-                          ]}
-                          onPress={() =>
-                            setFilters(prev => ({ ...prev, keywordPriority: priority }))
-                          }
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={[
-                              styles.priorityOptionText,
-                              isActive && styles.priorityOptionTextActive,
-                            ]}
-                          >
-                            {priority}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
                   <View style={styles.dateRow}>
                     <View style={styles.dateColumn}>
                       <Text style={styles.label}>From</Text>
@@ -377,7 +366,7 @@ const AdvancedFiltersBottomSheet = ({
                       >
                         <TextInput
                           style={styles.dateInput}
-                          placeholder="Day & Time"
+                          placeholder="DD/MM/YYYY"
                           placeholderTextColor={colors.textMuted}
                           value={filters.fromDate}
                           editable={false}
@@ -395,7 +384,7 @@ const AdvancedFiltersBottomSheet = ({
                       >
                         <TextInput
                           style={styles.dateInput}
-                          placeholder="Day & Time"
+                          placeholder="DD/MM/YYYY"
                           placeholderTextColor={colors.textMuted}
                           value={filters.toDate}
                           editable={false}
@@ -423,20 +412,10 @@ const AdvancedFiltersBottomSheet = ({
       <DatePicker
         modal
         open={datePickerOpen}
-        date={
-          filters[activeDateField]
-            ? (() => {
-              const parts = filters[activeDateField].split(' ');
-              const datePart = parts[0];
-              const timePart = parts[1] || '00:00';
-              const [d, m, y] = datePart.split('/').map(Number);
-              const [hr, min] = timePart.split(':').map(Number);
-              const date = new Date(y, m - 1, d, hr, min);
-              return isNaN(date.getTime()) ? new Date() : date;
-            })()
-            : new Date()
-        }
-        mode="datetime"
+        date={pickerDate}
+        mode="date"
+        locale="en-GB"
+        title="Select date"
         onConfirm={handleDateConfirm}
         onCancel={() => setDatePickerOpen(false)}
         theme={isDark ? 'dark' : 'light'}

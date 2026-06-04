@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {ActivityIndicator, StatusBar, StyleSheet, View} from 'react-native';
 import {Provider} from 'react-redux';
@@ -6,6 +6,7 @@ import {PersistGate} from 'redux-persist/integration/react';
 import {AppNavigator} from './src/navigation/AppNavigator';
 import {persistor, store} from './src/redux/store';
 import {ThemeProvider, useTheme} from './src/context';
+import {initializeFirebaseMessaging} from './src/services/notifications/firebaseMessaging';
 
 const AppShell = () => {
   const {colors, isDark} = useTheme();
@@ -30,6 +31,10 @@ const PersistLoading = () => (
 );
 
 const App = () => {
+  useEffect(() => {
+    initializeFirebaseMessaging();
+  }, []);
+
   return (
     <Provider store={store}>
       <PersistGate loading={<PersistLoading />} persistor={persistor}>

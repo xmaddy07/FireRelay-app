@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "922255868362",
+    "project_id": "firerelay-44255",
+    "storage_bucket": "firerelay-44255.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:922255868362:android:1109f6d48839aa65f38f33",
+        "android_client_info": {
+          "package_name": "com.firerelay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1EWwy08i5J9VBGzc5NPvfGBAzPOdblxw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
