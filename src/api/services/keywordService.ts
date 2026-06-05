@@ -34,6 +34,14 @@ export async function searchKeywords(
     page,
     limit,
     search: searchTerm,
+    keyword: searchTerm,
+    severity: params.severity,
+    active:
+      params.active === true
+        ? 'true'
+        : params.active === false
+          ? 'false'
+          : undefined,
   });
   const payload = await authorizedRequest<unknown>(
     token,

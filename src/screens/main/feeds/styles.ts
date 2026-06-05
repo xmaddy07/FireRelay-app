@@ -490,7 +490,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: colors.warning,
   },
   feedBadgeSeverityInfo: {
-    backgroundColor: colors.textMuted,
+    backgroundColor: colors.live,
   },
   feedBadgeSeverityText: {
     color: colors.textOnPrimary,
@@ -562,7 +562,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.warning,
   },
   feedSnippetHighlightInfo: {
-    color: colors.textMuted,
+    color: colors.live,
   },
 
   feedStarButton: {
@@ -808,7 +808,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: colors.warning,
   },
   metadataSeverityInfo: {
-    backgroundColor: colors.textMuted,
+    backgroundColor: colors.live,
   },
   metadataSeverityBadgeText: {
     fontSize: responsiveSize(11),
@@ -848,7 +848,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: colors.warning,
   },
   metadataKeywordPillInfo: {
-    backgroundColor: colors.textMuted,
+    backgroundColor: colors.live,
   },
   metadataKeywordPillText: {
     fontSize: responsiveSize(12),

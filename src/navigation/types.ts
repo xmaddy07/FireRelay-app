@@ -15,6 +15,10 @@ export type MainTabParamList = {
 export type SettingsStackParamList = {
   Menu: undefined;
   Profile: undefined;
+  ProfileEmailOtp: {
+    currentEmail: string;
+    newEmail: string;
+  };
   Password: undefined;
   Subscription: undefined;
 };

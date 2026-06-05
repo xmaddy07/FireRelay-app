@@ -13,7 +13,17 @@ import Icon from 'react-native-vector-icons/Feather';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {createPremium} from './styles';
 import {createKeywordModalStyles} from './keywordModal.styles';
-import type {KeywordDescriptionLevel, KeywordRecord} from './types';
+import {
+  getModalSeverityChipStyles,
+  normalizeKeywordSeverity,
+} from './severityStyles';
+import {severityDisplayName} from '../../../api';
+import {
+  KEYWORD_SEVERITY_LEVELS,
+  type KeywordDescriptionLevel,
+  type KeywordRecord,
+  type KeywordSeverity,
+} from './types';
 
 type Props = {
   visible: boolean;
@@ -23,9 +33,13 @@ type Props = {
   onSubmit: (keyword: KeywordRecord) => void;
 };
 
-const deriveDescriptionMeta = (description: string) => {
+const deriveRecordMeta = (
+  description: string,
+  severity: KeywordSeverity | null,
+) => {
   const trimmed = description.trim();
-  const isCritical = trimmed.toUpperCase() === 'CRITICAL';
+  const normalized = severity?.toUpperCase();
+  const isCritical = normalized === 'CRITICAL' || normalized === 'HIGH';
   const descriptionLevel: KeywordDescriptionLevel = isCritical
     ? 'critical'
     : 'normal';
@@ -46,6 +60,7 @@ const KeywordFormModal = ({
   const [name, setName] = useState('');
   const [active, setActive] = useState(true);
   const [description, setDescription] = useState('');
+  const [severity, setSeverity] = useState<KeywordSeverity | null>(null);
 
   const isEdit = mode === 'edit';
   const title = isEdit ? 'Edit Keyword' : 'Add New Keyword';
@@ -59,12 +74,14 @@ const KeywordFormModal = ({
     if (isEdit && keyword) {
       setName(keyword.name);
       setActive(keyword.active);
-      setDescription(keyword.description);
+      setDescription(keyword.description === '—' ? '' : keyword.description);
+      setSeverity(normalizeKeywordSeverity(keyword.severity));
       return;
     }
     setName('');
     setActive(true);
     setDescription('');
+    setSeverity(null);
   }, [visible, isEdit, keyword]);
 
   const handleSubmit = () => {
@@ -73,13 +90,14 @@ const KeywordFormModal = ({
       return;
     }
 
-    const meta = deriveDescriptionMeta(description);
+    const meta = deriveRecordMeta(description, severity);
 
     if (isEdit && keyword) {
       onSubmit({
         ...keyword,
         name: trimmedName,
         active,
+        severity,
         ...meta,
       });
     } else {
@@ -87,7 +105,7 @@ const KeywordFormModal = ({
         id: `keyword-${Date.now()}`,
         name: trimmedName,
         active,
-        severity: null,
+        severity,
         createdAt: new Date().toISOString().slice(0, 10),
         ...meta,
       });
@@ -144,6 +162,28 @@ const KeywordFormModal = ({
                 </View>
                 <Text style={s.activeLabel}>Active</Text>
               </TouchableOpacity>
+
+              <Text style={s.fieldLabel}>Severity</Text>
+              <View style={s.severityRow}>
+                {KEYWORD_SEVERITY_LEVELS.map(option => {
+                  const selected = severity === option;
+                  const chipStyles = getModalSeverityChipStyles(option, selected, s);
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={chipStyles.chip}
+                      onPress={() =>
+                        setSeverity(prev => (prev === option ? null : option))
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <Text style={chipStyles.text}>
+                        {severityDisplayName(option)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
               <Text style={s.fieldLabel}>Description</Text>
               <TextInput

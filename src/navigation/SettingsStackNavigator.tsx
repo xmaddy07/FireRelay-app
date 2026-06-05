@@ -4,6 +4,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
 import SettingsMenu from '../screens/main/settings/SettingsMenu';
 import ProfileSettings from '../screens/main/settings/ProfileSettings';
+import ProfileEmailOtp from '../screens/main/settings/ProfileEmailOtp';
 import PasswordSettings from '../screens/main/settings/PasswordSettings';
 import SubscriptionSettings from '../screens/main/settings/SubscriptionSettings';
 import {useTheme} from '../config/theme';
@@ -32,6 +33,7 @@ const SettingsStackNavigator = () => {
       >
         <Stack.Screen name="Menu" component={SettingsMenu} />
         <Stack.Screen name="Profile" component={ProfileSettings} />
+        <Stack.Screen name="ProfileEmailOtp" component={ProfileEmailOtp} />
         <Stack.Screen name="Password" component={PasswordSettings} />
         <Stack.Screen
           name="Subscription"

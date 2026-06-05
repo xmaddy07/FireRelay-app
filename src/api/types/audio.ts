@@ -1,3 +1,10 @@
+import type {KeywordSeverity} from './severity';
+
+export type ApiKeywordMatch = {
+  keyword: string;
+  severity: KeywordSeverity;
+};
+
 export type ApiCountyRef = {
   id?: string;
   name?: string;
@@ -14,12 +21,12 @@ export type ApiAudio = {
   talkgroupID?: string;
   talkgroupId?: string;
   talkGroupId?: string;
-  maxSeverity?: string;
+  maxSeverity?: KeywordSeverity;
   flagged?: boolean;
   timestamp?: string;
   path?: string;
   confidence?: number;
-  keywordMatches?: unknown[];
+  keywordMatches?: ApiKeywordMatch[];
   snippet?: string;
   transcription?: string;
   transcript?: string;

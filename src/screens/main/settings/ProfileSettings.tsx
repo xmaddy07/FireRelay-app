@@ -2,7 +2,9 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {ActivityIndicator, Alert, View, Text} from 'react-native';
+import {ActivityIndicator, View, Text} from 'react-native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {SettingsStackParamList} from '../../../navigation/types';
 import {Input, Button} from '../../../components';
 import {ApiError, changeEmail, getProfile} from '../../../api';
 import type {AuthUser} from '../../../api';
@@ -33,7 +35,8 @@ const mapProfileToUserState = (profile: AuthUser) => ({
 });
 
 const ProfileSettings = () => {
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const styles = useThemedStyles(createStyles);
   const dispatch = useAppDispatch();
   const {token} = useAuth();
@@ -89,14 +92,15 @@ const ProfileSettings = () => {
 
       setSubmitError(null);
       try {
+        const trimmedEmail = values.newEmail.trim().toLowerCase();
         await changeEmail(token, {
-          newEmail: values.newEmail.trim().toLowerCase(),
+          newEmail: trimmedEmail,
         });
-        Alert.alert(
-          'Email change requested',
-          'Check your current email for a confirmation link.',
-        );
         resetForm();
+        navigation.navigate('ProfileEmailOtp', {
+          currentEmail: profileEmail,
+          newEmail: trimmedEmail,
+        });
       } catch (error) {
         setSubmitError(
           error instanceof ApiError

@@ -11,13 +11,12 @@ export type SenderRecord = {
   createdAt: string;
 };
 
-export type StatusFilter = 'All Status' | 'Active' | 'Inactive' | 'Disabled';
+export type StatusFilter = 'All Status' | 'Active' | 'Inactive';
 
 export const STATUS_FILTER_OPTIONS: StatusFilter[] = [
   'All Status',
   'Active',
   'Inactive',
-  'Disabled',
 ];
 
 export const SENDERS_PAGE_SIZE = 10;

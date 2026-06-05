@@ -23,6 +23,7 @@ import * as UserSlice from '../../../redux/slices/userSlice';
 import {authActions} from '../../../redux/slices/authSlice';
 import {ApiError, login} from '../../../api';
 import type {AuthUser} from '../../../api';
+import {getLoginDeviceInfo} from '../../../utils/deviceInfo';
 
 const validationSchema = Yup.object().shape({
   email: Yup.string()
@@ -121,6 +122,7 @@ function LoginScreen() {
         const response = await login({
           email: values.email.trim().toLowerCase(),
           password: values.password,
+          device: getLoginDeviceInfo(),
         });
 
         if (!response.user) {

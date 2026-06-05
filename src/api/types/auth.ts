@@ -1,6 +1,16 @@
+import type {NotificationPreferences} from './severity';
+
+export type LoginDeviceInfo = {
+  platform: 'ios' | 'android';
+  deviceName: string;
+  osVersion: string;
+  appVersion: string;
+};
+
 export type LoginRequest = {
   email: string;
   password: string;
+  device?: LoginDeviceInfo;
 };
 
 export type AuthUser = {
@@ -8,6 +18,7 @@ export type AuthUser = {
   email?: string;
   name?: string;
   role?: 'admin' | 'user' | string;
+  notificationPreferences?: NotificationPreferences;
   [key: string]: unknown;
 };
 

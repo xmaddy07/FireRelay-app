@@ -321,7 +321,12 @@ const PROFILE_TABS: ProfileTab[] = [
   'Activity',
 ];
 
-const FEED_SEVERITY_LEVELS: FeedSeverityLevel[] = ['HIGH', 'MEDIUM', 'LOW'];
+const FEED_SEVERITY_LEVELS: FeedSeverityLevel[] = [
+  'CRITICAL',
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+];
 
 type SeverityAccessMode = 'all' | 'restricted';
 
@@ -333,6 +338,7 @@ const severityLevelStyles = (
   styles: ReturnType<typeof createStyles>,
 ) => {
   switch (level) {
+    case 'CRITICAL':
     case 'HIGH':
       return {
         badge: [styles.severityLevelBadge, styles.severityBadgeHigh],

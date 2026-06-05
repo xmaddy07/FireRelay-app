@@ -69,11 +69,13 @@ const FeedCardMetadataPanel = ({item, expanded}: Props) => {
         <View style={styles.feedMetadataKeywordList}>
           {metadata.matchedKeywords.map(match => {
             const pillStyle =
-              match.severity === 'High'
+              match.severity === 'CRITICAL'
                 ? styles.metadataKeywordPillCritical
-                : match.severity === 'Medium'
+                : match.severity === 'HIGH'
                   ? styles.metadataKeywordPillWarning
-                  : styles.metadataKeywordPillInfo;
+                  : match.severity === 'MEDIUM'
+                    ? styles.metadataKeywordPillWarning
+                    : styles.metadataKeywordPillInfo;
 
             return (
               <View
@@ -81,7 +83,7 @@ const FeedCardMetadataPanel = ({item, expanded}: Props) => {
                 style={[styles.metadataKeywordPill, pillStyle]}
               >
                 <Text style={styles.metadataKeywordPillText}>
-                  {match.keyword} · {match.severity}
+                  {match.keyword} - {match.severity}
                 </Text>
               </View>
             );

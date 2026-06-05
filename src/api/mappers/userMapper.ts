@@ -10,6 +10,9 @@ export const normalizeFeedSeverityLevel = (
   value: string,
 ): FeedSeverityLevel | null => {
   const normalized = value.trim().toUpperCase();
+  if (normalized === 'CRITICAL') {
+    return 'CRITICAL';
+  }
   if (normalized === 'HIGH') {
     return 'HIGH';
   }

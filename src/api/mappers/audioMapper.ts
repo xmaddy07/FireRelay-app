@@ -1,6 +1,7 @@
 import {API_BASE_URL} from '../../config/env';
 import {endpoints} from '../endpoints';
 import type {ApiAudio} from '../types/audio';
+import {formatSeverityLabel} from '../types/severity';
 import type {FeedItem, FeedKeywordMatch} from '../../screens/main/feeds/feedTypes';
 import {pickBoolean, pickString} from '../utils';
 
@@ -167,19 +168,7 @@ const resolveAudioSource = (record: Record<string, unknown>) => {
   };
 };
 
-const formatMatchSeverity = (raw?: string) => {
-  const value = (raw ?? '').trim().toUpperCase();
-  if (value.includes('CRITICAL') || value.includes('HIGH')) {
-    return 'High';
-  }
-  if (value.includes('MEDIUM') || value.includes('WARNING')) {
-    return 'Medium';
-  }
-  if (value.includes('LOW')) {
-    return 'Low';
-  }
-  return 'Normal';
-};
+const formatMatchSeverity = (raw?: string) => formatSeverityLabel(raw);
 
 const collectKeywordMatches = (
   record: Record<string, unknown>,

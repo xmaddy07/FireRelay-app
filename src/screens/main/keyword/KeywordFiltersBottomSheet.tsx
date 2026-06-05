@@ -14,7 +14,6 @@ import {useTheme, useThemedStyles} from '../../../config/theme';
 import {createKeywordFilterSheetStyles} from './keywordFiltersBottomSheet.styles';
 import {
   DEFAULT_KEYWORD_FILTERS,
-  KEYWORD_SEVERITY_FILTER_OPTIONS,
   KEYWORD_STATUS_FILTER_OPTIONS,
   type KeywordFilters,
   type KeywordSeverityFilter,
@@ -28,6 +27,7 @@ type Props = {
   onClose: () => void;
   onApply: (filters: KeywordFilters) => void;
   appliedFilters?: KeywordFilters | null;
+  severityOptions: KeywordSeverityFilter[];
 };
 
 const KeywordFiltersBottomSheet = ({
@@ -35,6 +35,7 @@ const KeywordFiltersBottomSheet = ({
   onClose,
   onApply,
   appliedFilters,
+  severityOptions,
 }: Props) => {
   const {colors} = useTheme();
   const styles = useThemedStyles(createKeywordFilterSheetStyles);
@@ -175,7 +176,7 @@ const KeywordFiltersBottomSheet = ({
 
               <Text style={styles.sectionTitle}>Severity</Text>
               <View style={styles.severityRow}>
-                {KEYWORD_SEVERITY_FILTER_OPTIONS.map(option =>
+                {severityOptions.map(option =>
                   renderChip<KeywordSeverityFilter>(
                     option,
                     filters.severity,

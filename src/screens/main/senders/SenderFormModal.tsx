@@ -25,8 +25,10 @@ type Props = {
 const STATUS_OPTIONS: {label: string; value: SenderStatus}[] = [
   {label: 'Active', value: 'active'},
   {label: 'Inactive', value: 'inactive'},
-  {label: 'Disabled', value: 'disabled'},
 ];
+
+const normalizeStatus = (value: SenderStatus): SenderStatus =>
+  value === 'disabled' ? 'inactive' : value;
 
 const SenderFormModal = ({
   visible,
@@ -55,7 +57,7 @@ const SenderFormModal = ({
     if (isEdit && sender) {
       setName(sender.name);
       setDescription(sender.description ?? '');
-      setStatus(sender.status);
+      setStatus(normalizeStatus(sender.status));
       return;
     }
     setName('');
