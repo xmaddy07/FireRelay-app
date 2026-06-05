@@ -33,7 +33,7 @@ export type CreateUserPayload = {
   password?: string;
 };
 
-export type FeedSeverityLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+export type FeedSeverityLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 export type UpdateUserPayload = {
   email?: string;

@@ -42,6 +42,7 @@ import {
   searchAudio,
 } from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
+import {useFeedSocket} from '../../../hooks/useFeedSocket';
 import {useAppSelector} from '../../../redux/hooks';
 import {
   loadFeedFilters,
@@ -835,6 +836,94 @@ const CountiesScreen = () => {
     () => (selectedFeedItem ? buildFeedDetail(selectedFeedItem) : null),
     [selectedFeedItem],
   );
+
+  const mergeCountyFromFeedItem = useCallback((item: FeedItem) => {
+    setCounties(prev => {
+      const fromFeed = deriveCountiesFromFeed([item]);
+      if (fromFeed.length === 0) {
+        return prev;
+      }
+      const map = new Map<string, County>();
+      [...prev, ...fromFeed].forEach(county => {
+        const key = county.id ?? county.name;
+        map.set(key, county);
+      });
+      const merged = Array.from(map.values());
+      cardFades.current = merged.map(
+        (_, index) => cardFades.current[index] ?? new Animated.Value(1),
+      );
+      cardSlides.current = merged.map(
+        (_, index) => cardSlides.current[index] ?? new Animated.Value(0),
+      );
+      return merged;
+    });
+  }, []);
+
+  const animateLiveFeedItem = useCallback(
+    (id: string) => {
+      const anim = getFeedItemAnim(id);
+      anim.setValue(0);
+      Animated.spring(anim, {
+        toValue: 1,
+        friction: 7,
+        tension: 65,
+        useNativeDriver: true,
+      }).start();
+    },
+    [getFeedItemAnim],
+  );
+
+  const handleLiveNewAudio = useCallback(
+    (item: FeedItem) => {
+      setFeedItems(prev => {
+        if (prev.some(existing => existing.id === item.id)) {
+          return prev;
+        }
+        return [item, ...prev];
+      });
+      mergeCountyFromFeedItem(item);
+      animateLiveFeedItem(item.id);
+    },
+    [animateLiveFeedItem, mergeCountyFromFeedItem],
+  );
+
+  const handleLiveAudioUpdated = useCallback((item: FeedItem) => {
+    setFeedItems(prev => {
+      const index = prev.findIndex(existing => existing.id === item.id);
+      if (index === -1) {
+        return [item, ...prev];
+      }
+      const next = [...prev];
+      next[index] = {...next[index], ...item};
+      return next;
+    });
+    mergeCountyFromFeedItem(item);
+  }, [mergeCountyFromFeedItem]);
+
+  const handleLiveAudioDeleted = useCallback(
+    ({id}: {id: string}) => {
+      setFeedItems(prev => prev.filter(item => item.id !== id));
+      if (selectedFeedItem?.id === id) {
+        setSelectedFeedItem(null);
+      }
+      if (expandedPanel?.id === id) {
+        setExpandedPanel(null);
+      }
+    },
+    [expandedPanel?.id, selectedFeedItem?.id],
+  );
+
+  useFeedSocket({
+    token: token ?? null,
+    enabled: filtersReady && Boolean(token),
+    counties,
+    selectedCountyNames,
+    filters: advancedFilters,
+    searchQuery: debouncedSearchQuery,
+    onNewAudio: handleLiveNewAudio,
+    onAudioUpdated: handleLiveAudioUpdated,
+    onAudioDeleted: handleLiveAudioDeleted,
+  });
 
   const renderFeedItem = ({ item }: { item: FeedItem }) => (
     <FeedListItem

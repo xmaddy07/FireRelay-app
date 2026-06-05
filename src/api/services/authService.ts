@@ -10,13 +10,20 @@ import type {
   UpdateProfileRequest,
 } from '../types/auth';
 import {authorizedRequest} from '../utils';
+import {getLoginDeviceInfo} from '../../utils/deviceInfo';
 
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
+  const device = credentials.device ?? getLoginDeviceInfo();
+
   const {data, token} = await apiRequestWithAuth<LoginResponse>(
     endpoints.auth.login,
     {
       method: 'POST',
-      body: credentials,
+      body: {
+        email: credentials.email,
+        password: credentials.password,
+        device,
+      },
     },
   );
 
@@ -85,10 +92,14 @@ export async function changeEmail(
 }
 
 export async function confirmEmailChange(
-  token: string,
-  payload: ConfirmEmailChangeRequest,
+  accessToken: string,
+  verificationToken: string,
 ): Promise<void> {
-  await authorizedRequest(token, endpoints.auth.confirmEmailChange, {
+  const payload: ConfirmEmailChangeRequest = {
+    token: verificationToken,
+  };
+
+  await authorizedRequest(accessToken, endpoints.auth.confirmEmailChange, {
     method: 'POST',
     body: payload,
   });

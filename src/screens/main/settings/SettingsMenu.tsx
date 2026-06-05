@@ -21,11 +21,16 @@ import AccountNavRow from './components/AccountNavRow';
 import AnimatedLogoutButton from './components/AnimatedLogoutButton';
 import SettingsScreenLayout from './SettingsScreenLayout';
 
+type SettingsMenuRoute = Exclude<
+  keyof SettingsStackParamList,
+  'ProfileEmailOtp'
+>;
+
 const ACCOUNT_ITEMS: {
   key: string;
   label: string;
   icon: string;
-  route: keyof SettingsStackParamList;
+  route: SettingsMenuRoute;
 }[] = [
   {key: 'profile', label: 'Profile', icon: 'user', route: 'Profile'},
   {key: 'password', label: 'Password', icon: 'lock', route: 'Password'},

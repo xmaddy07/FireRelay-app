@@ -2,6 +2,7 @@ import messaging, {
   FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
 import notifee, {AndroidImportance} from '@notifee/react-native';
+import {Platform} from 'react-native';
 import {requestNotificationPermission} from '../permissions/notificationPermission';
 import {logger} from '../../utils/logger';
 
@@ -36,9 +37,24 @@ const getNotificationChannelId = () => {
   return notificationChannelPromise;
 };
 
+const shouldDisplayWithNotifee = (
+  remoteMessage: FirebaseMessagingTypes.RemoteMessage,
+) => {
+  if (Platform.OS === 'android') {
+    return true;
+  }
+
+  // iOS already renders notification-payload pushes natively (correct app icon).
+  // Notifee re-creates them as local notifications, which can show the grid placeholder.
+  return !remoteMessage.notification;
+};
+
 export const displayRemoteMessageNotification = async (
   remoteMessage: FirebaseMessagingTypes.RemoteMessage,
 ) => {
+  if (!shouldDisplayWithNotifee(remoteMessage)) {
+    return;
+  }
   const dataTitle = remoteMessage.data?.title;
   const dataBody = remoteMessage.data?.body;
   const title =
@@ -102,6 +118,7 @@ export const initializeFirebaseMessaging = async (): Promise<void> => {
 
   foregroundUnsubscribe = messaging().onMessage(async remoteMessage => {
     logIncomingMessage('foreground', remoteMessage);
+    // iOS foreground pushes with a notification payload are shown natively via firebase.json.
     await displayRemoteMessageNotification(remoteMessage);
   });
 

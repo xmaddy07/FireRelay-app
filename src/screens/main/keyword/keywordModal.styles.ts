@@ -96,6 +96,73 @@ export const createKeywordModalStyles = (colors: AppColors) => {
       fontFamily: fonts.medium,
       color: colors.text,
     },
+    severityRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: wp(2),
+      marginBottom: hp(1.6),
+    },
+    severityChip: {
+      paddingVertical: hp(0.7),
+      paddingHorizontal: wp(3),
+      borderRadius: wp(5),
+      borderWidth: 1.5,
+      borderColor: premium.borderStrong,
+      backgroundColor: premium.searchBg,
+    },
+    severityChipActive: {
+      borderWidth: 2,
+    },
+    severityChipLow: {
+      borderColor: 'rgba(34, 197, 94, 0.45)',
+      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    },
+    severityChipLowActive: {
+      borderColor: '#16A34A',
+      backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    },
+    severityChipMedium: {
+      borderColor: 'rgba(245, 158, 11, 0.45)',
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    },
+    severityChipMediumActive: {
+      borderColor: '#D97706',
+      backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    },
+    severityChipCritical: {
+      borderColor: 'rgba(185, 28, 28, 0.5)',
+      backgroundColor: 'rgba(185, 28, 28, 0.12)',
+    },
+    severityChipCriticalActive: {
+      borderColor: '#B91C1C',
+      backgroundColor: 'rgba(185, 28, 28, 0.22)',
+    },
+    severityChipHigh: {
+      borderColor: 'rgba(239, 68, 68, 0.45)',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    },
+    severityChipHighActive: {
+      borderColor: '#EF4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    },
+    severityChipText: {
+      fontSize: responsiveSize(12),
+      fontFamily: fonts.bold,
+      letterSpacing: responsiveSize(0.5),
+      color: premium.textMuted,
+    },
+    severityChipTextLow: {
+      color: '#16A34A',
+    },
+    severityChipTextMedium: {
+      color: '#D97706',
+    },
+    severityChipTextCritical: {
+      color: '#B91C1C',
+    },
+    severityChipTextHigh: {
+      color: '#EF4444',
+    },
     footer: {
       flexDirection: 'row',
       justifyContent: 'flex-end',

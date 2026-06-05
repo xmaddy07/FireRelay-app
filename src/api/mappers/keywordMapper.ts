@@ -1,5 +1,10 @@
 import type {KeywordRecord} from '../../screens/main/keyword/types';
 import type {ApiKeyword} from '../types/keyword';
+import {
+  formatSeverityLabel,
+  KEYWORD_SEVERITY_LEVELS,
+  type KeywordSeverity,
+} from '../types/severity';
 import {pickBoolean, pickString} from '../utils';
 
 const normalizeSeverity = (
@@ -8,7 +13,11 @@ const normalizeSeverity = (
   if (!value?.trim()) {
     return null;
   }
-  return value.trim().toUpperCase();
+  const normalized = value.trim().toUpperCase();
+  if ((KEYWORD_SEVERITY_LEVELS as readonly string[]).includes(normalized)) {
+    return normalized as KeywordSeverity;
+  }
+  return formatSeverityLabel(normalized);
 };
 
 const mapDescriptionLevel = (

@@ -32,49 +32,25 @@ import {
   ApiError,
   createKeyword,
   deleteKeyword,
+  listKeywords,
   searchKeywords,
   updateKeyword,
 } from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
 import KeywordFiltersBottomSheet from './KeywordFiltersBottomSheet';
 import KeywordFormModal from './KeywordFormModal';
-import {applyKeywordFilters, isDefaultKeywordFilters} from './keywordFilters';
+import {
+  getKeywordSeverityFilterOptions,
+  isDefaultKeywordFilters,
+  keywordFiltersToSearchParams,
+} from './keywordFilters';
 import {
   DEFAULT_KEYWORD_FILTERS,
   KEYWORDS_PAGE_SIZE,
   type KeywordFilters,
   type KeywordRecord,
-  type KeywordSeverity,
 } from './types';
-
-const getSeverityStyles = (
-  severity: KeywordSeverity | null,
-  styles: ReturnType<typeof createStyles>,
-) => {
-  switch (severity?.toUpperCase()) {
-    case 'HIGH':
-    case 'CRITICAL':
-      return {
-        badge: [styles.severityBadge, styles.severityBadgeHigh],
-        text: [styles.severityText, styles.severityTextHigh],
-      };
-    case 'MEDIUM':
-      return {
-        badge: [styles.severityBadge, styles.severityBadgeMedium],
-        text: [styles.severityText, styles.severityTextMedium],
-      };
-    case 'LOW':
-      return {
-        badge: [styles.severityBadge, styles.severityBadgeLow],
-        text: [styles.severityText, styles.severityTextLow],
-      };
-    default:
-      return {
-        badge: [styles.severityBadge, styles.severityBadgeDefault],
-        text: [styles.severityText, styles.severityTextDefault],
-      };
-  }
-};
+import {getListSeverityStyles} from './severityStyles';
 
 const formatCreatedDate = (iso: string) => {
   const date = new Date(iso);
@@ -104,7 +80,7 @@ const KeywordListItem = ({
   const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const isCritical = item.isCritical || item.descriptionLevel === 'critical';
-  const severityStyles = getSeverityStyles(item.severity, styles);
+  const severityStyles = getListSeverityStyles(item.severity, styles);
 
   const entranceStyle = {
     opacity: entranceAnim,
@@ -389,46 +365,21 @@ const KeywordsScreen = () => {
   const isSearching = debouncedSearch.length > 0;
   const hasActiveFilters = !isDefaultKeywordFilters(appliedFilters);
 
-  const baseDisplayKeywords = useMemo(() => {
-    if (!isSearching) {
-      if (hasActiveFilters && allKeywords.length > 0) {
-        return allKeywords;
-      }
-      return keywords;
+  const filterOptionSource = useMemo(() => {
+    if (allKeywords.length > 0) {
+      return allKeywords;
     }
-    return searchResults;
-  }, [
-    allKeywords,
-    hasActiveFilters,
-    isSearching,
-    keywords,
-    searchResults,
-  ]);
+    return isSearching ? searchResults : keywords;
+  }, [allKeywords, isSearching, keywords, searchResults]);
 
-  const displayKeywords = useMemo(
-    () => applyKeywordFilters(baseDisplayKeywords, appliedFilters),
-    [appliedFilters, baseDisplayKeywords],
+  const severityFilterOptions = useMemo(
+    () => getKeywordSeverityFilterOptions(filterOptionSource),
+    [filterOptionSource],
   );
 
-  const displayHasMore =
-    hasActiveFilters && !isSearching ? false : isSearching ? searchHasMore : hasMore;
-
-  const displayTotalCount = useMemo(() => {
-    if (hasActiveFilters) {
-      return displayKeywords.length;
-    }
-    if (isSearching) {
-      return searchTotalCount;
-    }
-    return totalCount;
-  }, [
-    displayKeywords.length,
-    hasActiveFilters,
-    isSearching,
-    searchTotalCount,
-    totalCount,
-  ]);
-
+  const displayKeywords = isSearching ? searchResults : keywords;
+  const displayHasMore = isSearching ? searchHasMore : hasMore;
+  const displayTotalCount = isSearching ? searchTotalCount : totalCount;
   const isListLoading = isSearching ? searchLoading : loading;
 
   useEffect(() => {
@@ -456,39 +407,8 @@ const KeywordsScreen = () => {
       return;
     }
     try {
-      const merged: KeywordRecord[] = [];
-      let pageNum = 1;
-      let more = true;
-      const pageSize = 50;
-
-      const seenIds = new Set<string>();
-
-      while (more && pageNum <= 40) {
-        const result = await searchKeywords(token, {
-          page: pageNum,
-          limit: pageSize,
-        });
-        result.items.forEach(item => {
-          if (!seenIds.has(item.id)) {
-            seenIds.add(item.id);
-            merged.push(item);
-          }
-        });
-        if (result.totalFromApi && pageNum === 1) {
-          setTotalCount(result.total);
-        }
-        more = result.hasMore;
-        pageNum += 1;
-        if (result.items.length === 0) {
-          break;
-        }
-      }
-
+      const merged = await listKeywords(token);
       setAllKeywords(merged);
-      if (!merged.length) {
-        return;
-      }
-      setTotalCount(prev => (prev > 0 ? prev : merged.length));
     } catch {
       // Keep the last known cache when prefetch is unavailable.
     }
@@ -512,6 +432,7 @@ const KeywordsScreen = () => {
         const result = await searchKeywords(token, {
           page: pageToLoad,
           limit: KEYWORDS_PAGE_SIZE,
+          ...keywordFiltersToSearchParams(appliedFilters),
         });
 
         if (!append) {
@@ -551,7 +472,7 @@ const KeywordsScreen = () => {
         }
       }
     },
-    [mergeKeywords, token],
+    [appliedFilters, mergeKeywords, token],
   );
 
   const loadSearchResults = useCallback(
@@ -572,6 +493,8 @@ const KeywordsScreen = () => {
           page: pageToLoad,
           limit: KEYWORDS_PAGE_SIZE,
           search: debouncedSearch,
+          keyword: debouncedSearch,
+          ...keywordFiltersToSearchParams(appliedFilters),
         });
 
         if (!append) {
@@ -611,7 +534,7 @@ const KeywordsScreen = () => {
         }
       }
     },
-    [debouncedSearch, mergeKeywords, token],
+    [appliedFilters, debouncedSearch, mergeKeywords, token],
   );
 
   useEffect(() => {
@@ -624,7 +547,7 @@ const KeywordsScreen = () => {
     setSearchResults([]);
     setSearchTotalCount(0);
     loadKeywords(1, false);
-  }, [isSearching, loadKeywords]);
+  }, [appliedFilters, isSearching, loadKeywords]);
 
   useEffect(() => {
     if (!isSearching) {
@@ -635,7 +558,7 @@ const KeywordsScreen = () => {
     setSearchHasMore(true);
     setSearchResults([]);
     void loadSearchResults(1, false);
-  }, [debouncedSearch, isSearching, loadSearchResults]);
+  }, [appliedFilters, debouncedSearch, isSearching, loadSearchResults]);
 
   useEffect(() => {
     if (!token) {
@@ -769,12 +692,15 @@ const KeywordsScreen = () => {
   };
 
   const handleApplyFilters = (filters: KeywordFilters) => {
-    setAppliedFilters(filters);
+    const options = getKeywordSeverityFilterOptions(filterOptionSource);
+    const nextFilters: KeywordFilters =
+      filters.severity !== 'All' && !options.includes(filters.severity)
+        ? {...filters, severity: 'All'}
+        : filters;
+
+    setAppliedFilters(nextFilters);
     setLoadError(null);
     animatedIdsRef.current.clear();
-    if (!isDefaultKeywordFilters(filters) && allKeywords.length === 0 && token) {
-      void loadAllKeywords();
-    }
   };
 
   const headerStyle = {
@@ -1018,9 +944,11 @@ const KeywordsScreen = () => {
             ) : (
               <Text style={styles.emptyStateText}>
                 {loadError ??
-                  (isSearching
-                    ? 'No keywords match your search.'
-                    : 'No keywords found.')}
+                  (hasActiveFilters
+                    ? 'No keywords match your filters.'
+                    : isSearching
+                      ? 'No keywords match your search.'
+                      : 'No keywords found.')}
               </Text>
             )}
           </View>
@@ -1048,6 +976,7 @@ const KeywordsScreen = () => {
         onClose={() => setFilterSheetVisible(false)}
         onApply={handleApplyFilters}
         appliedFilters={appliedFilters}
+        severityOptions={severityFilterOptions}
       />
     </View>
   );

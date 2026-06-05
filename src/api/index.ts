@@ -3,6 +3,7 @@ export {endpoints} from './endpoints';
 export {ApiError, apiRequest, apiRequestWithAuth} from './client';
 export * from './types/auth';
 export * from './types/common';
+export * from './types/severity';
 export {getAudioFileUrl} from './mappers/audioMapper';
 
 export {

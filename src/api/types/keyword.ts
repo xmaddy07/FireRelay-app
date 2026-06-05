@@ -1,3 +1,5 @@
+import type {KeywordSeverity} from './severity';
+
 export type ApiKeyword = {
   id: string;
   keyword?: string;
@@ -6,7 +8,7 @@ export type ApiKeyword = {
   active?: boolean;
   isActive?: boolean;
   description?: string | null;
-  severity?: string | null;
+  severity?: KeywordSeverity | null;
   priority?: string;
   level?: string;
   createdAt?: string;
@@ -20,13 +22,15 @@ export type KeywordSearchParams = {
   search?: string;
   q?: string;
   keyword?: string;
+  severity?: string;
+  active?: boolean;
 };
 
 export type CreateKeywordPayload = {
   keyword: string;
   active?: boolean;
   description?: string | null;
-  severity?: string | null;
+  severity?: KeywordSeverity | null;
   priority?: string;
 };
 

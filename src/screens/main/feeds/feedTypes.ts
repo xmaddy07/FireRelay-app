@@ -1,6 +1,8 @@
+import {formatSeverityLabel, type KeywordSeverity} from '../../../api/types/severity';
+
 export type FeedKeywordMatch = {
   keyword: string;
-  severity: string;
+  severity: KeywordSeverity;
 };
 
 export type FeedItem = {
@@ -98,21 +100,20 @@ export const buildFeedDetail = (item: FeedItem): FeedDetailData => ({
   confidencePercent: confidenceForItem(item),
 });
 
-const formatSeverityLabel = (raw?: string, fallback?: FeedItem['severity']) => {
-  const value = (raw ?? '').trim().toUpperCase();
-  if (value.includes('CRITICAL') || value.includes('HIGH')) {
-    return 'High';
+const formatFeedSeverityLabel = (
+  raw?: string,
+  fallback?: FeedItem['severity'],
+): KeywordSeverity => {
+  if (raw?.trim()) {
+    return formatSeverityLabel(raw);
   }
-  if (value.includes('MEDIUM') || value.includes('WARNING')) {
-    return 'Medium';
+  if (fallback === 'critical') {
+    return 'CRITICAL';
   }
-  if (value.includes('LOW')) {
-    return 'Low';
+  if (fallback === 'warning') {
+    return 'MEDIUM';
   }
-  if (fallback) {
-    return priorityForSeverity(fallback);
-  }
-  return 'Normal';
+  return 'LOW';
 };
 
 const formatCreatedLabel = (item: FeedItem) => {
@@ -149,6 +150,6 @@ export const buildFeedMetadata = (item: FeedItem): FeedMetadataView => ({
       ? item.matchedKeywords
       : item.highlightKeywords.map(keyword => ({
           keyword,
-          severity: item.maxSeverityLabel,
+          severity: formatFeedSeverityLabel(item.maxSeverityLabel, item.severity),
         })),
 });

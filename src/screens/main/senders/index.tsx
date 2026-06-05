@@ -315,7 +315,6 @@ const SendersScreen = () => {
       total: senders.length,
       active: senders.filter(s => s.status === 'active').length,
       inactive: senders.filter(s => s.status === 'inactive').length,
-      disabled: senders.filter(s => s.status === 'disabled').length,
     }),
     [senders],
   );
@@ -618,7 +617,7 @@ const SendersScreen = () => {
               Senders Management
             </Text>
             <Text style={styles.screenSubtitle}>
-              Manage and monitor all email senders used in the system.
+              Configure and manage audio upload senders.
             </Text>
           </View>
         </View>
@@ -676,14 +675,6 @@ const SendersScreen = () => {
           icon="pause-circle"
           iconStyle="orange"
           iconColor="#F59E0B"
-        />
-        <StatCard
-          label="Disabled"
-          value={stats.disabled}
-          subLabel="Disabled senders"
-          icon="x-circle"
-          iconStyle="red"
-          iconColor="#EF4444"
         />
       </ScrollView>
 
