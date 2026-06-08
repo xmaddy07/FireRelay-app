@@ -25,6 +25,8 @@ export type AuthUser = {
 export type LoginResponse = {
   user: AuthUser;
   accessToken?: string;
+  sessionId?: string;
+  session_id?: string;
 };
 
 export type ApiErrorBody = {

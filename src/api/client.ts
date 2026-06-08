@@ -1,8 +1,6 @@
 import {API_BASE_URL} from '../config/env';
 import type {ApiErrorBody} from './types/auth';
-import {store} from '../redux/store';
-import {authActions} from '../redux/slices/authSlice';
-import {userActions} from '../redux/slices/userSlice';
+import {forceLogout} from '../services/auth/forceLogout';
 
 export class ApiError extends Error {
   status: number;
@@ -121,8 +119,7 @@ export async function apiRequest<T>(
     const errorBody = data as ApiErrorBody | undefined;
     logApi('← Error', {method, url, status: response.status, body: errorBody});
     if (response.status === 401 && path !== '/auth/login') {
-      store.dispatch(authActions.logout());
-      store.dispatch(userActions.clearUser());
+      forceLogout();
     }
     throw new ApiError(
       formatErrorMessage(errorBody, response.statusText || 'Request failed'),
@@ -184,8 +181,7 @@ export async function apiRequestWithAuth<T>(
     const errorBody = data as ApiErrorBody | undefined;
     logApi('← Error', {method, url, status: response.status, body: errorBody});
     if (response.status === 401 && path !== '/auth/login') {
-      store.dispatch(authActions.logout());
-      store.dispatch(userActions.clearUser());
+      forceLogout();
     }
     throw new ApiError(
       formatErrorMessage(errorBody, response.statusText || 'Request failed'),

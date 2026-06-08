@@ -473,6 +473,7 @@ const UserProfileModal = ({
   const [savingRole, setSavingRole] = useState(false);
   const [savingCounties, setSavingCounties] = useState(false);
   const loadedTabsRef = useRef<Set<ProfileTab>>(new Set());
+  const tabLoadGenerationRef = useRef(0);
   const [sessionActionId, setSessionActionId] = useState<string | null>(null);
   const [savingAccess, setSavingAccess] = useState(false);
   const [securityLoading, setSecurityLoading] = useState<'reset' | 'revokeAll' | null>(
@@ -524,9 +525,8 @@ const UserProfileModal = ({
         return;
       }
 
-      if (tab !== 'Security') {
-        setTabLoading(tab);
-      }
+      const generation = ++tabLoadGenerationRef.current;
+      setTabLoading(tab);
       setError(null);
 
       try {
@@ -536,6 +536,9 @@ const UserProfileModal = ({
             getUserCounties(token, userId),
             listCounties(token),
           ]);
+          if (generation !== tabLoadGenerationRef.current) {
+            return;
+          }
           setProfileUser(fetchedUser);
           setUserCounties(counties);
           setPickerCounties(allCounties);
@@ -552,6 +555,9 @@ const UserProfileModal = ({
             getUserTalkgroupAccess(token, userId),
             getUserById(token, userId),
           ]);
+          if (generation !== tabLoadGenerationRef.current) {
+            return;
+          }
           setTalkgroupAccess(access);
           setProfileUser(fetchedUser);
           applySeverityAccessState(
@@ -565,16 +571,24 @@ const UserProfileModal = ({
           tab === 'Security'
         ) {
           const sessionList = await listUserSessions(token, userId);
+          if (generation !== tabLoadGenerationRef.current) {
+            return;
+          }
           setSessions(sortSessionsByLastSeen(sessionList));
         }
 
         loadedTabsRef.current.add(tab);
       } catch (loadErr) {
+        if (generation !== tabLoadGenerationRef.current) {
+          return;
+        }
         setError(
           loadErr instanceof ApiError ? loadErr.message : 'Unable to load profile data.',
         );
       } finally {
-        setTabLoading(null);
+        if (generation === tabLoadGenerationRef.current) {
+          setTabLoading(null);
+        }
       }
     },
     [token, userId, visible],
@@ -600,9 +614,10 @@ const UserProfileModal = ({
     setManagingCounties(false);
     setCountySearch('');
     setEditingRole(false);
+    tabLoadGenerationRef.current += 1;
     loadedTabsRef.current = new Set();
+    setTabLoading(null);
     setError(null);
-    void loadTabDataRef.current('Overview', true);
   }, [visible, userId, token]);
 
   useEffect(() => {
@@ -1697,13 +1712,16 @@ const UserProfileModal = ({
             contentContainerStyle={styles.profileContentContainer}
             showsVerticalScrollIndicator={false}
           >
-            {isTabLoading ? (
-              <View style={styles.profileLoadingWrap}>
-                <ActivityIndicator color={colors.primary} />
-              </View>
-            ) : (
-              <Animated.View style={tabContentAnimatedStyle}>{renderTabContent()}</Animated.View>
-            )}
+            <View style={styles.profileTabContentWrap}>
+              <Animated.View style={[styles.profileTabContent, tabContentAnimatedStyle]}>
+                {renderTabContent()}
+              </Animated.View>
+              {isTabLoading ? (
+                <View style={styles.profileLoadingOverlay}>
+                  <ActivityIndicator color={colors.primary} />
+                </View>
+              ) : null}
+            </View>
             {error ? <Text style={styles.profileErrorText}>{error}</Text> : null}
             <TouchableOpacity style={styles.closeProfileButton} onPress={onClose} activeOpacity={0.85}>
               <Text style={styles.closeProfileButtonText}>Close</Text>

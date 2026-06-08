@@ -5,40 +5,49 @@ import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
 export const createFeedDetailModalStyles = (colors: AppColors) =>
   StyleSheet.create({
-    fullScreen: {
+    overlay: {
       flex: 1,
-      backgroundColor: colors.modalSurface,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      paddingHorizontal: wp(4),
+      paddingVertical: hp(3),
     },
-    screenHeader: {
+    card: {
+      width: '100%',
+      maxHeight: '92%',
+      backgroundColor: colors.modalSurface,
+      borderRadius: wp(4),
+      borderWidth: 1,
+      borderColor: colors.primaryBorder,
+      overflow: 'hidden',
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.shadow,
+          shadowOffset: {width: 0, height: 12},
+          shadowOpacity: 0.2,
+          shadowRadius: 28,
+        },
+        android: {elevation: 14},
+      }),
+    },
+    popupHeader: {
       position: 'relative',
       overflow: 'hidden',
       borderBottomWidth: 1,
       borderBottomColor: colors.primaryBorder,
     },
-    screenHeaderGradient: {
+    popupHeaderGradient: {
       ...StyleSheet.absoluteFillObject,
     },
-    screenHeaderContent: {
+    popupHeaderContent: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       paddingHorizontal: wp(4),
-      paddingTop: hp(0.6),
+      paddingTop: hp(1.6),
       paddingBottom: hp(1.4),
       gap: wp(2.5),
     },
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: wp(0.5),
-      paddingRight: wp(1),
-      flexShrink: 0,
-    },
-    backButtonLabel: {
-      fontSize: responsiveSize(14),
-      fontFamily: fonts.semibold,
-      color: colors.primary,
-    },
-    screenHeaderMain: {
+    popupHeaderMain: {
       flex: 1,
       minWidth: 0,
       flexDirection: 'row',
@@ -56,27 +65,38 @@ export const createFeedDetailModalStyles = (colors: AppColors) =>
       justifyContent: 'center',
       flexShrink: 0,
     },
-    screenHeaderText: {
+    popupHeaderText: {
       flex: 1,
       minWidth: 0,
       gap: hp(0.2),
     },
-    screenHeaderEyebrow: {
+    popupHeaderEyebrow: {
       fontSize: responsiveSize(9),
       fontFamily: fonts.bold,
       color: colors.primary,
       letterSpacing: responsiveSize(1.1),
     },
-    screenHeaderTitle: {
+    popupHeaderTitle: {
       fontSize: responsiveSize(15),
       fontFamily: fonts.bold,
       color: colors.text,
       letterSpacing: responsiveSize(-0.2),
     },
-    screenHeaderSubtitle: {
+    popupHeaderSubtitle: {
       fontSize: responsiveSize(11),
       fontFamily: fonts.regular,
       color: colors.textMuted,
+    },
+    closeButton: {
+      width: wp(8.5),
+      height: wp(8.5),
+      borderRadius: wp(2.5),
+      backgroundColor: colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
     },
     headerSeverityPill: {
       flexShrink: 0,
@@ -84,6 +104,7 @@ export const createFeedDetailModalStyles = (colors: AppColors) =>
       paddingHorizontal: wp(2),
       paddingVertical: hp(0.45),
       alignItems: 'center',
+      marginTop: hp(0.2),
     },
     headerSeverityText: {
       fontSize: responsiveSize(8),
@@ -91,14 +112,14 @@ export const createFeedDetailModalStyles = (colors: AppColors) =>
       letterSpacing: responsiveSize(0.5),
     },
     scrollView: {
-      flex: 1,
+      flexGrow: 0,
+      flexShrink: 1,
     },
     scrollContent: {
       paddingHorizontal: wp(4),
       paddingTop: hp(1.5),
-      paddingBottom: hp(4),
+      paddingBottom: hp(2),
       width: '100%',
-      flexGrow: 1,
     },
     playerCard: {
       position: 'relative',

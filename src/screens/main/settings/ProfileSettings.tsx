@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {ActivityIndicator, View, Text} from 'react-native';
+import {ActivityIndicator, InteractionManager, View, Text} from 'react-native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {SettingsStackParamList} from '../../../navigation/types';
 import {Input, Button} from '../../../components';
@@ -76,7 +76,10 @@ const ProfileSettings = () => {
   }, [dispatch, token]);
 
   useEffect(() => {
-    loadProfile();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadProfile();
+    });
+    return () => task.cancel();
   }, [loadProfile]);
 
   const formik = useFormik({

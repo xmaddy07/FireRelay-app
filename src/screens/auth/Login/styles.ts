@@ -94,6 +94,41 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     fontFamily: monoFont,
     letterSpacing: responsiveSize(0.3),
   },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: hp(1.5),
+    gap: wp(2.5),
+    alignSelf: 'flex-start',
+    paddingVertical: hp(0.4),
+    paddingRight: wp(2),
+  },
+  rememberRowPressed: {
+    opacity: 0.72,
+  },
+  checkbox: {
+    width: wp(5.4),
+    height: wp(5.4),
+    borderRadius: wp(1.2),
+    borderWidth: 1.5,
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surfaceInset,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  rememberText: {
+    color: colors.textSecondary,
+    fontSize: responsiveSize(12),
+    fontFamily: monoFont,
+    letterSpacing: responsiveSize(0.3),
+  },
+  rememberTextChecked: {
+    color: colors.text,
+  },
   primaryButton: {
     marginTop: hp(1),
     borderRadius: wp(1.5),

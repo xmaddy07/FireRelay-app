@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Platform, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -11,8 +11,11 @@ import {useTheme} from '../config/theme';
 import AuthNavigator from './AuthNavigator';
 import BottomTabs from './BottomTabs';
 import type {RootStackParamList} from './types';
+import {flushPendingFeedAudioNavigation} from './navigationRef';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+let initialSplashComplete = false;
 
 const MainWithBackground = () => {
   const {glass} = useTheme();
@@ -38,12 +41,25 @@ const NotificationsModalScreen = () => {
 };
 
 const RootNavigator = () => {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(!initialSplashComplete);
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const {colors} = useTheme();
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      flushPendingFeedAudioNavigation();
+    }
+  }, [isAuthenticated]);
+
   if (showSplash) {
-    return <SplashAnimatedScreen onFinish={() => setShowSplash(false)} />;
+    return (
+      <SplashAnimatedScreen
+        onFinish={() => {
+          initialSplashComplete = true;
+          setShowSplash(false);
+        }}
+      />
+    );
   }
 
   return (

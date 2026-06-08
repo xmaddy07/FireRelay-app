@@ -7,6 +7,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   View,
@@ -24,6 +25,11 @@ import {authActions} from '../../../redux/slices/authSlice';
 import {ApiError, login} from '../../../api';
 import type {AuthUser} from '../../../api';
 import {getLoginDeviceInfo} from '../../../utils/deviceInfo';
+import {getSessionIdFromToken} from '../../../utils/jwt';
+import {
+  loadRememberedLogin,
+  saveRememberedLogin,
+} from '../../../services/storage/rememberedLoginStorage';
 
 const validationSchema = Yup.object().shape({
   email: Yup.string()
@@ -106,6 +112,7 @@ function LoginScreen() {
   const styles = useThemedStyles(createStyles);
   const dispatch = useAppDispatch();
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -113,7 +120,7 @@ function LoginScreen() {
       password: '',
     },
     validationSchema,
-    validateOnChange: true,
+    validateOnChange: false,
     validateOnBlur: true,
     onSubmit: async (values, {setSubmitting}) => {
       setLoginError(null);
@@ -132,11 +139,32 @@ function LoginScreen() {
 
         dispatch(UserSlice.userActions.setUser(mapApiUserToState(response.user)));
 
+        const sessionId =
+          response.sessionId ??
+          response.session_id ??
+          (response.accessToken
+            ? getSessionIdFromToken(response.accessToken)
+            : undefined);
+
         if (response.accessToken) {
-          dispatch(authActions.login(response.accessToken));
+          dispatch(
+            authActions.login({
+              token: response.accessToken,
+              sessionId,
+            }),
+          );
         } else {
-          dispatch(authActions.loginWithSession());
+          dispatch(authActions.loginWithSession({sessionId}));
         }
+
+        await saveRememberedLogin(
+          rememberMe
+            ? {
+                email: values.email.trim().toLowerCase(),
+                rememberMe: true,
+              }
+            : null,
+        );
       } catch (error: unknown) {
         if (error instanceof ApiError) {
           setLoginError(error.message);
@@ -168,6 +196,24 @@ function LoginScreen() {
       }),
     ]).start();
   }, [cardOpacity, cardTranslateY]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      const saved = await loadRememberedLogin();
+      if (!mounted || !saved) {
+        return;
+      }
+
+      formik.setFieldValue('email', saved.email);
+      setRememberMe(true);
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -266,12 +312,36 @@ function LoginScreen() {
                 }
               />
 
-              {(formik.touched.email && formik.errors.email) ||
-              (formik.touched.password && formik.errors.password) ? (
-                <Text style={styles.errorText}>
-                  {formik.errors.email || formik.errors.password}
+              <Pressable
+                style={({pressed}) => [
+                  styles.rememberRow,
+                  pressed && styles.rememberRowPressed,
+                ]}
+                onPress={() => setRememberMe(prev => !prev)}
+                accessibilityRole="checkbox"
+                accessibilityState={{checked: rememberMe}}
+                accessibilityLabel="Remember me"
+              >
+                <View
+                  style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
+                >
+                  {rememberMe ? (
+                    <AntDesign
+                      name="check"
+                      size={12}
+                      color={colors.textOnPrimary}
+                    />
+                  ) : null}
+                </View>
+                <Text
+                  style={[
+                    styles.rememberText,
+                    rememberMe && styles.rememberTextChecked,
+                  ]}
+                >
+                  Remember me
                 </Text>
-              ) : null}
+              </Pressable>
 
               {loginError ? (
                 <Text style={styles.errorText}>{loginError}</Text>

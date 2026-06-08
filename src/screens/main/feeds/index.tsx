@@ -26,7 +26,10 @@ if (
 }
 import { createStyles } from './styles';
 import { useTheme, useThemedStyles } from '../../../config/theme';
+import {useRoute, useNavigation, type RouteProp} from '@react-navigation/native';
+import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import {useOpenNotifications} from '../../../navigation/hooks';
+import type {MainTabParamList} from '../../../navigation/types';
 import AdvancedFiltersBottomSheet, {
   FilterState as SheetFilterState,
 } from '../../../components/feed/AdvancedFiltersBottomSheet';
@@ -36,6 +39,7 @@ import { responsiveHitSlop } from '../../../utils/responsive';
 import {
   addAudioFavorite,
   ApiError,
+  getAudioById,
   listCounties,
   markAudioViewed,
   removeAudioFavorite,
@@ -508,6 +512,9 @@ const FeedListItem = ({
 
 const CountiesScreen = () => {
   const openNotifications = useOpenNotifications();
+  const route = useRoute<RouteProp<MainTabParamList, 'Feed'>>();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<MainTabParamList, 'Feed'>>();
   const {token} = useAuth();
   const userKey =
     useAppSelector(state => state.user.id ?? state.user.email) ?? '';
@@ -858,6 +865,49 @@ const CountiesScreen = () => {
       return merged;
     });
   }, []);
+
+  useEffect(() => {
+    const audioId = route.params?.audioId;
+    if (!audioId || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const item = await getAudioById(token, audioId);
+        if (cancelled) {
+          return;
+        }
+
+        setFeedItems(prev => {
+          if (prev.some(existing => existing.id === item.id)) {
+            return prev;
+          }
+          return [item, ...prev];
+        });
+        mergeCountyFromFeedItem(item);
+        setSelectedFeedItem(item);
+      } catch (error) {
+        if (!cancelled) {
+          setFeedError(
+            error instanceof ApiError
+              ? error.message
+              : 'Unable to open this alert.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          navigation.setParams({audioId: undefined});
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mergeCountyFromFeedItem, navigation, route.params?.audioId, token]);
 
   const animateLiveFeedItem = useCallback(
     (id: string) => {

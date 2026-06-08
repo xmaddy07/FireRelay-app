@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {View, Text, ActivityIndicator, Alert} from 'react-native';
+import {View, Text, ActivityIndicator, Alert, InteractionManager} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import {Button} from '../../../components';
@@ -166,7 +166,10 @@ const SubscriptionSettings = () => {
   }, [token]);
 
   useEffect(() => {
-    loadPreferences();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadPreferences();
+    });
+    return () => task.cancel();
   }, [loadPreferences]);
 
   const activeCount = SEVERITY_SUBSCRIPTIONS.filter(

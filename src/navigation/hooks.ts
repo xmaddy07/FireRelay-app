@@ -1,6 +1,7 @@
 import {useCallback} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import type {RootStackParamList} from './types';
+import {openFeedAudioFromPush} from './navigationRef';
 
 export const useOpenNotifications = () => {
   const navigation = useNavigation();
@@ -15,3 +16,8 @@ export const useOpenNotifications = () => {
     navigation.navigate('Notifications' as never);
   }, [navigation]);
 };
+
+export const useOpenFeedAudio = () =>
+  useCallback((audioId?: string) => {
+    openFeedAudioFromPush(audioId);
+  }, []);

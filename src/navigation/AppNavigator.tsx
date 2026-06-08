@@ -1,12 +1,14 @@
 import React, {useMemo} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
-import {useAppSelector} from '../redux/hooks';
 import {useTheme} from '../config/theme';
 import {createNavigationTheme} from '../config/theme/navigationTheme';
 import RootNavigator from './RootNavigator';
+import {
+  flushPendingFeedAudioNavigation,
+  navigationRef,
+} from './navigationRef';
 
 export const AppNavigator = () => {
-  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const {colors, isDark} = useTheme();
   const navigationTheme = useMemo(
     () => createNavigationTheme(colors, isDark),
@@ -15,8 +17,9 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer
-      key={isAuthenticated ? 'auth' : 'guest'}
+      ref={navigationRef}
       theme={navigationTheme}
+      onReady={flushPendingFeedAudioNavigation}
     >
       <RootNavigator />
     </NavigationContainer>

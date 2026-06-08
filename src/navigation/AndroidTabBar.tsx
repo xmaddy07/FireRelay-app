@@ -11,9 +11,8 @@ import type {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import LinearGradient from 'react-native-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {GlassView} from '../components/feed/LiquidGlass';
-import {fonts} from '../config/constants';
 import type {AppColors, GlassTheme} from '../config/theme/types';
-import {useTheme} from '../config/theme';
+import {fonts, useTheme} from '../config/theme';
 import {hp, responsiveSize, wp} from '../utils/responsive';
 import type {TabBarConfig} from './tabConfig';
 
@@ -190,7 +189,13 @@ const AndroidTabBar = ({state, descriptors, navigation, tabConfig}: Props) => {
                   />
                 ) : null}
                 <Text
-                  style={[styles.tabLabel, isFocused && styles.tabLabelActive]}
+                  style={[
+                    styles.tabLabel,
+                    isFocused && styles.tabLabelActive,
+                    {
+                      fontFamily: isFocused ? fonts.semibold : fonts.medium,
+                    },
+                  ]}
                   numberOfLines={1}
                   allowFontScaling={false}
                 >

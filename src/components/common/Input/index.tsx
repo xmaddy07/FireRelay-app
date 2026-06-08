@@ -86,19 +86,20 @@ const Input = ({
   };
 
   if (variant === 'stacked') {
-    const useAnimatedWrapper = animatedBorder && !error;
+    const Wrapper = animatedBorder ? Animated.View : View;
 
-    const animatedWrapperStyle = useAnimatedWrapper
-      ? {
-          borderWidth: 1,
-          borderColor: pulseAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: isFocused
-              ? [colors.inputBorder, colors.primary]
-              : [colors.inputBorder, colors.borderMuted],
-          }),
-        }
-      : undefined;
+    const animatedBorderStyle =
+      animatedBorder && !error
+        ? {
+            borderWidth: 1,
+            borderColor: pulseAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: isFocused
+                ? [colors.inputBorder, colors.primary]
+                : [colors.inputBorder, colors.borderMuted],
+            }),
+          }
+        : null;
 
     return (
       <View style={[styles.stackedContainer, style]}>
@@ -112,49 +113,27 @@ const Input = ({
             {labelRight}
           </View>
         ) : null}
-        {useAnimatedWrapper ? (
-          <Animated.View
+        <Wrapper
+          style={[
+            styles.stackedInputWrapper,
+            wrapperStyle,
+            error ? styles.inputError : null,
+            animatedBorderStyle,
+          ]}
+        >
+          {icon ? <View style={styles.iconContainer}>{icon}</View> : null}
+          <TextInput
             style={[
-              styles.stackedInputWrapper,
-              wrapperStyle,
-              animatedWrapperStyle,
+              styles.stackedInput,
+              icon ? styles.inputWithIcon : null,
+              inputStyle,
             ]}
-          >
-            {icon ? <View style={styles.iconContainer}>{icon}</View> : null}
-            <TextInput
-              style={[
-                styles.stackedInput,
-                icon ? styles.inputWithIcon : null,
-                inputStyle,
-              ]}
-              placeholderTextColor={colors.textMuted}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              {...props}
-            />
-          </Animated.View>
-        ) : (
-          <View
-            style={[
-              styles.stackedInputWrapper,
-              wrapperStyle,
-              error ? styles.inputError : null,
-            ]}
-          >
-            {icon ? <View style={styles.iconContainer}>{icon}</View> : null}
-            <TextInput
-              style={[
-                styles.stackedInput,
-                icon ? styles.inputWithIcon : null,
-                inputStyle,
-              ]}
-              placeholderTextColor={colors.textMuted}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              {...props}
-            />
-          </View>
-        )}
+            placeholderTextColor={colors.textMuted}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            {...props}
+          />
+        </Wrapper>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
     );

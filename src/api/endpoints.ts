@@ -76,4 +76,13 @@ export const endpoints = {
     favorite: (audioId: string) => `/audio-favorites/${audioId}`,
     byId: (id: string) => `/audio-favorites/${id}`,
   },
+  notifications: {
+    root: '/notifications',
+    unreadCount: '/notifications/unread-count',
+    markRead: (id: string) => `/notifications/${id}/read`,
+    readAll: '/notifications/read-all',
+  },
+  devices: {
+    root: '/devices',
+  },
 } as const;
