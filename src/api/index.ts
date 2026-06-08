@@ -83,3 +83,13 @@ export type {
   UserSessionRecord,
   UserTalkgroupAccessRecord,
 } from './services/userService';
+
+export {registerDevice} from './services/deviceService';
+
+export {
+  listNotifications,
+  getUnreadNotificationCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from './services/notificationService';
+export type {NotificationRecord} from './mappers/notificationMapper';

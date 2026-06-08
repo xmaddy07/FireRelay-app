@@ -12,10 +12,17 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import {
+  useFocusEffect,
+  useIsFocused,
+  useNavigation,
+} from '@react-navigation/native';
+import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
 import {images} from '../../../config/constants';
 import {useOpenNotifications} from '../../../navigation/hooks';
+import type {MainTabParamList} from '../../../navigation/types';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {hp, responsiveHitSlop, wp} from '../../../utils/responsive';
 import {createPremium, createStyles, TAB_BAR_HEIGHT} from './styles';
@@ -287,6 +294,9 @@ const SenderListItem = ({
 };
 
 const SendersScreen = () => {
+  const navigation =
+    useNavigation<BottomTabNavigationProp<MainTabParamList, 'Senders'>>();
+  const isFocused = useIsFocused();
   const openNotifications = useOpenNotifications();
   const {token, isAuthenticated} = useAuth();
   const {colors} = useTheme();
@@ -306,9 +316,13 @@ const SendersScreen = () => {
   const [editLoadingId, setEditLoadingId] = useState<string | null>(null);
 
   const listBottomInset = insets.bottom + TAB_BAR_HEIGHT + hp(2);
+  const listRef = useRef<FlatList<SenderRecord>>(null);
   const headerAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
+  const animatedIdsRef = useRef<Set<string>>(new Set());
+  const hasPlayedHeaderEntranceRef = useRef(false);
+  const hasFocusedOnceRef = useRef(false);
 
   const stats = useMemo(
     () => ({
@@ -351,15 +365,19 @@ const SendersScreen = () => {
     return itemAnimsRef.current[id];
   };
 
-  const animateSenderList = (items: SenderRecord[]) => {
-    const anims = items.map(item => {
+  const animateNewSenderItems = useCallback((items: SenderRecord[]) => {
+    const newItems = items.filter(item => !animatedIdsRef.current.has(item.id));
+    if (newItems.length === 0) {
+      return;
+    }
+
+    const anims = newItems.map(item => {
+      animatedIdsRef.current.add(item.id);
       const anim = getItemAnim(item.id);
       anim.setValue(0);
       return anim;
     });
-    if (anims.length === 0) {
-      return;
-    }
+
     Animated.stagger(
       70,
       anims.map(anim =>
@@ -371,9 +389,17 @@ const SendersScreen = () => {
         }),
       ),
     ).start();
-  };
+  }, []);
 
   useEffect(() => {
+    if (hasPlayedHeaderEntranceRef.current) {
+      headerAnim.setValue(1);
+      searchAnim.setValue(1);
+      return;
+    }
+
+    hasPlayedHeaderEntranceRef.current = true;
+
     Animated.parallel([
       Animated.spring(headerAnim, {
         toValue: 1,
@@ -394,43 +420,77 @@ const SendersScreen = () => {
   }, [headerAnim, searchAnim]);
 
   useEffect(() => {
-    animateSenderList(visibleSenders);
-  }, [visibleSenders]);
+    animateNewSenderItems(visibleSenders);
+  }, [animateNewSenderItems, visibleSenders]);
 
-  const loadSenders = useCallback(async () => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      setLoadError('Please sign in to view senders.');
-      return;
-    }
-
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const status = filterToStatus(statusFilter);
-      const params = {
-        limit: 200,
-        search: searchQuery.trim() || undefined,
-        status: status ?? undefined,
-      };
-
-      let results = await listSenders(token, params);
-      if (results.length === 0) {
-        results = await searchSenders(token, params);
+  const loadSenders = useCallback(
+    async ({silent = false}: {silent?: boolean} = {}) => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        setLoadError('Please sign in to view senders.');
+        return;
       }
-      setSenders(results);
-    } catch (error) {
-      setLoadError(
-        error instanceof ApiError ? error.message : 'Unable to load senders.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated, searchQuery, statusFilter, token]);
+
+      if (!silent) {
+        setLoading(true);
+        animatedIdsRef.current.clear();
+      }
+      setLoadError(null);
+
+      try {
+        const status = filterToStatus(statusFilter);
+        const params = {
+          limit: 200,
+          search: searchQuery.trim() || undefined,
+          status: status ?? undefined,
+        };
+
+        let results = await listSenders(token, params);
+        if (results.length === 0) {
+          results = await searchSenders(token, params);
+        }
+        setSenders(results);
+      } catch (error) {
+        if (!silent) {
+          setLoadError(
+            error instanceof ApiError ? error.message : 'Unable to load senders.',
+          );
+        }
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [isAuthenticated, searchQuery, statusFilter, token],
+  );
 
   useEffect(() => {
-    loadSenders();
+    void loadSenders();
   }, [loadSenders]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+
+      void loadSenders({silent: true});
+    }, [loadSenders]),
+  );
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      if (!isFocused) {
+        return;
+      }
+      listRef.current?.scrollToOffset({offset: 0, animated: true});
+      void loadSenders({silent: true});
+    });
+
+    return unsubscribe;
+  }, [isFocused, loadSenders, navigation]);
 
   const handleLoadMore = useCallback(() => {
     if (!hasMore) {
@@ -502,10 +562,7 @@ const SendersScreen = () => {
             }
             try {
               await regenerateSenderToken(token, sender.id);
-              const fresh = await getSenderById(token, sender.id);
-              setSenders(prev =>
-                prev.map(item => (item.id === sender.id ? fresh : item)),
-              );
+              await loadSenders({silent: true});
             } catch (error) {
               Alert.alert(
                 'Regenerate failed',
@@ -525,6 +582,7 @@ const SendersScreen = () => {
   };
 
   const handleClearFilters = () => {
+    animatedIdsRef.current.clear();
     setSearchQuery('');
     setStatusFilter('All Status');
   };
@@ -540,8 +598,9 @@ const SendersScreen = () => {
     }
     try {
       await createSender(token, sender);
-      await loadSenders();
       setAddModalVisible(false);
+      await loadSenders({silent: true});
+      listRef.current?.scrollToOffset({offset: 0, animated: true});
     } catch (error) {
       Alert.alert(
         'Create failed',
@@ -556,11 +615,8 @@ const SendersScreen = () => {
     }
     try {
       await updateSender(token, sender);
-      const fresh = await getSenderById(token, sender.id);
-      setSenders(prev =>
-        prev.map(item => (item.id === sender.id ? fresh : item)),
-      );
       closeEditModal();
+      await loadSenders({silent: true});
     } catch (error) {
       Alert.alert(
         'Update failed',
@@ -757,6 +813,7 @@ const SendersScreen = () => {
       {listHeader}
 
       <FlatList
+        ref={listRef}
         style={styles.list}
         data={visibleSenders}
         keyExtractor={item => item.id}

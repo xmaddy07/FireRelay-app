@@ -1,14 +1,74 @@
 import messaging, {
   FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
-import notifee, {AndroidImportance} from '@notifee/react-native';
+import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
 import {Platform} from 'react-native';
+import {openFeedAudioFromPush} from '../../navigation/navigationRef';
 import {requestNotificationPermission} from '../permissions/notificationPermission';
 import {logger} from '../../utils/logger';
 
 let foregroundUnsubscribe: (() => void) | null = null;
+let notifeeForegroundUnsubscribe: (() => void) | null = null;
 let notificationChannelPromise: Promise<string> | null = null;
 const FIRE_RELAY_CHANNEL_ID = 'firerelay-alerts';
+
+const AUDIO_ID_KEYS = [
+  'audioId',
+  'audio_id',
+  'resourceId',
+  'resource_id',
+] as const;
+
+const extractAudioIdFromPushData = (
+  data?: FirebaseMessagingTypes.RemoteMessage['data'] | Record<string, unknown>,
+): string | undefined => {
+  if (!data) {
+    return undefined;
+  }
+
+  for (const key of AUDIO_ID_KEYS) {
+    const value = data[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  const metadata = data.metadata;
+  if (typeof metadata === 'string') {
+    try {
+      const parsed = JSON.parse(metadata) as Record<string, unknown>;
+      for (const key of AUDIO_ID_KEYS) {
+        const value = parsed[key];
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+    } catch {
+      // Ignore malformed metadata payloads.
+    }
+  } else if (metadata && typeof metadata === 'object') {
+    const record = metadata as Record<string, unknown>;
+    for (const key of AUDIO_ID_KEYS) {
+      const value = record[key];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const handlePushNotificationOpen = (
+  data?: FirebaseMessagingTypes.RemoteMessage['data'] | Record<string, unknown>,
+) => {
+  const audioId = extractAudioIdFromPushData(data);
+  if (!audioId) {
+    return;
+  }
+
+  openFeedAudioFromPush(audioId);
+};
 
 const logIncomingMessage = (
   source:
@@ -47,6 +107,17 @@ const shouldDisplayWithNotifee = (
   // iOS already renders notification-payload pushes natively (correct app icon).
   // Notifee re-creates them as local notifications, which can show the grid placeholder.
   return !remoteMessage.notification;
+};
+
+export const getFcmToken = async (): Promise<string | null> => {
+  try {
+    await messaging().registerDeviceForRemoteMessages();
+    const token = await messaging().getToken();
+    return token || null;
+  } catch (error) {
+    logger.debug('FCM token unavailable', error);
+    return null;
+  }
 };
 
 export const displayRemoteMessageNotification = async (
@@ -109,11 +180,9 @@ export const initializeFirebaseMessaging = async (): Promise<void> => {
     return;
   }
 
-  try {
-    const fcmToken = await messaging().getToken();
+  const fcmToken = await getFcmToken();
+  if (fcmToken) {
     logger.debug('FCM token acquired', fcmToken);
-  } catch (error) {
-    logger.error('Failed to get FCM token', error);
   }
 
   foregroundUnsubscribe = messaging().onMessage(async remoteMessage => {
@@ -124,10 +193,25 @@ export const initializeFirebaseMessaging = async (): Promise<void> => {
 
   messaging().onNotificationOpenedApp(remoteMessage => {
     logIncomingMessage('opened_from_background', remoteMessage);
+    handlePushNotificationOpen(remoteMessage.data);
   });
 
   const initialNotification = await messaging().getInitialNotification();
   if (initialNotification) {
     logIncomingMessage('opened_from_quit', initialNotification);
+    handlePushNotificationOpen(initialNotification.data);
+  }
+
+  const initialNotifeeNotification = await notifee.getInitialNotification();
+  if (initialNotifeeNotification) {
+    handlePushNotificationOpen(initialNotifeeNotification.notification?.data);
+  }
+
+  if (!notifeeForegroundUnsubscribe) {
+    notifeeForegroundUnsubscribe = notifee.onForegroundEvent(({type, detail}) => {
+      if (type === EventType.PRESS) {
+        handlePushNotificationOpen(detail.notification?.data);
+      }
+    });
   }
 };

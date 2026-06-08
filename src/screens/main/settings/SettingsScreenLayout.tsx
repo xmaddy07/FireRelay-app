@@ -3,7 +3,7 @@ import {ScrollView, StyleProp, View, ViewStyle} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Header} from '../../../components';
 import {createStyles} from './styles';
-import {useThemedStyles} from '../../../config/theme';
+import {useTheme, useThemedStyles} from '../../../config/theme';
 import {TAB_BAR_HEIGHT, hp} from '../../../utils/responsive';
 
 type Props = {
@@ -32,15 +32,22 @@ const SettingsScreenLayout = ({
   layout = 'centered',
   fullScreen = false,
 }: Props) => {
+  const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
+  const isChildScreen = Boolean(showBack);
   const bottomInset = fullScreen
     ? insets.bottom + hp(3)
     : TAB_BAR_HEIGHT + hp(2);
   const showHeader = Boolean(title || showBack);
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        isChildScreen && {backgroundColor: colors.background},
+      ]}
+    >
       {showHeader ? (
         <Header
           title={title ?? ''}
@@ -53,7 +60,10 @@ const SettingsScreenLayout = ({
         />
       ) : null}
       <ScrollView
-        style={styles.scroll}
+        style={[
+          styles.scroll,
+          isChildScreen && {backgroundColor: colors.background},
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled

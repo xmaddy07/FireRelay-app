@@ -364,24 +364,73 @@ export const createStyles = (colors: AppColors) => {
       paddingVertical: hp(2),
       alignItems: 'center',
     },
-    totalCountRow: {
+    statsRow: {
       flexDirection: 'row',
+      gap: wp(2),
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: premium.surface,
+      borderRadius: wp(2.5),
+      borderWidth: 1,
+      borderColor: premium.border,
+      paddingVertical: hp(1.2),
+      paddingHorizontal: wp(2.5),
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.shadow,
+          shadowOffset: {width: 0, height: 2},
+          shadowOpacity: 0.06,
+          shadowRadius: 4,
+        },
+        android: {elevation: 1},
+      }),
+    },
+    statCardTop: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: wp(1.8),
+    },
+    statCardContent: {
+      flex: 1,
+      minWidth: 0,
+      gap: hp(0.35),
+    },
+    statIconWrap: {
+      width: wp(7),
+      height: wp(7),
+      borderRadius: wp(1.8),
       alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: hp(0.6),
-      paddingHorizontal: wp(1),
+      justifyContent: 'center',
+      flexShrink: 0,
+      marginTop: hp(0.1),
     },
-    totalCountLabel: {
-      fontSize: responsiveSize(11),
-      fontFamily: fonts.semibold,
+    statIconGreen: {
+      backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    },
+    statDot: {
+      width: wp(2.2),
+      height: wp(2.2),
+      borderRadius: wp(1.1),
+      flexShrink: 0,
+      marginTop: hp(0.55),
+    },
+    statDotActive: {
+      backgroundColor: '#22C55E',
+    },
+    statDotInactive: {
+      backgroundColor: '#EF4444',
+    },
+    statLabel: {
+      fontSize: responsiveSize(10),
+      fontFamily: fonts.medium,
       color: premium.textMuted,
-      letterSpacing: responsiveSize(0.8),
-      textTransform: 'uppercase',
     },
-    totalCountValue: {
-      fontSize: responsiveSize(14),
+    statValue: {
+      fontSize: responsiveSize(20),
       fontFamily: fonts.bold,
       color: colors.text,
+      letterSpacing: responsiveSize(-0.3),
     },
     paginationFooter: {
       flexDirection: 'row',

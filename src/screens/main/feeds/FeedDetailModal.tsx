@@ -5,9 +5,9 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   useWindowDimensions,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -116,72 +116,76 @@ const FeedDetailModal = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
+      transparent
+      animationType="fade"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.fullScreen}>
-        <KeyboardAvoidingView
-          style={styles.fullScreen}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.screenHeader}>
-            <LinearGradient
-              colors={[
-                colors.primaryTintStrong,
-                colors.modalSurface,
-                colors.modalSurface,
-              ]}
-              start={{x: 0, y: 0}}
-              end={{x: 0, y: 1}}
-              style={styles.screenHeaderGradient}
-              pointerEvents="none"
-            />
-            <View style={styles.screenHeaderContent}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={onClose}
-                hitSlop={responsiveHitSlop(2)}
-                activeOpacity={0.7}
-              >
-                <Icon name="chevron-left" size={22} color={colors.primary} />
-                <Text style={styles.backButtonLabel}>Feed</Text>
-              </TouchableOpacity>
-
-              <View style={styles.screenHeaderMain}>
-                <View style={styles.headerIconWrap}>
-                  <Icon name="radio" size={18} color={colors.primary} />
+      <KeyboardAvoidingView
+        style={{flex: 1}}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Pressable style={styles.overlay} onPress={onClose}>
+          <Pressable
+            style={styles.card}
+            onPress={event => event.stopPropagation()}
+          >
+            <View style={styles.popupHeader}>
+              <LinearGradient
+                colors={[
+                  colors.primaryTintStrong,
+                  colors.modalSurface,
+                  colors.modalSurface,
+                ]}
+                start={{x: 0, y: 0}}
+                end={{x: 0, y: 1}}
+                style={styles.popupHeaderGradient}
+                pointerEvents="none"
+              />
+              <View style={styles.popupHeaderContent}>
+                <View style={styles.popupHeaderMain}>
+                  <View style={styles.headerIconWrap}>
+                    <Icon name="radio" size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.popupHeaderText}>
+                    <Text style={styles.popupHeaderEyebrow}>
+                      {typeBadgeLabel[item.type]} DISPATCH
+                    </Text>
+                    <Text style={styles.popupHeaderTitle} numberOfLines={2}>
+                      {detail.title}
+                    </Text>
+                    <Text style={styles.popupHeaderSubtitle} numberOfLines={1}>
+                      {countyLabel} · {item.date} · {item.time}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.screenHeaderText}>
-                  <Text style={styles.screenHeaderEyebrow}>
-                    {typeBadgeLabel[item.type]} DISPATCH
-                  </Text>
-                  <Text style={styles.screenHeaderTitle} numberOfLines={1}>
-                    {detail.title}
-                  </Text>
-                  <Text style={styles.screenHeaderSubtitle} numberOfLines={1}>
-                    {countyLabel} · {item.date} · {item.time}
+
+                <View style={[badgeStyle, styles.headerSeverityPill]}>
+                  <Text
+                    style={[badgeTextStyle, styles.headerSeverityText]}
+                    numberOfLines={1}
+                  >
+                    {severityBadgeLabel[item.severity]}
                   </Text>
                 </View>
-              </View>
 
-              <View style={[badgeStyle, styles.headerSeverityPill]}>
-                <Text
-                  style={[badgeTextStyle, styles.headerSeverityText]}
-                  numberOfLines={1}
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={onClose}
+                  hitSlop={responsiveHitSlop(2)}
+                  activeOpacity={0.7}
                 >
-                  {severityBadgeLabel[item.severity]}
-                </Text>
+                  <Icon name="x" size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
               </View>
             </View>
-          </View>
 
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
+            <ScrollView
+              style={styles.scrollView}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
             <View style={styles.playerCard}>
               <LinearGradient
                 colors={[...colors.playerGradient]}
@@ -365,9 +369,10 @@ const FeedDetailModal = ({
                 severity={item.severity}
               />
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };

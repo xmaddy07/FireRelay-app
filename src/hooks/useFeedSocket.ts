@@ -125,15 +125,22 @@ export const useFeedSocket = ({
   }, [counties, selectedCountyNames]);
 
   useEffect(() => {
-    if (!enabled || !token) {
-      if (__DEV__ && token && !enabled) {
+    if (!token) {
+      joinedCountyIdsRef.current.forEach(countyId => {
+        socketService.leaveCounty(countyId);
+      });
+      joinedCountyIdsRef.current = [];
+      return;
+    }
+
+    if (!enabled) {
+      if (__DEV__) {
         console.log('[Socket] feed waiting for filters before connect');
       }
       joinedCountyIdsRef.current.forEach(countyId => {
         socketService.leaveCounty(countyId);
       });
       joinedCountyIdsRef.current = [];
-      socketService.disconnect();
       return;
     }
 
@@ -241,7 +248,6 @@ export const useFeedSocket = ({
         socketService.leaveCounty(countyId);
       });
       joinedCountyIdsRef.current = [];
-      socketService.disconnect();
     };
   }, [enabled, token]);
 };

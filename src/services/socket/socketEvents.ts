@@ -14,6 +14,8 @@ export const socketEvents = {
   countyAudioUpdated: 'countyAudioUpdated',
   audioDeleted: 'audioDeleted',
   countyAudioDeleted: 'countyAudioDeleted',
+  sessionRevoked: 'sessionRevoked',
+  sessionsRevoked: 'sessionsRevoked',
 } as const;
 
 export type SocketEventName = (typeof socketEvents)[keyof typeof socketEvents];

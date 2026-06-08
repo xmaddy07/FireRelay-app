@@ -1,11 +1,13 @@
+import type {NavigatorScreenParams} from '@react-navigation/native';
+
 export type RootStackParamList = {
   Login: undefined;
-  Main: undefined;
+  Main: NavigatorScreenParams<MainTabParamList> | undefined;
   Notifications: undefined;
 };
 
 export type MainTabParamList = {
-  Feed: undefined;
+  Feed: {audioId?: string} | undefined;
   Keywords: undefined;
   LeadLog: undefined;
   Senders: undefined;

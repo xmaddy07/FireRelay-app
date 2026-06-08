@@ -7,9 +7,13 @@ import {AppNavigator} from './src/navigation/AppNavigator';
 import {persistor, store} from './src/redux/store';
 import {ThemeProvider, useTheme} from './src/context';
 import {initializeFirebaseMessaging} from './src/services/notifications/firebaseMessaging';
+import {useSessionRevocation} from './src/hooks/useSessionRevocation';
+import {useFcmTokenSync} from './src/hooks/useFcmTokenSync';
 
 const AppShell = () => {
   const {colors, isDark} = useTheme();
+  useSessionRevocation();
+  useFcmTokenSync();
 
   return (
     <>

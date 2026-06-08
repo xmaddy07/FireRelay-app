@@ -10,12 +10,9 @@ import {responsiveHitSlop} from '../../../utils/responsive';
 import {createStyles} from './styles';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {ApiError, logout} from '../../../api';
-import {useAppDispatch} from '../../../redux/hooks';
 import {useAuth} from '../../../hooks/useAuth';
-import {authActions} from '../../../redux/slices/authSlice';
-import {userActions} from '../../../redux/slices/userSlice';
+import {forceLogout} from '../../../services/auth/forceLogout';
 import AnimatedToggle from './components/AnimatedToggle';
-import AnimatedBellIcon from './components/AnimatedBellIcon';
 import AnimatedMoonIcon from './components/AnimatedMoonIcon';
 import AccountNavRow from './components/AccountNavRow';
 import AnimatedLogoutButton from './components/AnimatedLogoutButton';
@@ -46,13 +43,10 @@ const SettingsMenu = () => {
   const openNotifications = useOpenNotifications();
   const navigation =
     useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
-  const dispatch = useAppDispatch();
   const {token} = useAuth();
   const {colors, glass, isDark, toggleTheme} = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [bellRing, setBellRing] = useState(0);
   const [moonPulse, setMoonPulse] = useState(0);
 
   const handleLogout = () => {
@@ -75,21 +69,13 @@ const SettingsMenu = () => {
                 console.warn('[API] logout failed:', error.message);
               }
             } finally {
-              dispatch(authActions.logout());
-              dispatch(userActions.clearUser());
+              forceLogout();
             }
           },
         },
       ],
       {cancelable: true},
     );
-  };
-
-  const handlePushToggle = (next: boolean) => {
-    setPushEnabled(next);
-    if (next) {
-      setBellRing(n => n + 1);
-    }
   };
 
   const handleDarkModeToggle = (next: boolean) => {
@@ -136,32 +122,6 @@ const SettingsMenu = () => {
         showHighlight={false}
         pointerEvents="box-none"
       >
-        <View style={styles.settingRow} pointerEvents="box-none">
-          <View style={[styles.iconBox, styles.iconBoxAccent]}>
-            <AnimatedBellIcon color={colors.primary} ringTrigger={bellRing} />
-          </View>
-          <View style={styles.settingTextBlock}>
-            <Text style={styles.settingTitle}>Push Notifications</Text>
-            <Text
-              style={[
-                styles.settingSubtitle,
-                pushEnabled && styles.settingSubtitleActive,
-              ]}
-            >
-              Real-time status updates
-            </Text>
-          </View>
-          <AnimatedToggle
-            value={pushEnabled}
-            onValueChange={handlePushToggle}
-            trackOnColor={colors.primary}
-            trackOffColor={colors.borderMuted}
-            thumbColor={colors.white}
-          />
-        </View>
-
-        <View style={styles.preferenceDivider} />
-
         <View style={styles.settingRow}>
           <View style={[styles.iconBox, styles.iconBoxAccent]}>
             <AnimatedMoonIcon color={colors.primary} pulseTrigger={moonPulse} />

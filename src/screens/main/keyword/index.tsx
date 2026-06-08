@@ -52,6 +52,44 @@ import {
 } from './types';
 import {getListSeverityStyles} from './severityStyles';
 
+type KeywordStatCardProps = {
+  label: string;
+  value: number | string;
+  variant: 'total' | 'active' | 'inactive';
+};
+
+const KeywordStatCard = ({label, value, variant}: KeywordStatCardProps) => {
+  const styles = useThemedStyles(createStyles);
+
+  const indicator =
+    variant === 'total' ? (
+      <View style={[styles.statIconWrap, styles.statIconGreen]}>
+        <Icon name="activity" size={14} color="#16A34A" />
+      </View>
+    ) : (
+      <View
+        style={[
+          styles.statDot,
+          variant === 'active' ? styles.statDotActive : styles.statDotInactive,
+        ]}
+      />
+    );
+
+  return (
+    <View style={styles.statCard}>
+      <View style={styles.statCardTop}>
+        {indicator}
+        <View style={styles.statCardContent}>
+          <Text style={styles.statLabel} numberOfLines={1}>
+            {label}
+          </Text>
+          <Text style={styles.statValue}>{value}</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const formatCreatedDate = (iso: string) => {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
@@ -379,8 +417,22 @@ const KeywordsScreen = () => {
 
   const displayKeywords = isSearching ? searchResults : keywords;
   const displayHasMore = isSearching ? searchHasMore : hasMore;
-  const displayTotalCount = isSearching ? searchTotalCount : totalCount;
   const isListLoading = isSearching ? searchLoading : loading;
+
+  const stats = useMemo(() => {
+    const source = allKeywords.length > 0 ? allKeywords : keywords;
+    const total = totalCount > 0 ? totalCount : source.length;
+    return {
+      total,
+      active: source.filter(item => item.active).length,
+      inactive: source.filter(item => !item.active).length,
+    };
+  }, [allKeywords, keywords, totalCount]);
+
+  const formatStatValue = (count: number) =>
+    loading && allKeywords.length === 0 && totalCount === 0
+      ? '—'
+      : count.toLocaleString();
 
   useEffect(() => {
     animateNewKeywordItems(displayKeywords);
@@ -895,17 +947,22 @@ const KeywordsScreen = () => {
         </Animated.View>
       </Animated.View>
 
-      <View style={styles.totalCountRow}>
-        <Text style={styles.totalCountLabel}>
-          {isSearching || hasActiveFilters
-            ? 'Matching Keywords'
-            : 'Total Keywords'}
-        </Text>
-        <Text style={styles.totalCountValue}>
-          {isListLoading && displayTotalCount === 0
-            ? '—'
-            : displayTotalCount.toLocaleString()}
-        </Text>
+      <View style={styles.statsRow}>
+        <KeywordStatCard
+          label="Total Keywords"
+          value={formatStatValue(stats.total)}
+          variant="total"
+        />
+        <KeywordStatCard
+          label="Active"
+          value={formatStatValue(stats.active)}
+          variant="active"
+        />
+        <KeywordStatCard
+          label="Inactive"
+          value={formatStatValue(stats.inactive)}
+          variant="inactive"
+        />
       </View>
     </View>
   );

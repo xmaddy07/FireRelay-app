@@ -58,6 +58,7 @@ export const unwrapList = <T>(payload: unknown): T[] => {
     record.data ??
     record.items ??
     record.results ??
+    record.notifications ??
     record.keywords ??
     record.senders ??
     record.users;
