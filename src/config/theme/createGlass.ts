@@ -17,16 +17,16 @@ export const createGlass = (colors: AppColors, mode: ThemeMode) => {
     settingsCardTint: `rgba(${primaryRgb}, ${isDark ? '0.05' : '0.04'})`,
     loginCardTint: isDark
       ? 'rgba(255, 255, 255, 0.08)'
-      : 'rgba(255, 255, 255, 0.94)',
+      : 'rgba(255, 255, 255, 1)',
     fallback: {
       loginCard: {
         backgroundColor: isDark
           ? 'rgba(20, 25, 32, 0.45)'
-          : 'rgba(255, 255, 255, 0.96)',
+          : colors.surface,
         borderWidth: 1,
         borderColor: isDark
           ? 'rgba(255, 255, 255, 0.18)'
-          : colors.menuItemBorder,
+          : colors.borderMuted,
       },
       cardUnread: {
         backgroundColor: isDark

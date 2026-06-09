@@ -40,6 +40,7 @@ import {
   addAudioFavorite,
   ApiError,
   getAudioById,
+  listAudioNotesByAudioIds,
   listCounties,
   markAudioViewed,
   removeAudioFavorite,
@@ -310,6 +311,8 @@ const FeedListItem = ({
   expandedPanel,
   onToggleNotes,
   onToggleMetadata,
+  onNotesCountChange,
+  notesCount = 0,
   token,
   currentUserId,
   isAdmin,
@@ -321,6 +324,8 @@ const FeedListItem = ({
   expandedPanel: FeedExpandedPanel | null;
   onToggleNotes: (id: string) => void;
   onToggleMetadata: (id: string) => void;
+  onNotesCountChange: (audioId: string, count: number) => void;
+  notesCount?: number;
   token?: string;
   currentUserId?: string;
   isAdmin?: boolean;
@@ -428,20 +433,29 @@ const FeedListItem = ({
               color={metadataExpanded ? colors.primary : colors.textMuted}
             />
           </Pressable>
-          <Pressable
-            style={[
-              styles.feedCardActionButton,
-              notesExpanded && styles.feedCardActionButtonActive,
-            ]}
-            onPress={() => onToggleNotes(item.id)}
-            hitSlop={responsiveHitSlop(2)}
-          >
-            <Icon
-              name="file-text"
-              size={14}
-              color={notesExpanded ? colors.primary : colors.textMuted}
-            />
-          </Pressable>
+          <View style={styles.feedCardActionButtonWrap}>
+            <Pressable
+              style={[
+                styles.feedCardActionButton,
+                notesExpanded && styles.feedCardActionButtonActive,
+              ]}
+              onPress={() => onToggleNotes(item.id)}
+              hitSlop={responsiveHitSlop(2)}
+            >
+              <Icon
+                name="file-text"
+                size={14}
+                color={notesExpanded ? colors.primary : colors.textMuted}
+              />
+            </Pressable>
+            {notesCount > 0 ? (
+              <View style={styles.feedCardNotesBadge}>
+                <Text style={styles.feedCardNotesBadgeText}>
+                  {notesCount > 9 ? '9+' : notesCount}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
         <View style={styles.feedTimeColumn}>
           <Text style={styles.feedTimeText}>{item.time}</Text>
@@ -484,6 +498,7 @@ const FeedListItem = ({
         token={token}
         currentUserId={currentUserId}
         isAdmin={isAdmin}
+        onNotesCountChange={count => onNotesCountChange(item.id, count)}
       />
     </>
   );
@@ -533,6 +548,9 @@ const CountiesScreen = () => {
   const [filtersReady, setFiltersReady] = useState(false);
   const [selectedFeedItem, setSelectedFeedItem] = useState<FeedItem | null>(null);
   const [expandedPanel, setExpandedPanel] = useState<FeedExpandedPanel | null>(null);
+  const [feedNotesCounts, setFeedNotesCounts] = useState<Record<string, number>>(
+    {},
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -823,6 +841,53 @@ const CountiesScreen = () => {
 
   const feedListKey = `${feedItems.map(item => item.id).join(',')}:${expandedPanel?.id ?? ''}:${expandedPanel?.type ?? ''}`;
 
+  const feedItemIdsKey = useMemo(
+    () => feedItems.map(item => item.id).join(','),
+    [feedItems],
+  );
+
+  useEffect(() => {
+    if (!token || !feedItemIdsKey) {
+      setFeedNotesCounts({});
+      return;
+    }
+
+    const audioIds = feedItemIdsKey.split(',');
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const grouped = await listAudioNotesByAudioIds(token, audioIds);
+        if (cancelled) {
+          return;
+        }
+
+        const counts: Record<string, number> = {};
+        audioIds.forEach(id => {
+          counts[id] = grouped[id]?.length ?? 0;
+        });
+        setFeedNotesCounts(counts);
+      } catch (error) {
+        if (__DEV__ && error instanceof ApiError) {
+          console.warn('[API] feed notes counts failed:', error.message);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [feedItemIdsKey, token]);
+
+  const handleNotesCountChange = useCallback((audioId: string, count: number) => {
+    setFeedNotesCounts(prev => {
+      if ((prev[audioId] ?? 0) === count) {
+        return prev;
+      }
+      return {...prev, [audioId]: count};
+    });
+  }, []);
+
   const handleToggleNotes = useCallback((id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedPanel(prev =>
@@ -984,6 +1049,8 @@ const CountiesScreen = () => {
       expandedPanel={expandedPanel}
       onToggleNotes={handleToggleNotes}
       onToggleMetadata={handleToggleMetadata}
+      onNotesCountChange={handleNotesCountChange}
+      notesCount={feedNotesCounts[item.id] ?? 0}
       token={token}
       currentUserId={currentUserId}
       isAdmin={isAdmin}

@@ -54,6 +54,7 @@ const AddUserModal = ({visible, onClose, onCreate}: Props) => {
       lastSeenAt: null,
       activeSessionCount: 0,
       presenceStatus: 'offline',
+      isActive: true,
       allowedSeverities: null,
     });
     onClose();

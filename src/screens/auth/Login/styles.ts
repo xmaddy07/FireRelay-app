@@ -1,7 +1,8 @@
 import {Platform, StyleSheet} from 'react-native';
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
 import {fonts} from '../../../config/constants';
-import type { AppColors } from "../../../config/theme/types";
+import {lightColors} from '../../../config/theme/colors';
+import type {AppColors} from '../../../config/theme/types';
 
 const monoFont = Platform.select({
   ios: 'Courier',
@@ -9,7 +10,22 @@ const monoFont = Platform.select({
   default: 'monospace',
 });
 
-export const createStyles = (colors: AppColors) => StyleSheet.create({
+export const createStyles = (colors: AppColors) => {
+  const isLight = colors.background === lightColors.background;
+  const loginCardShadow = isLight
+    ? Platform.select({
+        ios: {
+          shadowColor: colors.shadow,
+          shadowOffset: {width: 0, height: 10},
+          shadowOpacity: 0.14,
+          shadowRadius: 20,
+        },
+        android: {elevation: 8},
+        default: {},
+      })
+    : {};
+
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -67,13 +83,18 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     textTransform: 'uppercase',
   },
   loginCard: {
-    borderRadius: wp(2.5),
+    borderRadius: wp(3),
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: isLight ? colors.borderMuted : colors.border,
+    backgroundColor: isLight ? colors.surface : undefined,
     paddingHorizontal: wp(5),
     paddingTop: hp(3),
     paddingBottom: hp(2.5),
     overflow: 'hidden',
+    ...loginCardShadow,
+  },
+  passwordInput: {
+    marginBottom: 0,
   },
   cardTitle: {
     color: colors.text,
@@ -97,6 +118,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: hp(1),
     marginBottom: hp(1.5),
     gap: wp(2.5),
     alignSelf: 'flex-start',
@@ -214,3 +236,4 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.text,
   },
 });
+};

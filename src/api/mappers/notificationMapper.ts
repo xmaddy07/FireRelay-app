@@ -1,4 +1,5 @@
 import type {ApiNotification} from '../types/notification';
+import {notificationCreatedAtMs} from '../../utils/notificationTime';
 import {pickString} from '../utils';
 
 export type NotifSeverity = 'structure_fire' | 'bell' | 'alert' | 'info';
@@ -6,6 +7,7 @@ export type NotifSeverity = 'structure_fire' | 'bell' | 'alert' | 'info';
 export type NotificationRecord = {
   id: string;
   audioId?: string;
+  audioTimestamp?: string;
   severity: NotifSeverity;
   county: string;
   talkgroup: string;
@@ -47,61 +49,36 @@ const mapSeverity = (raw?: string | null): NotifSeverity => {
   return 'info';
 };
 
-const parseNotificationDate = (value: unknown): Date | null => {
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = new Date(value.trim());
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    const ms = value < 1e12 ? value * 1000 : value;
-    const parsed = new Date(ms);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
-  }
-
-  return null;
+const toCreatedAtIso = (value: unknown): string | undefined => {
+  const ms = notificationCreatedAtMs(
+    typeof value === 'string' || typeof value === 'number' || value instanceof Date
+      ? value
+      : null,
+  );
+  return ms == null ? undefined : new Date(ms).toISOString();
 };
 
-/** Relative label from notification `createdAt` only — not readAt/updatedAt. */
-export const formatTimeAgo = (
-  iso?: string | null,
-  nowMs = Date.now(),
-): string => {
-  if (!iso) {
-    return '—';
+const pickAudioTimestamp = (
+  record: Record<string, unknown>,
+): string | undefined => {
+  const audio = toRecord(record.audio);
+  if (!audio) {
+    return undefined;
   }
 
-  const date = parseNotificationDate(iso);
-  if (!date) {
-    return '—';
+  const timestamp = pickString(audio, [
+    'timestamp',
+    'createdAt',
+    'created_at',
+    'recordedAt',
+    'recorded_at',
+  ]);
+
+  if (!timestamp) {
+    return undefined;
   }
 
-  const elapsedMs = Math.abs(nowMs - date.getTime());
-  if (elapsedMs < 60_000) {
-    return 'Just now';
-  }
-
-  const minutes = Math.floor(elapsedMs / 60_000);
-  if (elapsedMs < 3_600_000) {
-    return minutes === 1 ? '1 min ago' : `${minutes} min ago`;
-  }
-
-  const hours = Math.floor(elapsedMs / 3_600_000);
-  if (elapsedMs < 86_400_000) {
-    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-  }
-
-  const days = Math.floor(elapsedMs / 86_400_000);
-  if (elapsedMs < 604_800_000) {
-    return days === 1 ? '1 day ago' : `${days} days ago`;
-  }
-
-  const weeks = Math.floor(elapsedMs / 604_800_000);
-  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+  return toCreatedAtIso(timestamp) ?? timestamp;
 };
 
 const pickTalkgroup = (record: Record<string, unknown>): string => {
@@ -211,11 +188,6 @@ const isRead = (record: Record<string, unknown>): boolean => {
   return false;
 };
 
-const toCreatedAtIso = (value: unknown): string | undefined => {
-  const parsed = parseNotificationDate(value);
-  return parsed ? parsed.toISOString() : undefined;
-};
-
 const pickCreatedAt = (record: Record<string, unknown>): string | undefined => {
   for (const key of ['createdAt', 'created_at']) {
     const iso = toCreatedAtIso(record[key]);
@@ -247,10 +219,12 @@ export const mapNotificationToRecord = (
 ): NotificationRecord => {
   const record = notification as Record<string, unknown>;
   const createdAt = pickCreatedAt(record);
+  const audioTimestamp = pickAudioTimestamp(record);
 
   return {
     id: notification.id,
     audioId: pickAudioId(record),
+    audioTimestamp,
     severity: mapSeverity(
       pickString(record, ['severity', 'priority', 'level', 'type']),
     ),

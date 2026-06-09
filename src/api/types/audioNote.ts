@@ -24,6 +24,7 @@ export type AudioNoteRecord = {
   updatedAt: string;
   authorId?: string;
   authorLabel?: string;
+  authorEmail?: string;
 };
 
 export type CreateAudioNotePayload = {

@@ -17,6 +17,7 @@ import {
   type AudioNoteRecord,
 } from '../../../api';
 import {useTheme, useThemedStyles} from '../../../config/theme';
+import {useAppSelector} from '../../../redux/hooks';
 import {responsiveHitSlop} from '../../../utils/responsive';
 import {createStyles} from './styles';
 
@@ -26,21 +27,39 @@ type Props = {
   token?: string;
   currentUserId?: string;
   isAdmin?: boolean;
+  onNotesCountChange?: (count: number) => void;
 };
 
-const formatNoteDate = (iso: string) => {
+const formatNoteAddedDate = (iso: string) => {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return '';
   }
-  return date.toLocaleString('en-GB', {
-    day: '2-digit',
+  return date.toLocaleString('en-US', {
     month: 'short',
+    day: 'numeric',
     year: 'numeric',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: false,
+    hour12: true,
   });
+};
+
+const resolveNoteAuthorName = (
+  note: AudioNoteRecord,
+  currentUserId?: string,
+  currentUserName?: string,
+) => {
+  if (note.authorLabel?.trim()) {
+    return note.authorLabel.trim();
+  }
+  if (currentUserId && note.authorId === currentUserId && currentUserName?.trim()) {
+    return currentUserName.trim();
+  }
+  if (note.authorEmail?.includes('@')) {
+    return note.authorEmail.split('@')[0];
+  }
+  return undefined;
 };
 
 const FeedCardNotesPanel = ({
@@ -49,9 +68,11 @@ const FeedCardNotesPanel = ({
   token,
   currentUserId,
   isAdmin = false,
+  onNotesCountChange,
 }: Props) => {
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
+  const currentUserName = useAppSelector(state => state.user.name);
   const [notes, setNotes] = useState<AudioNoteRecord[]>([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
@@ -103,6 +124,12 @@ const FeedCardNotesPanel = ({
     }
     void refreshNotes();
   }, [expanded, refreshNotes]);
+
+  useEffect(() => {
+    if (hasLoaded) {
+      onNotesCountChange?.(notes.length);
+    }
+  }, [hasLoaded, notes.length, onNotesCountChange]);
 
   const handleSaveNote = async () => {
     const trimmed = draft.trim();
@@ -235,20 +262,17 @@ const FeedCardNotesPanel = ({
           {notes.map(note => {
             const isEditing = editingNoteId === note.id;
             const canModify = canModifyNote(note);
+            const authorName = resolveNoteAuthorName(
+              note,
+              currentUserId,
+              currentUserName,
+            );
+            const addedLabel = formatNoteAddedDate(note.createdAt);
 
             return (
               <View key={note.id} style={styles.feedNoteCard}>
                 <View style={styles.feedNoteCardHeader}>
-                  <View style={styles.feedNoteMetaColumn}>
-                    <Text style={styles.feedNoteDate}>
-                      {formatNoteDate(note.createdAt)}
-                    </Text>
-                    {note.authorLabel ? (
-                      <Text style={styles.feedNoteAuthor} numberOfLines={1}>
-                        {note.authorLabel}
-                      </Text>
-                    ) : null}
-                  </View>
+                  <Text style={styles.feedNoteLabel}>Note</Text>
                   {canModify ? (
                     <View style={styles.feedNoteActions}>
                       <TouchableOpacity
@@ -314,6 +338,14 @@ const FeedCardNotesPanel = ({
                 ) : (
                   <Text style={styles.feedNoteBody}>{note.text}</Text>
                 )}
+
+                {authorName || addedLabel ? (
+                  <Text style={styles.feedNoteMeta} numberOfLines={2}>
+                    {authorName ? `By ${authorName}` : ''}
+                    {authorName && addedLabel ? ' • ' : ''}
+                    {addedLabel ? `Added: ${addedLabel}` : ''}
+                  </Text>
+                ) : null}
               </View>
             );
           })}

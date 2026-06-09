@@ -4,7 +4,7 @@ import type {
   UserRole,
 } from '../../screens/main/leadLog/types';
 import type {ApiCounty, ApiUser, FeedSeverityLevel} from '../types/user';
-import {pickNumber, pickString} from '../utils';
+import {pickBoolean, pickNumber, pickString} from '../utils';
 
 export const normalizeFeedSeverityLevel = (
   value: string,
@@ -110,6 +110,9 @@ export const mapUserToRecord = (user: ApiUser): UserRecord => {
     activeSessionCount > 0 ? lastSeenAt : null,
   );
 
+  const disabled = pickBoolean(record, ['disabled', 'isDisabled', 'is_disabled']);
+  const activeFlag = pickBoolean(record, ['isActive', 'is_active', 'active']);
+
   return {
     id: user.id,
     email: pickString(record, ['email']) ?? 'unknown',
@@ -121,6 +124,7 @@ export const mapUserToRecord = (user: ApiUser): UserRecord => {
     lastSeenAt,
     activeSessionCount,
     presenceStatus,
+    isActive: disabled === true ? false : activeFlag !== false,
     allowedSeverities: parseAllowedSeverities(record),
   };
 };

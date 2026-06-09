@@ -13,6 +13,7 @@ export type UserRecord = {
   lastSeenAt: string | null;
   activeSessionCount: number;
   presenceStatus: UserPresenceStatus;
+  isActive: boolean;
   /** null or [] = all severities; non-empty = restricted */
   allowedSeverities: FeedSeverityLevel[] | null;
 };

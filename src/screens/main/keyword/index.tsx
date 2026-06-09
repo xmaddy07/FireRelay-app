@@ -117,7 +117,6 @@ const KeywordListItem = ({
 }: KeywordListItemProps) => {
   const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const isCritical = item.isCritical || item.descriptionLevel === 'critical';
   const severityStyles = getListSeverityStyles(item.severity, styles);
 
   const entranceStyle = {
@@ -156,9 +155,8 @@ const KeywordListItem = ({
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[styles.keywordCard, isCritical && styles.keywordCardCritical]}
+        style={styles.keywordCard}
       >
-        {isCritical ? <View style={styles.criticalAccent} /> : null}
         <View style={styles.keywordCardBody}>
           <View style={styles.cardHeaderRow}>
             <Text style={styles.keywordName} numberOfLines={2}>
@@ -216,13 +214,7 @@ const KeywordListItem = ({
           <View style={styles.metaRow}>
             <View style={styles.metaColumn}>
               <Text style={styles.metaLabel}>Description</Text>
-              <Text
-                style={[
-                  styles.metaValue,
-                  isCritical && styles.metaValueCritical,
-                ]}
-                numberOfLines={2}
-              >
+              <Text style={styles.metaValue} numberOfLines={2}>
                 {item.description}
               </Text>
             </View>

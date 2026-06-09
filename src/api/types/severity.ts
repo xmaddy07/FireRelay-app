@@ -7,18 +7,23 @@ export const KEYWORD_SEVERITY_LEVELS: readonly KeywordSeverity[] = [
   'LOW',
 ];
 
+export type SeverityNotificationPreference = {
+  email: boolean;
+  push: boolean;
+};
+
 export type NotificationPreferences = {
-  CRITICAL: {email: boolean};
-  HIGH: {email: boolean};
-  MEDIUM: {email: boolean};
-  LOW: {email: boolean};
+  CRITICAL: SeverityNotificationPreference;
+  HIGH: SeverityNotificationPreference;
+  MEDIUM: SeverityNotificationPreference;
+  LOW: SeverityNotificationPreference;
 };
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
-  CRITICAL: {email: true},
-  HIGH: {email: true},
-  MEDIUM: {email: true},
-  LOW: {email: true},
+  CRITICAL: {email: true, push: true},
+  HIGH: {email: true, push: true},
+  MEDIUM: {email: true, push: true},
+  LOW: {email: true, push: true},
 };
 
 export const formatSeverityLabel = (raw?: string | null): KeywordSeverity => {
