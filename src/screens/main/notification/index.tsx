@@ -27,10 +27,13 @@ import {
   markNotificationRead,
   type NotificationRecord,
 } from '../../../api';
+import {type NotifSeverity} from '../../../api/mappers/notificationMapper';
+import {useNotificationTimestamps} from '../../../hooks/useNotificationTimestamps';
 import {
-  formatTimeAgo,
-  type NotifSeverity,
-} from '../../../api/mappers/notificationMapper';
+  formatNotificationTime,
+  getNotificationDisplayTimestamp,
+  sortNotificationsUnreadFirst,
+} from '../../../utils/notificationTime';
 
 const PAGE_SIZE = 20;
 
@@ -62,11 +65,18 @@ const buildTitle = (item: NotificationRecord) => {
 type ItemProps = {
   item: NotificationRecord;
   entranceAnim: Animated.Value;
-  nowMs: number;
+  audioTimestamps: ReadonlyMap<string, string>;
+  resolvedAudioIds: ReadonlySet<string>;
   onPress: (id: string) => void;
 };
 
-const NotificationItem = ({item, entranceAnim, nowMs, onPress}: ItemProps) => {
+const NotificationItem = ({
+  item,
+  entranceAnim,
+  audioTimestamps,
+  resolvedAudioIds,
+  onPress,
+}: ItemProps) => {
   const {glass, isDark} = useTheme();
   const styles = useThemedStyles(createNotificationStyles);
   const scale = useRef(new Animated.Value(1)).current;
@@ -147,7 +157,13 @@ const NotificationItem = ({item, entranceAnim, nowMs, onPress}: ItemProps) => {
                     {`${getSeverityEmoji(item.severity)} ${buildTitle(item)}`}
                   </Text>
                   <Text style={styles.timeText}>
-                    {formatTimeAgo(item.createdAt, nowMs)}
+                    {formatNotificationTime(
+                      getNotificationDisplayTimestamp(
+                        item,
+                        audioTimestamps,
+                        resolvedAudioIds,
+                      ),
+                    )}
                   </Text>
                 </View>
 
@@ -188,7 +204,14 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [markingAllRead, setMarkingAllRead] = useState(false);
-  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const {
+    audioTimestamps,
+    resolvedAudioIds,
+    audioTimestampsVersion,
+    relativeTimeTick,
+    ensureTimestampsHydrated,
+  } = useNotificationTimestamps(token);
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
@@ -269,8 +292,10 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
           animatedIdsRef.current.clear();
         }
 
+        await ensureTimestampsHydrated(result.items);
+
         setNotifications(prev => {
-          const nextItems = append
+          const merged = append
             ? (() => {
                 const existingIds = new Set(prev.map(item => item.id));
                 return [
@@ -288,7 +313,11 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
               : result.items,
           );
 
-          return nextItems;
+          return sortNotificationsUnreadFirst(
+            merged,
+            audioTimestamps,
+            resolvedAudioIds,
+          );
         });
         setPage(pageToLoad);
         setHasMore(result.hasMore);
@@ -308,7 +337,14 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
         setRefreshing(false);
       }
     },
-    [animateNewItems, fetchUnreadCount, token],
+    [
+      animateNewItems,
+      audioTimestamps,
+      ensureTimestampsHydrated,
+      fetchUnreadCount,
+      resolvedAudioIds,
+      token,
+    ],
   );
 
   useEffect(() => {
@@ -322,14 +358,6 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
   useEffect(() => {
     void loadNotifications(1, false);
   }, [loadNotifications]);
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setNowMs(Date.now());
-    }, 15_000);
-
-    return () => clearInterval(intervalId);
-  }, []);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -364,6 +392,8 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
                 ? {
                     ...updated,
                     createdAt: item.createdAt ?? updated.createdAt,
+                    audioTimestamp:
+                      item.audioTimestamp ?? updated.audioTimestamp,
                     read: true,
                   }
                 : item,
@@ -483,7 +513,7 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
 
       <FlatList
         data={notifications}
-        extraData={nowMs}
+        extraData={`${relativeTimeTick}:${audioTimestampsVersion}`}
         keyExtractor={item => item.id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
@@ -507,7 +537,8 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
           <NotificationItem
             item={item}
             entranceAnim={getItemAnim(item.id)}
-            nowMs={nowMs}
+            audioTimestamps={audioTimestamps}
+            resolvedAudioIds={resolvedAudioIds}
             onPress={id => void handlePress(id)}
           />
         )}

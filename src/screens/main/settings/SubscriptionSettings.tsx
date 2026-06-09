@@ -96,13 +96,13 @@ const parseNotificationPreferences = (
 
 const toApiPayload = (
   preferences: Record<KeywordSeverity, boolean>,
-): NotificationPreferences =>
+): Pick<NotificationPreferences, SubscriptionSeverity> =>
   Object.fromEntries(
-    KEYWORD_SEVERITY_LEVELS.map(level => [
+    SUBSCRIPTION_LEVELS.map(level => [
       level,
-      {email: preferences[level]},
+      {email: preferences[level], push: preferences[level]},
     ]),
-  ) as NotificationPreferences;
+  ) as Pick<NotificationPreferences, SubscriptionSeverity>;
 
 const getSeverityThemes = (
   isDark: boolean,

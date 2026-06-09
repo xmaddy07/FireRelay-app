@@ -93,3 +93,9 @@ export {
   markAllNotificationsRead,
 } from './services/notificationService';
 export type {NotificationRecord} from './mappers/notificationMapper';
+export {
+  formatNotificationTime,
+  getNotificationDisplayTimestamp,
+  notificationCreatedAtMs,
+  sortNotificationsUnreadFirst,
+} from '../utils/notificationTime';

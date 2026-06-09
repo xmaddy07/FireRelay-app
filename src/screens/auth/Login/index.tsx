@@ -300,6 +300,7 @@ function LoginScreen() {
                     : undefined
                 }
                 secureTextEntry
+                style={styles.passwordInput}
                 labelStyle={styles.inputLabel}
                 wrapperStyle={styles.inputWrapper}
                 inputStyle={styles.inputField}

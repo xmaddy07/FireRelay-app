@@ -592,6 +592,9 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   feedCardWrapperExpanded: {
     marginBottom: hp(0.8),
   },
+  feedCardActionButtonWrap: {
+    position: 'relative',
+  },
   feedCardActionButton: {
     width: wp(7),
     height: wp(7),
@@ -606,6 +609,26 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   feedCardActionButtonActive: {
     backgroundColor: colors.primaryTint,
     borderColor: colors.primaryBorder,
+  },
+  feedCardNotesBadge: {
+    position: 'absolute',
+    top: -hp(0.35),
+    right: -wp(0.8),
+    minWidth: wp(3.6),
+    height: wp(3.6),
+    borderRadius: wp(999),
+    paddingHorizontal: wp(0.6),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.inputBackground,
+  },
+  feedCardNotesBadgeText: {
+    fontSize: responsiveSize(8),
+    fontFamily: fonts.bold,
+    color: colors.textOnPrimary,
+    lineHeight: responsiveSize(9),
   },
   feedCardHeaderActions: {
     flexDirection: 'row',
@@ -701,30 +724,26 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   feedNoteCardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: hp(0.3),
+    marginBottom: hp(0.35),
     gap: wp(2),
   },
-  feedNoteMetaColumn: {
-    flex: 1,
-    minWidth: 0,
+  feedNoteLabel: {
+    fontSize: responsiveSize(11),
+    fontFamily: fonts.semibold,
+    color: colors.textSecondary,
   },
   feedNoteActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: wp(2),
   },
-  feedNoteDate: {
-    fontSize: responsiveSize(9),
-    fontFamily: fonts.semibold,
+  feedNoteMeta: {
+    fontSize: responsiveSize(9.5),
+    fontFamily: fonts.regular,
     color: colors.textMuted,
-  },
-  feedNoteAuthor: {
-    fontSize: responsiveSize(9),
-    fontFamily: fonts.medium,
-    color: colors.textSecondary,
-    marginTop: hp(0.1),
+    marginTop: hp(0.45),
   },
   feedNotesEditInput: {
     minHeight: hp(6),
@@ -752,6 +771,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     fontFamily: fonts.regular,
     color: colors.text,
     lineHeight: responsiveSize(16),
+    marginBottom: hp(0.1),
   },
   feedMetadataPanel: {
     borderTopWidth: 1,

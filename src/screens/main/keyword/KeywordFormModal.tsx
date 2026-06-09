@@ -20,10 +20,13 @@ import {
 import {severityDisplayName} from '../../../api';
 import {
   KEYWORD_SEVERITY_LEVELS,
-  type KeywordDescriptionLevel,
   type KeywordRecord,
   type KeywordSeverity,
 } from './types';
+
+const KEYWORD_FORM_SEVERITY_LEVELS = KEYWORD_SEVERITY_LEVELS.filter(
+  level => level !== 'CRITICAL',
+);
 
 type Props = {
   visible: boolean;
@@ -33,17 +36,9 @@ type Props = {
   onSubmit: (keyword: KeywordRecord) => void;
 };
 
-const deriveRecordMeta = (
-  description: string,
-  severity: KeywordSeverity | null,
-) => {
+const deriveRecordMeta = (description: string) => {
   const trimmed = description.trim();
-  const normalized = severity?.toUpperCase();
-  const isCritical = normalized === 'CRITICAL' || normalized === 'HIGH';
-  const descriptionLevel: KeywordDescriptionLevel = isCritical
-    ? 'critical'
-    : 'normal';
-  return {description: trimmed, descriptionLevel, isCritical};
+  return {description: trimmed, descriptionLevel: 'normal' as const};
 };
 
 const KeywordFormModal = ({
@@ -75,7 +70,10 @@ const KeywordFormModal = ({
       setName(keyword.name);
       setActive(keyword.active);
       setDescription(keyword.description === '—' ? '' : keyword.description);
-      setSeverity(normalizeKeywordSeverity(keyword.severity));
+      const normalizedSeverity = normalizeKeywordSeverity(keyword.severity);
+      setSeverity(
+        normalizedSeverity === 'CRITICAL' ? 'HIGH' : normalizedSeverity,
+      );
       return;
     }
     setName('');
@@ -90,7 +88,7 @@ const KeywordFormModal = ({
       return;
     }
 
-    const meta = deriveRecordMeta(description, severity);
+    const meta = deriveRecordMeta(description);
 
     if (isEdit && keyword) {
       onSubmit({
@@ -165,7 +163,7 @@ const KeywordFormModal = ({
 
               <Text style={s.fieldLabel}>Severity</Text>
               <View style={s.severityRow}>
-                {KEYWORD_SEVERITY_LEVELS.map(option => {
+                {KEYWORD_FORM_SEVERITY_LEVELS.map(option => {
                   const selected = severity === option;
                   const chipStyles = getModalSeverityChipStyles(option, selected, s);
                   return (

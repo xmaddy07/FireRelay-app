@@ -59,6 +59,50 @@ import {
 
 const ROLE_FILTER_OPTIONS: RoleFilter[] = ['All Roles', 'Admin', 'User'];
 
+type UserStatCardProps = {
+  label: string;
+  value: number;
+  subLabel: string;
+  icon: string;
+  iconStyle: 'purple' | 'blue' | 'orange';
+  iconColor: string;
+};
+
+const UserStatCard = ({
+  label,
+  value,
+  subLabel,
+  icon,
+  iconStyle,
+  iconColor,
+}: UserStatCardProps) => {
+  const styles = useThemedStyles(createStyles);
+  const iconWrapStyle = {
+    purple: styles.statIconPurple,
+    blue: styles.statIconBlue,
+    orange: styles.statIconOrange,
+  }[iconStyle];
+
+  return (
+    <View style={styles.statCard}>
+      <View style={styles.statCardRow}>
+        <View style={[styles.statIconWrap, iconWrapStyle]}>
+          <Icon name={icon} size={17} color={iconColor} />
+        </View>
+        <View style={styles.statCardContent}>
+          <Text style={styles.statLabel} numberOfLines={1}>
+            {label}
+          </Text>
+          <Text style={styles.statValue}>{value}</Text>
+          <Text style={styles.statSubLabel} numberOfLines={2}>
+            {subLabel}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const formatCreatedDate = (iso: string) => {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
@@ -322,7 +366,6 @@ const PROFILE_TABS: ProfileTab[] = [
 ];
 
 const FEED_SEVERITY_LEVELS: FeedSeverityLevel[] = [
-  'CRITICAL',
   'HIGH',
   'MEDIUM',
   'LOW',
@@ -429,6 +472,28 @@ const sortSessionsByLastSeen = (sessionList: UserSessionRecord[]) =>
     const right = new Date(b.lastSeenAt).getTime();
     return right - left;
   });
+
+const sortSessionsBySignIn = (sessionList: UserSessionRecord[]) =>
+  [...sessionList].sort((a, b) => {
+    const left = new Date(a.createdAt).getTime();
+    const right = new Date(b.createdAt).getTime();
+    return right - left;
+  });
+
+const getCurrentSignInActivity = (sessionList: UserSessionRecord[]) =>
+  sortSessionsBySignIn(sessionList).filter(session => !session.revokedAt);
+
+const formatSignInTimeLabel = (iso: string) => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+  const diffMs = Date.now() - date.getTime();
+  if (diffMs < 1000 * 60 * 60 * 48) {
+    return formatLastSeenLabel(iso);
+  }
+  return formatSessionDate(iso);
+};
 
 const UserProfileModal = ({
   visible,
@@ -1580,43 +1645,64 @@ const UserProfileModal = ({
       );
     }
 
-    if (sessions.length === 0) {
+    if (activeTab === 'Activity') {
+      const currentSignIns = getCurrentSignInActivity(sessions);
+
+      if (currentSignIns.length === 0) {
+        return (
+          <View style={styles.profilePlaceholderCard}>
+            <Text style={styles.profilePlaceholderText}>
+              No current sign-in sessions.
+            </Text>
+          </View>
+        );
+      }
+
       return (
-        <View style={styles.profilePlaceholderCard}>
-          <Text style={styles.profilePlaceholderText}>No session activity yet.</Text>
-        </View>
+        <>
+          <View style={styles.profileSectionHeaderInline}>
+            <Text style={styles.profileSectionHeading}>Current sign-in activity</Text>
+            <View style={styles.activeCountPill}>
+              <Text
+                style={styles.activeCountText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {currentSignIns.length} active
+              </Text>
+            </View>
+          </View>
+          <View style={styles.profileTimelineWrap}>
+            {currentSignIns.map((session, idx) => (
+              <View key={session.id} style={styles.timelineItem}>
+                <View style={styles.timelineColumn}>
+                  <View style={styles.timelineDot} />
+                  {idx !== currentSignIns.length - 1 ? (
+                    <View style={styles.timelineLine} />
+                  ) : null}
+                </View>
+                <View style={styles.timelineCard}>
+                  <Text style={styles.sessionTitle}>{formatDeviceLabel(session)}</Text>
+                  <View style={styles.sessionSignedRow}>
+                    <Text style={styles.profileLabel}>Signed in</Text>
+                    <Text style={styles.profileValue}>
+                      {formatSignInTimeLabel(session.createdAt)}
+                    </Text>
+                  </View>
+                  <View style={styles.sessionSignedRow}>
+                    <Text style={styles.profileLabel}>IP address</Text>
+                    <Text style={styles.profileValue}>{session.ipAddress || '-'}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
       );
     }
 
-    return (
-      <View style={styles.profileTimelineWrap}>
-        {sessions.map((session, idx) => (
-          <View key={session.id} style={styles.timelineItem}>
-            <View style={styles.timelineColumn}>
-              <View style={styles.timelineDot} />
-              {idx !== sessions.length - 1 ? <View style={styles.timelineLine} /> : null}
-            </View>
-            <View style={styles.timelineCard}>
-              <Text style={styles.sessionTitle}>{formatDeviceLabel(session)}</Text>
-              <View style={styles.sessionSignedRow}>
-                <Text style={styles.profileLabel}>Last seen</Text>
-                <Text style={styles.profileValue}>{formatLastSeenLabel(session.lastSeenAt)}</Text>
-              </View>
-              <View style={styles.sessionSignedRow}>
-                <Text style={styles.profileLabel}>Signed in</Text>
-                <Text style={styles.profileValue}>
-                  {formatSessionDate(session.createdAt)}
-                </Text>
-              </View>
-              <View style={styles.sessionSignedRow}>
-                <Text style={styles.profileLabel}>IP address</Text>
-                <Text style={styles.profileValue}>{session.ipAddress || '-'}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-    );
+    return null;
   };
 
   return (
@@ -1743,6 +1829,7 @@ const LeadLogScreen = () => {
   const insets = useSafeAreaInsets();
   const currentEmail = useAppSelector(state => state.user.email) ?? '';
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [userStatsSource, setUserStatsSource] = useState<UserRecord[]>([]);
   const [countyOptions, setCountyOptions] = useState<CountyOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -1772,6 +1859,16 @@ const LeadLogScreen = () => {
       return matchesSearch && matchesRole;
     });
   }, [searchQuery, roleFilter, users]);
+
+  const userStats = useMemo(
+    () => ({
+      total: userStatsSource.length,
+      admins: userStatsSource.filter(user => user.role === 'admin').length,
+      regularUsers: userStatsSource.filter(user => user.role === 'user').length,
+      inactiveUsers: userStatsSource.filter(user => !user.isActive).length,
+    }),
+    [userStatsSource],
+  );
 
   const getItemAnim = (id: string) => {
     if (!itemAnimsRef.current[id]) {
@@ -1854,7 +1951,7 @@ const LeadLogScreen = () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [userResults, counties] = await Promise.all([
+      const [userResults, statsUsers, counties] = await Promise.all([
         searchUsers(token, {
           limit: 200,
           search: searchQuery.trim() || undefined,
@@ -1863,9 +1960,11 @@ const LeadLogScreen = () => {
               ? undefined
               : roleFilter.toLowerCase(),
         }),
+        searchUsers(token, {limit: 200}),
         listCounties(token),
       ]);
       setUsers(userResults);
+      setUserStatsSource(statsUsers);
       setCountyOptions(counties);
       void enrichUsersWithSessionSummaries(token, userResults).then(enriched => {
         setUsers(enriched);
@@ -1904,20 +2003,20 @@ const LeadLogScreen = () => {
 
   const handleProfileUserUpdated = useCallback((updated: UserRecord) => {
     setSelectedProfileUser(updated);
-    setUsers(prev =>
-      prev.map(item =>
-        item.id === updated.id
-          ? {
-              ...item,
-              email: updated.email,
-              role: updated.role,
-              counties: updated.counties,
-              createdAt: updated.createdAt,
-              allowedSeverities: updated.allowedSeverities,
-            }
-          : item,
-      ),
-    );
+    const syncUser = (item: UserRecord) =>
+      item.id === updated.id
+        ? {
+            ...item,
+            email: updated.email,
+            role: updated.role,
+            counties: updated.counties,
+            createdAt: updated.createdAt,
+            isActive: updated.isActive,
+            allowedSeverities: updated.allowedSeverities,
+          }
+        : item;
+    setUsers(prev => prev.map(syncUser));
+    setUserStatsSource(prev => prev.map(syncUser));
   }, []);
 
   const handleSaveUser = async (
@@ -1934,23 +2033,23 @@ const LeadLogScreen = () => {
         role: updated.role,
       });
       await assignUserCounties(token, updated.id, countyIds);
-      setUsers(prev =>
-        prev.map(u => {
-          if (u.id !== updated.id) {
-            return u;
-          }
-          return {
-            ...saved,
-            counties: countyIds
-              .map(id => countyOptions.find(c => c.id === id)?.name)
-              .filter((name): name is string => Boolean(name)),
-            lastSeenAt: u.lastSeenAt,
-            activeSessionCount: u.activeSessionCount,
-            presenceStatus: u.presenceStatus,
-            allowedSeverities: u.allowedSeverities,
-          };
-        }),
-      );
+      const mergeSavedUser = (u: UserRecord) => {
+        if (u.id !== updated.id) {
+          return u;
+        }
+        return {
+          ...saved,
+          counties: countyIds
+            .map(id => countyOptions.find(c => c.id === id)?.name)
+            .filter((name): name is string => Boolean(name)),
+          lastSeenAt: u.lastSeenAt,
+          activeSessionCount: u.activeSessionCount,
+          presenceStatus: u.presenceStatus,
+          allowedSeverities: u.allowedSeverities,
+        };
+      };
+      setUsers(prev => prev.map(mergeSavedUser));
+      setUserStatsSource(prev => prev.map(mergeSavedUser));
       closeEditModal();
     } catch (error) {
       Alert.alert(
@@ -1971,6 +2070,7 @@ const LeadLogScreen = () => {
         role: user.role,
       });
       setUsers(prev => [created, ...prev]);
+      setUserStatsSource(prev => [created, ...prev]);
       setAddModalVisible(false);
     } catch (error) {
       Alert.alert(
@@ -1996,6 +2096,7 @@ const LeadLogScreen = () => {
           try {
             await deleteUser(token, user.id);
             setUsers(prev => prev.filter(u => u.id !== user.id));
+            setUserStatsSource(prev => prev.filter(u => u.id !== user.id));
           } catch (error) {
             Alert.alert(
               'Delete failed',
@@ -2066,9 +2167,9 @@ const LeadLogScreen = () => {
     />
   );
 
-  return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.searchRow, searchBarStyle]}>
+  const listHeader = (
+    <View style={[styles.listHeader]}>
+      <Animated.View style={[styles.toolbarRow, searchBarStyle]}>
         <View style={styles.searchBar}>
           <Icon
             name="search"
@@ -2119,6 +2220,48 @@ const LeadLogScreen = () => {
       </Animated.View>
 
       {isAdmin ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.statsScroll}
+          contentContainerStyle={styles.statsScrollContent}
+        >
+          <UserStatCard
+            label="Total Users"
+            value={userStats.total}
+            subLabel="All registered users"
+            icon="users"
+            iconStyle="purple"
+            iconColor="#7C3AED"
+          />
+          <UserStatCard
+            label="Admins"
+            value={userStats.admins}
+            subLabel="Users with admin access"
+            icon="shield"
+            iconStyle="purple"
+            iconColor="#8B5CF6"
+          />
+          <UserStatCard
+            label="Regular Users"
+            value={userStats.regularUsers}
+            subLabel="Standard users"
+            icon="user"
+            iconStyle="blue"
+            iconColor="#3B82F6"
+          />
+          <UserStatCard
+            label="Inactive Users"
+            value={userStats.inactiveUsers}
+            subLabel="Disabled users"
+            icon="user-x"
+            iconStyle="orange"
+            iconColor="#F59E0B"
+          />
+        </ScrollView>
+      ) : null}
+
+      {isAdmin ? (
         <View style={styles.roleChipsRow}>
           {ROLE_FILTER_OPTIONS.map(option => {
             const isActive = option === roleFilter;
@@ -2145,7 +2288,11 @@ const LeadLogScreen = () => {
           })}
         </View>
       ) : null}
+    </View>
+  );
 
+  return (
+    <View style={styles.container}>
       <FlatList
         style={styles.list}
         data={filteredUsers}
@@ -2157,6 +2304,7 @@ const LeadLogScreen = () => {
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={listHeader}
         ListFooterComponent={<View style={styles.listFooter} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
