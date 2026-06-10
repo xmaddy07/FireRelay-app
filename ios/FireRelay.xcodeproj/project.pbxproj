@@ -319,7 +319,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.firerelay;
+				PRODUCT_BUNDLE_IDENTIFIER = com.firerelay.app;
 				PRODUCT_NAME = FireRelay;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -350,7 +350,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.firerelay;
+				PRODUCT_BUNDLE_IDENTIFIER = com.firerelay.app;
 				PRODUCT_NAME = FireRelay;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;

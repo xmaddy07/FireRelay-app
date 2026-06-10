@@ -1,4 +1,11 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -7,10 +14,8 @@ import {
   TextInput,
   Pressable,
   Image,
-  Alert,
   Animated,
   Easing,
-  ActivityIndicator,
   Modal,
   ScrollView,
   useWindowDimensions,
@@ -43,9 +48,12 @@ import {
   type UserSessionRecord,
   type UserTalkgroupAccessRecord,
 } from '../../../api';
+import {derivePresenceStatus} from '../../../api/mappers/userMapper';
 import {useAuth} from '../../../hooks/useAuth';
+import {useAppDialog} from '../../../context';
 import AddUserModal from './AddUserModal';
 import EditUserModal from './EditUserModal';
+import UserListSkeleton from './UserListSkeleton';
 import {hp, responsiveHitSlop, wp} from '../../../utils/responsive';
 import {useOpenNotifications} from '../../../navigation/hooks';
 import {createPremium, createStyles, TAB_BAR_HEIGHT} from './styles';
@@ -428,6 +436,117 @@ const profileTabLabel = (tab: ProfileTab, compact: boolean) => {
   return shortLabels[tab];
 };
 
+type TabLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
+
+const SESSION_TABS: ProfileTab[] = ['Sessions', 'Activity', 'Security'];
+
+const createInitialTabStatus = (): Record<ProfileTab, TabLoadStatus> => ({
+  Overview: 'idle',
+  Permissions: 'idle',
+  Sessions: 'idle',
+  Security: 'idle',
+  Activity: 'idle',
+});
+
+const statusTabsFor = (tab: ProfileTab): ProfileTab[] =>
+  SESSION_TABS.includes(tab) ? SESSION_TABS : [tab];
+
+const resolveProfilePresence = (
+  listUser: UserRecord,
+  sessions: UserSessionRecord[],
+  sessionsTabStatus: TabLoadStatus,
+): UserPresenceStatus => {
+  const sessionSummary = summarizeUserSessions(sessions);
+
+  if (sessionsTabStatus !== 'loaded' || sessions.length === 0) {
+    return listUser.presenceStatus;
+  }
+
+  const hasActiveSessions =
+    sessionSummary.activeSessionCount > 0 || listUser.activeSessionCount > 0;
+
+  if (!hasActiveSessions) {
+    return 'offline';
+  }
+
+  const freshestLastSeen =
+    [listUser.lastSeenAt, sessionSummary.lastSeenAt]
+      .filter((ts): ts is string => {
+        if (!ts) {
+          return false;
+        }
+        return !Number.isNaN(new Date(ts).getTime());
+      })
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ??
+    null;
+
+  return derivePresenceStatus(freshestLastSeen);
+};
+
+const SkeletonBlock = ({
+  width,
+  height,
+  style,
+}: {
+  width: number | `${number}%`;
+  height: number;
+  style?: object;
+}) => {
+  const styles = useThemedStyles(createStyles);
+  const pulse = useRef(new Animated.Value(0.35)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0.35,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  return (
+    <Animated.View
+      style={[styles.skeletonBlock, {width, height, opacity: pulse}, style]}
+    />
+  );
+};
+
+const ProfileTabSkeleton = ({tab}: {tab: ProfileTab}) => {
+  const styles = useThemedStyles(createStyles);
+  const cardCount =
+    tab === 'Permissions' ? 2 : tab === 'Overview' ? 2 : 1;
+  const rowCount =
+    tab === 'Sessions' || tab === 'Activity' ? 3 : tab === 'Permissions' ? 4 : 2;
+
+  return (
+    <View style={styles.profileTabContent}>
+      {Array.from({length: cardCount}, (_, cardIndex) => (
+        <View key={cardIndex} style={styles.profileSectionCard}>
+          <SkeletonBlock width="38%" height={14} />
+          {Array.from({length: rowCount}, (_, rowIndex) => (
+            <View key={rowIndex} style={styles.skeletonRow}>
+              <SkeletonBlock width="28%" height={10} />
+              <SkeletonBlock width="82%" height={rowIndex === 0 ? 18 : 14} />
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+};
+
 const formatSessionDate = (iso: string) => {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
@@ -510,6 +629,7 @@ const UserProfileModal = ({
   onClose: () => void;
   onUserUpdated?: (user: UserRecord) => void;
 }) => {
+  const {alert, showError} = useAppDialog();
   const styles = useThemedStyles(createStyles);
   const {colors} = useTheme();
   const insets = useSafeAreaInsets();
@@ -517,7 +637,9 @@ const UserProfileModal = ({
   const compactProfileTabs = windowWidth < 390;
   const userId = user?.id;
   const [activeTab, setActiveTab] = useState<ProfileTab>('Overview');
-  const [tabLoading, setTabLoading] = useState<ProfileTab | null>(null);
+  const [tabStatus, setTabStatus] = useState<Record<ProfileTab, TabLoadStatus>>(
+    createInitialTabStatus,
+  );
   const [error, setError] = useState<string | null>(null);
   const [profileUser, setProfileUser] = useState<UserRecord | null>(null);
   const [sessions, setSessions] = useState<UserSessionRecord[]>([]);
@@ -537,8 +659,9 @@ const UserProfileModal = ({
   const [draftRole, setDraftRole] = useState<UserRole>('user');
   const [savingRole, setSavingRole] = useState(false);
   const [savingCounties, setSavingCounties] = useState(false);
-  const loadedTabsRef = useRef<Set<ProfileTab>>(new Set());
   const tabLoadGenerationRef = useRef(0);
+  const tabStatusRef = useRef(tabStatus);
+  tabStatusRef.current = tabStatus;
   const [sessionActionId, setSessionActionId] = useState<string | null>(null);
   const [savingAccess, setSavingAccess] = useState(false);
   const [securityLoading, setSecurityLoading] = useState<'reset' | 'revokeAll' | null>(
@@ -568,7 +691,6 @@ const UserProfileModal = ({
 
   useEffect(() => {
     if (visible) {
-      setActiveTab('Overview');
       tabContentAnim.setValue(1);
       tabFocusAnim.setValue(0);
       modalEntranceAnim.setValue(0);
@@ -581,17 +703,32 @@ const UserProfileModal = ({
     }
   }, [modalEntranceAnim, tabContentAnim, tabFocusAnim, visible]);
 
+  const setTabsStatus = useCallback(
+    (tabs: ProfileTab[], status: TabLoadStatus) => {
+      setTabStatus(prev => {
+        const next = {...prev};
+        tabs.forEach(item => {
+          next[item] = status;
+        });
+        return next;
+      });
+    },
+    [],
+  );
+
   const loadTabData = useCallback(
     async (tab: ProfileTab, force = false) => {
       if (!visible || !userId || !token) {
         return;
       }
-      if (!force && loadedTabsRef.current.has(tab)) {
+      if (!force && tabStatusRef.current[tab] === 'loaded') {
         return;
       }
 
-      const generation = ++tabLoadGenerationRef.current;
-      setTabLoading(tab);
+      const generation = tabLoadGenerationRef.current;
+      const tabsToUpdate = statusTabsFor(tab);
+
+      setTabsStatus(tabsToUpdate, 'loading');
       setError(null);
 
       try {
@@ -630,11 +767,7 @@ const UserProfileModal = ({
             setSeverityMode,
             setAllowedSeverities,
           );
-        } else if (
-          tab === 'Sessions' ||
-          tab === 'Activity' ||
-          tab === 'Security'
-        ) {
+        } else if (SESSION_TABS.includes(tab)) {
           const sessionList = await listUserSessions(token, userId);
           if (generation !== tabLoadGenerationRef.current) {
             return;
@@ -642,30 +775,35 @@ const UserProfileModal = ({
           setSessions(sortSessionsByLastSeen(sessionList));
         }
 
-        loadedTabsRef.current.add(tab);
+        if (generation === tabLoadGenerationRef.current) {
+          setTabsStatus(tabsToUpdate, 'loaded');
+        }
       } catch (loadErr) {
         if (generation !== tabLoadGenerationRef.current) {
           return;
         }
+        setTabsStatus(tabsToUpdate, 'error');
         setError(
           loadErr instanceof ApiError ? loadErr.message : 'Unable to load profile data.',
         );
-      } finally {
-        if (generation === tabLoadGenerationRef.current) {
-          setTabLoading(null);
-        }
       }
     },
-    [token, userId, visible],
+    [setTabsStatus, token, userId, visible],
   );
 
   const loadTabDataRef = useRef(loadTabData);
   loadTabDataRef.current = loadTabData;
 
-  useEffect(() => {
-    if (!visible || !userId || !token) {
+  useLayoutEffect(() => {
+    if (!visible) {
+      setTabStatus(createInitialTabStatus());
       return;
     }
+    if (!userId || !token) {
+      return;
+    }
+
+    tabLoadGenerationRef.current += 1;
     setActiveTab('Overview');
     setProfileUser(null);
     setSessions([]);
@@ -679,18 +817,15 @@ const UserProfileModal = ({
     setManagingCounties(false);
     setCountySearch('');
     setEditingRole(false);
-    tabLoadGenerationRef.current += 1;
-    loadedTabsRef.current = new Set();
-    setTabLoading(null);
+    setTabStatus(createInitialTabStatus());
     setError(null);
-  }, [visible, userId, token]);
 
-  useEffect(() => {
-    if (!visible || !userId || !token) {
-      return;
-    }
-    void loadTabDataRef.current(activeTab);
-  }, [activeTab, visible, userId, token]);
+    void Promise.all([
+      loadTabDataRef.current('Overview', true),
+      loadTabDataRef.current('Permissions', true),
+      loadTabDataRef.current('Sessions', true),
+    ]);
+  }, [visible, userId, token]);
 
   useEffect(() => {
     animateTabFocus(activeTab);
@@ -734,10 +869,17 @@ const UserProfileModal = ({
   const severityEditingDisabled = displayUser.role === 'admin';
   const headerTopSpacing = insets.top + hp(1.2);
   const activeSessions = sessions.filter(session => !session.revokedAt);
-  const {presenceStatus: profilePresenceStatus} = summarizeUserSessions(sessions);
+  const profilePresenceStatus = resolveProfilePresence(
+    user,
+    sessions,
+    tabStatus.Sessions,
+  );
+  const profilePresenceStyles = getPresenceStyles(profilePresenceStatus, styles);
   const countyNames = userCounties.map(county => county.name).filter(Boolean);
   const hasCountyAccess = countyNames.length > 0;
-  const isTabLoading = tabLoading === activeTab;
+  const activeTabStatus = tabStatus[activeTab];
+  const showTabSkeleton =
+    activeTabStatus === 'idle' || activeTabStatus === 'loading';
 
   const toggleCounty = (countyId: string) => {
     setSelectedCountyIds(prev =>
@@ -758,10 +900,7 @@ const UserProfileModal = ({
       setEditingRole(false);
       onUserUpdatedRef.current?.(updated);
     } catch (saveErr) {
-      Alert.alert(
-        'Unable to update role',
-        saveErr instanceof ApiError ? saveErr.message : 'Please try again.',
-      );
+      showError('Unable to update role', saveErr);
     } finally {
       setSavingRole(false);
     }
@@ -782,10 +921,7 @@ const UserProfileModal = ({
       setManagingCounties(false);
       onUserUpdatedRef.current?.(refreshed);
     } catch (saveErr) {
-      Alert.alert(
-        'Unable to save county access',
-        saveErr instanceof ApiError ? saveErr.message : 'Please try again.',
-      );
+      showError('Unable to save county access', saveErr);
     } finally {
       setSavingCounties(false);
     }
@@ -806,10 +942,7 @@ const UserProfileModal = ({
         ),
       );
     } catch (revokeErr) {
-      Alert.alert(
-        'Unable to revoke session',
-        revokeErr instanceof ApiError ? revokeErr.message : 'Please try again.',
-      );
+      showError('Unable to revoke session', revokeErr);
     } finally {
       setSessionActionId(null);
     }
@@ -827,22 +960,18 @@ const UserProfileModal = ({
       );
       setSessions(sessionList);
       setProfileUser(updated);
-      loadedTabsRef.current.add('Sessions');
-      loadedTabsRef.current.add('Activity');
-      loadedTabsRef.current.add('Security');
+      setTabsStatus(SESSION_TABS, 'loaded');
       onUserUpdatedRef.current?.({
         ...updated,
         ...summarizeUserSessions(sessionList),
       });
-      Alert.alert(
+      alert(
         'Password reset sent',
         'A new password was issued and all active sessions were revoked.',
+        {variant: 'success'},
       );
     } catch (resetErr) {
-      Alert.alert(
-        'Unable to reset password',
-        resetErr instanceof ApiError ? resetErr.message : 'Please try again.',
-      );
+      showError('Unable to reset password', resetErr);
     } finally {
       setSecurityLoading(null);
     }
@@ -863,17 +992,16 @@ const UserProfileModal = ({
         await listUserSessions(token, userId),
       );
       setSessions(sessionList);
-      loadedTabsRef.current.add('Sessions');
+      setTabsStatus(SESSION_TABS, 'loaded');
       onUserUpdatedRef.current?.({
         ...displayUser,
         ...summarizeUserSessions(sessionList),
       });
-      Alert.alert('Sessions revoked', 'All active sessions were revoked.');
+      alert('Sessions revoked', 'All active sessions were revoked.', {
+        variant: 'success',
+      });
     } catch (revokeErr) {
-      Alert.alert(
-        'Unable to revoke all sessions',
-        revokeErr instanceof ApiError ? revokeErr.message : 'Please try again.',
-      );
+      showError('Unable to revoke all sessions', revokeErr);
     } finally {
       setSecurityLoading(null);
     }
@@ -917,7 +1045,7 @@ const UserProfileModal = ({
       return;
     }
     if (severityMode === 'restricted' && allowedSeverities.length === 0) {
-      Alert.alert(
+      alert(
         'Select severities',
         'Choose at least one of HIGH, MEDIUM, or LOW, or switch to all severities.',
       );
@@ -936,12 +1064,11 @@ const UserProfileModal = ({
         setAllowedSeverities,
       );
       onUserUpdatedRef.current?.(updated);
-      Alert.alert('Access saved', 'Feed severity access has been updated.');
+      alert('Access saved', 'Feed severity access has been updated.', {
+        variant: 'success',
+      });
     } catch (saveErr) {
-      Alert.alert(
-        'Unable to save severity access',
-        saveErr instanceof ApiError ? saveErr.message : 'Please try again.',
-      );
+      showError('Unable to save severity access', saveErr);
     } finally {
       setSavingSeverityAccess(false);
     }
@@ -968,13 +1095,12 @@ const UserProfileModal = ({
         access: payloadAccess,
       });
       setTalkgroupAccess(saved);
-      loadedTabsRef.current.delete('Permissions');
-      Alert.alert('Access saved', 'Talkgroup access list has been updated.');
+      setTabsStatus(['Permissions'], 'loaded');
+      alert('Access saved', 'Talkgroup access list has been updated.', {
+        variant: 'success',
+      });
     } catch (saveErr) {
-      Alert.alert(
-        'Unable to save talkgroup access',
-        saveErr instanceof ApiError ? saveErr.message : 'Please try again.',
-      );
+      showError('Unable to save talkgroup access', saveErr);
     } finally {
       setSavingAccess(false);
     }
@@ -1035,6 +1161,9 @@ const UserProfileModal = ({
       }),
     ]).start();
     setActiveTab(tab);
+    if (tabStatusRef.current[tab] === 'idle' || tabStatusRef.current[tab] === 'error') {
+      void loadTabData(tab, true);
+    }
   };
 
   const renderTabContent = () => {
@@ -1738,8 +1867,11 @@ const UserProfileModal = ({
           </Animated.View>
 
           <Animated.View style={[styles.profileBadgesRow, headerAnimatedStyle]}>
-            <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>
+            <View style={[styles.presenceBadge, profilePresenceStyles.badge]}>
+              <View style={[styles.presenceDot, profilePresenceStyles.dot]} />
+              <Text
+                style={[styles.presenceBadgeText, profilePresenceStyles.text]}
+              >
                 {presenceLabel(profilePresenceStatus)}
               </Text>
             </View>
@@ -1800,15 +1932,29 @@ const UserProfileModal = ({
           >
             <View style={styles.profileTabContentWrap}>
               <Animated.View style={[styles.profileTabContent, tabContentAnimatedStyle]}>
-                {renderTabContent()}
+                {activeTabStatus === 'error' ? (
+                  <View style={styles.profilePlaceholderCard}>
+                    <Text style={styles.profilePlaceholderText}>
+                      {error ?? 'Unable to load this tab.'}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.profileOutlineButton, styles.profilePrimaryButtonFull]}
+                      activeOpacity={0.85}
+                      onPress={() => loadTabData(activeTab, true)}
+                    >
+                      <Text style={styles.profileOutlineButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : showTabSkeleton ? (
+                  <ProfileTabSkeleton tab={activeTab} />
+                ) : (
+                  renderTabContent()
+                )}
               </Animated.View>
-              {isTabLoading ? (
-                <View style={styles.profileLoadingOverlay}>
-                  <ActivityIndicator color={colors.primary} />
-                </View>
-              ) : null}
             </View>
-            {error ? <Text style={styles.profileErrorText}>{error}</Text> : null}
+            {error && activeTabStatus !== 'error' ? (
+              <Text style={styles.profileErrorText}>{error}</Text>
+            ) : null}
             <TouchableOpacity style={styles.closeProfileButton} onPress={onClose} activeOpacity={0.85}>
               <Text style={styles.closeProfileButtonText}>Close</Text>
             </TouchableOpacity>
@@ -1822,6 +1968,7 @@ const UserProfileModal = ({
 const LeadLogScreen = () => {
   const {isAdmin} = useRole();
   const {token} = useAuth();
+  const {confirm, showError} = useAppDialog();
   const openNotifications = useOpenNotifications();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -1843,8 +1990,8 @@ const LeadLogScreen = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
 
-  const searchAnim = useRef(new Animated.Value(0)).current;
-  const fabAnim = useRef(new Animated.Value(0)).current;
+  const searchAnim = useRef(new Animated.Value(1)).current;
+  const fabAnim = useRef(new Animated.Value(1)).current;
   const fabPulse = useRef(new Animated.Value(0)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
 
@@ -1872,52 +2019,16 @@ const LeadLogScreen = () => {
 
   const getItemAnim = (id: string) => {
     if (!itemAnimsRef.current[id]) {
-      itemAnimsRef.current[id] = new Animated.Value(0);
+      itemAnimsRef.current[id] = new Animated.Value(1);
     }
     return itemAnimsRef.current[id];
   };
 
   const animateUserList = (items: UserRecord[]) => {
-    const anims = items.map(item => {
-      const anim = getItemAnim(item.id);
-      anim.setValue(0);
-      return anim;
-    });
-    if (anims.length === 0) {
-      return;
-    }
-    Animated.stagger(
-      70,
-      anims.map(anim =>
-        Animated.spring(anim, {
-          toValue: 1,
-          friction: 7,
-          tension: 65,
-          useNativeDriver: true,
-        }),
-      ),
-    ).start();
+    items.forEach(item => getItemAnim(item.id).setValue(1));
   };
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(searchAnim, {
-        toValue: 1,
-        friction: 7,
-        tension: 55,
-        useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.delay(180),
-        Animated.spring(fabAnim, {
-          toValue: 1,
-          friction: 6,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(fabPulse, {
@@ -1936,7 +2047,7 @@ const LeadLogScreen = () => {
     );
     pulseLoop.start();
     return () => pulseLoop.stop();
-  }, [searchAnim, fabAnim, fabPulse]);
+  }, [fabPulse]);
 
   useEffect(() => {
     animateUserList(filteredUsers);
@@ -2052,10 +2163,7 @@ const LeadLogScreen = () => {
       setUserStatsSource(prev => prev.map(mergeSavedUser));
       closeEditModal();
     } catch (error) {
-      Alert.alert(
-        'Update failed',
-        error instanceof ApiError ? error.message : 'Unable to update user.',
-      );
+      showError('Update failed', error);
     }
   };
 
@@ -2073,10 +2181,7 @@ const LeadLogScreen = () => {
       setUserStatsSource(prev => [created, ...prev]);
       setAddModalVisible(false);
     } catch (error) {
-      Alert.alert(
-        'Create failed',
-        error instanceof ApiError ? error.message : 'Unable to create user.',
-      );
+      showError('Create failed', error);
     }
   };
 
@@ -2084,30 +2189,18 @@ const LeadLogScreen = () => {
     if (user.email === currentEmail) {
       return;
     }
-    Alert.alert('Delete User', `Remove ${user.email} from FireRelay?`, [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          if (!token) {
-            return;
-          }
-          try {
-            await deleteUser(token, user.id);
-            setUsers(prev => prev.filter(u => u.id !== user.id));
-            setUserStatsSource(prev => prev.filter(u => u.id !== user.id));
-          } catch (error) {
-            Alert.alert(
-              'Delete failed',
-              error instanceof ApiError
-                ? error.message
-                : 'Unable to delete user.',
-            );
-          }
-        },
+    confirm('Delete User', `Remove ${user.email} from FireRelay?`, {
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        if (!token) {
+          return;
+        }
+        await deleteUser(token, user.id);
+        setUsers(prev => prev.filter(u => u.id !== user.id));
+        setUserStatsSource(prev => prev.filter(u => u.id !== user.id));
       },
-    ]);
+    });
   };
 
   const searchBarStyle = {
@@ -2307,15 +2400,15 @@ const LeadLogScreen = () => {
         ListHeaderComponent={listHeader}
         ListFooterComponent={<View style={styles.listFooter} />}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            {loading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
+          loading ? (
+            <UserListSkeleton />
+          ) : (
+            <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
                 {loadError ?? 'No users match your filters.'}
               </Text>
-            )}
-          </View>
+            </View>
+          )
         }
       />
 
@@ -2339,6 +2432,7 @@ const LeadLogScreen = () => {
           <EditUserModal
             visible={editModalVisible}
             user={editingUser}
+            token={token}
             countyOptions={countyOptions}
             onClose={closeEditModal}
             onSave={handleSaveUser}

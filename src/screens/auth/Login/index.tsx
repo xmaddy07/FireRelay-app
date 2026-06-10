@@ -113,6 +113,7 @@ function LoginScreen() {
   const dispatch = useAppDispatch();
   const [loginError, setLoginError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -177,26 +178,6 @@ function LoginScreen() {
     },
   });
 
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslateY = useRef(new Animated.Value(36)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 650,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(cardTranslateY, {
-        toValue: 0,
-        duration: 650,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [cardOpacity, cardTranslateY]);
-
   useEffect(() => {
     let mounted = true;
 
@@ -241,12 +222,7 @@ function LoginScreen() {
             <Text style={styles.brandTagline}>REAL REFERRAIS, REAL TIME</Text>
           </View>
 
-          <Animated.View
-            style={{
-              opacity: cardOpacity,
-              transform: [{translateY: cardTranslateY}],
-            }}
-          >
+          <View>
             <GlassView
               effect="clear"
               colorScheme={isDark ? 'dark' : 'light'}
@@ -299,7 +275,7 @@ function LoginScreen() {
                     ? formik.errors.password
                     : undefined
                 }
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 style={styles.passwordInput}
                 labelStyle={styles.inputLabel}
                 wrapperStyle={styles.inputWrapper}
@@ -310,6 +286,22 @@ function LoginScreen() {
                     size={18}
                     color={colors.textSecondary}
                   />
+                }
+                rightIcon={
+                  <Pressable
+                    onPress={() => setShowPassword(prev => !prev)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
+                  >
+                    <AntDesign
+                      name={showPassword ? 'eyeo' : 'eye'}
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                  </Pressable>
                 }
               />
 
@@ -361,7 +353,7 @@ function LoginScreen() {
                 }
               />
             </GlassView>
-          </Animated.View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

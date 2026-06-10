@@ -4,7 +4,6 @@ import messaging, {
 import notifee, {AndroidImportance, EventType} from '@notifee/react-native';
 import {Platform} from 'react-native';
 import {openFeedAudioFromPush} from '../../navigation/navigationRef';
-import {requestNotificationPermission} from '../permissions/notificationPermission';
 import {logger} from '../../utils/logger';
 
 let foregroundUnsubscribe: (() => void) | null = null;
@@ -167,22 +166,10 @@ export const initializeFirebaseMessaging = async (): Promise<void> => {
     return;
   }
 
-  const permissionGranted = await requestNotificationPermission();
-  if (!permissionGranted) {
-    logger.debug('Push notification permission denied.');
-    return;
-  }
-
   try {
     await messaging().registerDeviceForRemoteMessages();
   } catch (error) {
-    logger.error('Failed to register device for remote messages', error);
-    return;
-  }
-
-  const fcmToken = await getFcmToken();
-  if (fcmToken) {
-    logger.debug('FCM token acquired', fcmToken);
+    logger.debug('Remote message registration deferred', error);
   }
 
   foregroundUnsubscribe = messaging().onMessage(async remoteMessage => {

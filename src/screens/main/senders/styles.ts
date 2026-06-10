@@ -431,6 +431,60 @@ export const createStyles = (colors: AppColors) => {
       paddingVertical: hp(2),
       alignItems: 'center',
     },
+    senderSkeletonList: {
+      gap: hp(1),
+      paddingTop: hp(0.2),
+    },
+    senderSkeletonCard: {
+      backgroundColor: premium.surface,
+      borderRadius: wp(3.5),
+      borderWidth: 1,
+      borderColor: premium.border,
+      paddingHorizontal: wp(3.2),
+      paddingVertical: hp(1.2),
+      gap: hp(0.8),
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.shadow,
+          shadowOffset: {width: 0, height: 4},
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+        },
+        android: {elevation: 3},
+      }),
+    },
+    senderSkeletonBlock: {
+      borderRadius: wp(5),
+      backgroundColor: colors.surfaceInset,
+    },
+    senderSkeletonHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: wp(2),
+    },
+    senderSkeletonMetaRow: {
+      flexDirection: 'row',
+      gap: wp(2.5),
+    },
+    senderSkeletonMetaColumn: {
+      flex: 1,
+      gap: hp(0.2),
+    },
+    senderSkeletonMetaColumnEnd: {
+      flex: 1,
+      alignItems: 'flex-end',
+      gap: hp(0.2),
+    },
+    senderSkeletonDescription: {
+      gap: hp(0.2),
+    },
+    senderSkeletonActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: wp(1.6),
+      paddingTop: hp(0.2),
+    },
     emptyState: {
       paddingVertical: hp(8),
       alignItems: 'center',

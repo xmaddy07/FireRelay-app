@@ -1,7 +1,7 @@
-import {Alert} from 'react-native';
 import {authActions} from '../../redux/slices/authSlice';
 import {userActions} from '../../redux/slices/userSlice';
 import {store} from '../../redux/store';
+import {dialogService} from '../dialogs/dialogService';
 import {socketService} from '../socket/socketService';
 
 let revocationAlertVisible = false;
@@ -25,21 +25,9 @@ export const forceLogoutDueToSessionRevocation = () => {
   }
 
   revocationAlertVisible = true;
-  Alert.alert(
-    'Signed out',
-    'Your session was revoked. Please sign in again.',
-    [
-      {
-        text: 'OK',
-        onPress: () => {
-          revocationAlertVisible = false;
-        },
-      },
-    ],
-    {
-      onDismiss: () => {
-        revocationAlertVisible = false;
-      },
+  dialogService.alert('Signed out', 'Your session was revoked. Please sign in again.', {
+    onDismiss: () => {
+      revocationAlertVisible = false;
     },
-  );
+  });
 };

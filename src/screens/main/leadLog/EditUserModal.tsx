@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import type {CountyOption} from '../../../api';
+import {getUserCounties, type CountyOption} from '../../../api';
 import {ALL_COUNTIES, EditUserTab, ROLE_OPTIONS, UserRecord, UserRole} from './types';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {createPremium} from './styles';
@@ -20,14 +20,33 @@ import {createEditModalStyles} from './editUserModal.styles';
 type Props = {
   visible: boolean;
   user: UserRecord | null;
+  token?: string;
   countyOptions?: CountyOption[];
   onClose: () => void;
   onSave: (user: UserRecord, countyIds: string[]) => void;
 };
 
+const resolveCountyIds = (
+  entries: string[],
+  counties: CountyOption[],
+): string[] => {
+  const ids = new Set<string>();
+  for (const entry of entries) {
+    const match =
+      counties.find(county => county.id === entry) ??
+      counties.find(county => county.name === entry) ??
+      counties.find(county => county.code === entry);
+    if (match) {
+      ids.add(match.id);
+    }
+  }
+  return [...ids];
+};
+
 const EditUserModal = ({
   visible,
   user,
+  token,
   countyOptions = [],
   onClose,
   onSave,
@@ -41,6 +60,7 @@ const EditUserModal = ({
   const [roleOpen, setRoleOpen] = useState(false);
   const [selectedCountyIds, setSelectedCountyIds] = useState<string[]>([]);
   const [countySearch, setCountySearch] = useState('');
+  const [loadingCounties, setLoadingCounties] = useState(false);
 
   const availableCounties = useMemo(
     () =>
@@ -57,31 +77,73 @@ const EditUserModal = ({
   );
 
   useEffect(() => {
-    if (user) {
-      setEmail(user.email);
-      setRole(user.role);
-      const ids = availableCounties
-        .filter(county => user.counties.includes(county.name))
-        .map(county => county.id);
-      setSelectedCountyIds(ids);
-      setActiveTab('details');
-      setRoleOpen(false);
-      setCountySearch('');
+    if (!user) {
+      return;
     }
-  }, [availableCounties, user]);
+    setEmail(user.email);
+    setRole(user.role);
+    setActiveTab('details');
+    setRoleOpen(false);
+    setCountySearch('');
+  }, [user]);
+
+  useEffect(() => {
+    if (!visible || !user) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const applyCountyIds = (ids: string[]) => {
+      if (!cancelled) {
+        setSelectedCountyIds(ids);
+      }
+    };
+
+    if (!token) {
+      applyCountyIds(resolveCountyIds(user.counties, availableCounties));
+      return;
+    }
+
+    setLoadingCounties(true);
+    getUserCounties(token, user.id)
+      .then(counties => {
+        applyCountyIds(counties.map(county => county.id));
+      })
+      .catch(() => {
+        applyCountyIds(resolveCountyIds(user.counties, availableCounties));
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingCounties(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [availableCounties, token, user, visible]);
 
   const filteredCounties = useMemo(() => {
     const query = countySearch.trim().toLowerCase();
-    if (!query) {
-      return availableCounties;
-    }
-    return availableCounties.filter(
-      c =>
-        c.name.toLowerCase().includes(query) ||
-        c.code.toLowerCase().includes(query) ||
-        c.state.toLowerCase().includes(query),
-    );
-  }, [availableCounties, countySearch]);
+    const matches = !query
+      ? availableCounties
+      : availableCounties.filter(
+          c =>
+            c.name.toLowerCase().includes(query) ||
+            c.code.toLowerCase().includes(query) ||
+            c.state.toLowerCase().includes(query),
+        );
+    const selectedSet = new Set(selectedCountyIds);
+    return [...matches].sort((a, b) => {
+      const aSelected = selectedSet.has(a.id);
+      const bSelected = selectedSet.has(b.id);
+      if (aSelected === bSelected) {
+        return 0;
+      }
+      return aSelected ? -1 : 1;
+    });
+  }, [availableCounties, countySearch, selectedCountyIds]);
 
   const roleLabel =
     ROLE_OPTIONS.find(option => option.value === role)?.label ?? 'Admin';
@@ -272,34 +334,51 @@ const EditUserModal = ({
                   </View>
 
                   <View style={s.countyGrid}>
-                    <View style={s.countyGridInner}>
-                      {filteredCounties.map(county => {
-                        const checked = selectedCountyIds.includes(county.id);
-                        return (
-                          <TouchableOpacity
-                            key={county.id}
-                            style={[
-                              s.countyItem,
-                              checked && s.countyItemSelected,
-                            ]}
-                            onPress={() => toggleCounty(county.id)}
-                            activeOpacity={0.8}
-                          >
-                            <View
+                    {loadingCounties ? (
+                      <Text style={s.countyLoadingText}>
+                        Loading county access...
+                      </Text>
+                    ) : (
+                      <ScrollView
+                        horizontal
+                        nestedScrollEnabled
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={s.countyGridInner}
+                      >
+                        {filteredCounties.map(county => {
+                          const checked = selectedCountyIds.includes(county.id);
+                          return (
+                            <TouchableOpacity
+                              key={county.id}
                               style={[
-                                s.checkbox,
-                                checked && s.checkboxChecked,
+                                s.countyItem,
+                                checked && s.countyItemSelected,
                               ]}
+                              onPress={() => toggleCounty(county.id)}
+                              activeOpacity={0.8}
                             >
-                              {checked ? (
-                                <Icon name="check" size={12} color="#FFFFFF" />
-                              ) : null}
-                            </View>
-                            <Text style={s.countyName}>{county.name}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
+                              <View
+                                style={[
+                                  s.checkbox,
+                                  checked && s.checkboxChecked,
+                                ]}
+                              >
+                                {checked ? (
+                                  <Icon
+                                    name="check"
+                                    size={12}
+                                    color="#FFFFFF"
+                                  />
+                                ) : null}
+                              </View>
+                              <Text style={s.countyName} numberOfLines={1}>
+                                {county.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    )}
                   </View>
                 </>
               )}

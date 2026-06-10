@@ -1,4 +1,4 @@
-package com.firerelay
+package com.firerelay.app
 
 import android.app.Application
 import com.facebook.react.PackageList

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   Pressable,
-  Alert,
   Animated,
   Easing,
   Image,
@@ -37,8 +36,10 @@ import {
   updateKeyword,
 } from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
+import {useAppDialog} from '../../../context';
 import KeywordFiltersBottomSheet from './KeywordFiltersBottomSheet';
 import KeywordFormModal from './KeywordFormModal';
+import KeywordListSkeleton from './KeywordListSkeleton';
 import {
   getKeywordSeverityFilterOptions,
   isDefaultKeywordFilters,
@@ -237,6 +238,7 @@ const KeywordListItem = ({
 const KeywordsScreen = () => {
   const openNotifications = useOpenNotifications();
   const {token} = useAuth();
+  const {confirm, showError} = useAppDialog();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const premium = useMemo(() => createPremium(colors), [colors]);
@@ -267,9 +269,9 @@ const KeywordsScreen = () => {
   );
 
   const listBottomInset = insets.bottom + TAB_BAR_HEIGHT + hp(2);
-  const searchAnim = useRef(new Animated.Value(0)).current;
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const addButtonAnim = useRef(new Animated.Value(0)).current;
+  const searchAnim = useRef(new Animated.Value(1)).current;
+  const headerAnim = useRef(new Animated.Value(1)).current;
+  const addButtonAnim = useRef(new Animated.Value(1)).current;
   const addButtonPulse = useRef(new Animated.Value(0)).current;
   const addButtonPress = useRef(new Animated.Value(1)).current;
   const filterToClearAnim = useRef(new Animated.Value(0)).current;
@@ -278,7 +280,7 @@ const KeywordsScreen = () => {
 
   const getItemAnim = (id: string) => {
     if (!itemAnimsRef.current[id]) {
-      itemAnimsRef.current[id] = new Animated.Value(0);
+      itemAnimsRef.current[id] = new Animated.Value(1);
     }
     return itemAnimsRef.current[id];
   };
@@ -289,54 +291,13 @@ const KeywordsScreen = () => {
       return;
     }
 
-    const anims = newItems.map(item => {
+    newItems.forEach(item => {
       animatedIdsRef.current.add(item.id);
-      const anim = getItemAnim(item.id);
-      anim.setValue(0);
-      return anim;
+      getItemAnim(item.id).setValue(1);
     });
-
-    Animated.stagger(
-      70,
-      anims.map(anim =>
-        Animated.spring(anim, {
-          toValue: 1,
-          friction: 7,
-          tension: 65,
-          useNativeDriver: true,
-        }),
-      ),
-    ).start();
   };
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(headerAnim, {
-        toValue: 1,
-        friction: 7,
-        tension: 55,
-        useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.delay(120),
-        Animated.spring(searchAnim, {
-          toValue: 1,
-          friction: 7,
-          tension: 55,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.sequence([
-        Animated.delay(200),
-        Animated.spring(addButtonAnim, {
-          toValue: 1,
-          friction: 6,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(addButtonPulse, {
@@ -355,7 +316,7 @@ const KeywordsScreen = () => {
     );
     pulseLoop.start();
     return () => pulseLoop.stop();
-  }, [headerAnim, searchAnim, addButtonAnim, addButtonPulse]);
+  }, [addButtonPulse]);
 
   const hasSearchText = searchQuery.length > 0;
   useEffect(() => {
@@ -641,36 +602,24 @@ const KeywordsScreen = () => {
   };
 
   const handleDelete = (keyword: KeywordRecord) => {
-    Alert.alert('Delete Keyword', `Remove "${keyword.name}"?`, [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          if (!token) {
-            return;
-          }
-          try {
-            await deleteKeyword(token, keyword.id);
-            setKeywords(prev => prev.filter(k => k.id !== keyword.id));
-            setAllKeywords(prev => prev.filter(k => k.id !== keyword.id));
-            setSearchResults(prev => prev.filter(k => k.id !== keyword.id));
-            if (isSearching) {
-              setSearchTotalCount(prev => Math.max(0, prev - 1));
-            } else {
-              setTotalCount(prev => Math.max(0, prev - 1));
-            }
-          } catch (error) {
-            Alert.alert(
-              'Delete failed',
-              error instanceof ApiError
-                ? error.message
-                : 'Unable to delete keyword.',
-            );
-          }
-        },
+    confirm('Delete Keyword', `Remove "${keyword.name}"?`, {
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        if (!token) {
+          return;
+        }
+        await deleteKeyword(token, keyword.id);
+        setKeywords(prev => prev.filter(k => k.id !== keyword.id));
+        setAllKeywords(prev => prev.filter(k => k.id !== keyword.id));
+        setSearchResults(prev => prev.filter(k => k.id !== keyword.id));
+        if (isSearching) {
+          setSearchTotalCount(prev => Math.max(0, prev - 1));
+        } else {
+          setTotalCount(prev => Math.max(0, prev - 1));
+        }
       },
-    ]);
+    });
   };
 
   const handleAddKeyword = () => {
@@ -700,10 +649,7 @@ const KeywordsScreen = () => {
       }
       await loadAllKeywords();
     } catch (error) {
-      Alert.alert(
-        'Create failed',
-        error instanceof ApiError ? error.message : 'Unable to create keyword.',
-      );
+      showError('Create failed', error);
     }
   };
 
@@ -724,10 +670,7 @@ const KeywordsScreen = () => {
       );
       closeEditModal();
     } catch (error) {
-      Alert.alert(
-        'Update failed',
-        error instanceof ApiError ? error.message : 'Unable to update keyword.',
-      );
+      showError('Update failed', error);
     }
   };
 
@@ -987,10 +930,10 @@ const KeywordsScreen = () => {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.35}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            {isListLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
+          isListLoading ? (
+            <KeywordListSkeleton />
+          ) : (
+            <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
                 {loadError ??
                   (hasActiveFilters
@@ -999,8 +942,8 @@ const KeywordsScreen = () => {
                       ? 'No keywords match your search.'
                       : 'No keywords found.')}
               </Text>
-            )}
-          </View>
+            </View>
+          )
         }
       />
 

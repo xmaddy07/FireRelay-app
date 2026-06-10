@@ -346,6 +346,50 @@ export const createStyles = (colors: AppColors) => {
       letterSpacing: responsiveSize(0.2),
       textTransform: 'none',
     },
+    keywordSkeletonList: {
+      gap: hp(1.6),
+      paddingTop: hp(0.2),
+    },
+    keywordSkeletonCard: {
+      backgroundColor: premium.surface,
+      borderRadius: wp(3.5),
+      borderWidth: 1,
+      borderColor: premium.border,
+      paddingHorizontal: wp(3.5),
+      paddingVertical: hp(1.6),
+      gap: hp(1),
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.shadow,
+          shadowOffset: {width: 0, height: 4},
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+        },
+        android: {elevation: 3},
+      }),
+    },
+    keywordSkeletonBlock: {
+      borderRadius: wp(5),
+      backgroundColor: colors.surfaceInset,
+    },
+    keywordSkeletonCircle: {
+      borderRadius: wp(5),
+    },
+    keywordSkeletonLines: {
+      gap: hp(0.55),
+    },
+    keywordSkeletonFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: wp(2),
+    },
+    keywordSkeletonFooterLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: wp(1.2),
+      flex: 1,
+    },
     emptyState: {
       paddingVertical: hp(8),
       alignItems: 'center',

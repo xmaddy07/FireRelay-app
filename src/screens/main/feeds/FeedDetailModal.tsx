@@ -68,12 +68,18 @@ const FeedDetailModal = ({
     setPlaybackSpeed,
     togglePlay,
     seekBy,
+    stopPlayback,
   } = useFeedAudioPlayer(
     visible,
     item?.id,
     item?.audioFilename,
     item?.audioUrl,
   );
+
+  const handleClose = () => {
+    stopPlayback();
+    onClose();
+  };
 
   const compact = screenWidth < COMPACT_BREAKPOINT;
   const waveformBarCount = useMemo(
@@ -118,13 +124,13 @@ const FeedDetailModal = ({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
         style={{flex: 1}}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.overlay} onPress={handleClose}>
           <Pressable
             style={styles.card}
             onPress={event => event.stopPropagation()}
@@ -170,7 +176,7 @@ const FeedDetailModal = ({
 
                 <TouchableOpacity
                   style={styles.closeButton}
-                  onPress={onClose}
+                  onPress={handleClose}
                   hitSlop={responsiveHitSlop(2)}
                   activeOpacity={0.7}
                 >

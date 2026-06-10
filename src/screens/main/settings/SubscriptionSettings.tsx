@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {View, Text, ActivityIndicator, Alert, InteractionManager} from 'react-native';
+import {View, Text, ActivityIndicator, InteractionManager} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import {Button} from '../../../components';
@@ -21,6 +21,7 @@ import {
   type NotificationPreferences,
 } from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
+import {useAppDialog} from '../../../context';
 
 type SubscriptionSeverity = Exclude<KeywordSeverity, 'CRITICAL'>;
 
@@ -136,6 +137,7 @@ const getSeverityThemes = (
 const SubscriptionSettings = () => {
   const navigation = useNavigation();
   const {token} = useAuth();
+  const {alert, showError} = useAppDialog();
   const {colors, glass, isDark} = useTheme();
   const styles = useThemedStyles(createStyles);
   const severityThemes = useMemo(() => getSeverityThemes(isDark), [isDark]);
@@ -157,13 +159,11 @@ const SubscriptionSettings = () => {
       setPreferences(parsed);
       setSavedPreferences(parsed);
     } catch (error) {
-      if (error instanceof ApiError) {
-        Alert.alert('Unable to load preferences', error.message);
-      }
+      showError('Unable to load preferences', error);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [showError, token]);
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
@@ -185,7 +185,7 @@ const SubscriptionSettings = () => {
 
   const handleSave = useCallback(async () => {
     if (!token) {
-      Alert.alert('Sign in required', 'You must be signed in to save preferences.');
+      alert('Sign in required', 'You must be signed in to save preferences.');
       return;
     }
 
@@ -195,17 +195,17 @@ const SubscriptionSettings = () => {
         notificationPreferences: toApiPayload(preferences),
       });
       setSavedPreferences(preferences);
-      Alert.alert('Preferences saved', 'Your email alert preferences have been updated.');
+      alert(
+        'Preferences saved',
+        'Your email alert preferences have been updated.',
+        {variant: 'success'},
+      );
     } catch (error) {
-      const message =
-        error instanceof ApiError
-          ? error.message
-          : 'Unable to save preferences.';
-      Alert.alert('Save failed', message);
+      showError('Save failed', error);
     } finally {
       setSaving(false);
     }
-  }, [preferences, token]);
+  }, [alert, preferences, showError, token]);
 
   const hasChanges = SUBSCRIPTION_LEVELS.some(
     level => preferences[level] !== savedPreferences[level],

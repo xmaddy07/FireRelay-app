@@ -19,6 +19,7 @@ type Props = TextInputProps & {
   label?: string;
   labelRight?: React.ReactNode;
   icon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
   wrapperStyle?: StyleProp<ViewStyle>;
@@ -32,6 +33,7 @@ const Input = ({
   label,
   labelRight,
   icon,
+  rightIcon,
   style,
   labelStyle,
   wrapperStyle,
@@ -126,6 +128,7 @@ const Input = ({
             style={[
               styles.stackedInput,
               icon ? styles.inputWithIcon : null,
+              rightIcon ? styles.inputWithRightIcon : null,
               inputStyle,
             ]}
             placeholderTextColor={colors.textMuted}
@@ -133,6 +136,9 @@ const Input = ({
             onBlur={handleBlur}
             {...props}
           />
+          {rightIcon ? (
+            <View style={styles.rightIconContainer}>{rightIcon}</View>
+          ) : null}
         </Wrapper>
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
@@ -147,11 +153,17 @@ const Input = ({
         <TextInput
           style={[
             icon ? [styles.input, styles.inputWithIcon] : styles.input,
+            rightIcon ? styles.inputWithRightIcon : null,
             inputStyle,
           ]}
           placeholderTextColor={colors.textSecondary}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           {...props}
         />
+        {rightIcon ? (
+          <View style={styles.rightIconContainer}>{rightIcon}</View>
+        ) : null}
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
