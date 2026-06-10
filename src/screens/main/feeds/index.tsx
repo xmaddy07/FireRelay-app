@@ -11,7 +11,6 @@ import {
   FlatList,
   Pressable,
   TextInput,
-  ActivityIndicator,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -54,6 +53,8 @@ import {
   saveFeedFilters,
 } from '../../../services/storage/feedFiltersStorage';
 import FeedDetailModal from './FeedDetailModal';
+import FeedListSkeleton from './FeedListSkeleton';
+import {preloadFeedAudio} from './feedAudioPreload';
 import FeedCardNotesPanel from './FeedCardNotesPanel';
 import FeedCardMetadataPanel from './FeedCardMetadataPanel';
 import FeedSnippetText from './FeedSnippetText';
@@ -308,6 +309,7 @@ const FeedListItem = ({
   entranceAnim,
   onToggleStar,
   onPress,
+  onPressIn,
   expandedPanel,
   onToggleNotes,
   onToggleMetadata,
@@ -321,6 +323,7 @@ const FeedListItem = ({
   entranceAnim: Animated.Value;
   onToggleStar: (id: string) => void;
   onPress: (item: FeedItem) => void;
+  onPressIn: (item: FeedItem) => void;
   expandedPanel: FeedExpandedPanel | null;
   onToggleNotes: (id: string) => void;
   onToggleMetadata: (id: string) => void;
@@ -466,7 +469,10 @@ const FeedListItem = ({
       <Pressable
         style={styles.feedCardBodyPressable}
         onPress={() => onPress(item)}
-        onPressIn={handlePressIn}
+        onPressIn={() => {
+          handlePressIn();
+          onPressIn(item);
+        }}
         onPressOut={handlePressOut}
       >
         <View style={styles.feedTalkgroupRow}>
@@ -597,7 +603,7 @@ const CountiesScreen = () => {
   }, [searchQuery]);
 
   // Entrance animations
-  const listEntranceAnim = useRef(new Animated.Value(0)).current;
+  const listEntranceAnim = useRef(new Animated.Value(1)).current;
   const cardFades = useRef<Animated.Value[]>([]);
   const cardSlides = useRef<Animated.Value[]>([]);
   const feedItemAnimsRef = useRef<Record<string, Animated.Value>>({});
@@ -606,42 +612,14 @@ const CountiesScreen = () => {
 
   const getFeedItemAnim = useCallback((id: string) => {
     if (!feedItemAnimsRef.current[id]) {
-      feedItemAnimsRef.current[id] = new Animated.Value(
-        hasPlayedFeedEntranceRef.current ? 1 : 0,
-      );
+      feedItemAnimsRef.current[id] = new Animated.Value(1);
     }
     return feedItemAnimsRef.current[id];
   }, []);
 
   const settleFeedItemAnims = useCallback((items: FeedItem[]) => {
-    if (items.length === 0) {
-      return;
-    }
-
-    if (hasPlayedFeedEntranceRef.current) {
-      items.forEach(item => getFeedItemAnim(item.id).setValue(1));
-      return;
-    }
-
-    const anims = items.map(item => {
-      const anim = getFeedItemAnim(item.id);
-      anim.setValue(0);
-      return anim;
-    });
-
-    Animated.stagger(
-      55,
-      anims.map(anim =>
-        Animated.spring(anim, {
-          toValue: 1,
-          friction: 7,
-          tension: 65,
-          useNativeDriver: true,
-        }),
-      ),
-    ).start(() => {
-      hasPlayedFeedEntranceRef.current = true;
-    });
+    items.forEach(item => getFeedItemAnim(item.id).setValue(1));
+    hasPlayedFeedEntranceRef.current = true;
   }, [getFeedItemAnim]);
 
   const loadCounties = useCallback(async () => {
@@ -658,8 +636,8 @@ const CountiesScreen = () => {
         est: county.established || '',
       }));
       setCounties(mappedCounties);
-      cardFades.current = mappedCounties.map(() => new Animated.Value(0));
-      cardSlides.current = mappedCounties.map(() => new Animated.Value(24));
+      cardFades.current = mappedCounties.map(() => new Animated.Value(1));
+      cardSlides.current = mappedCounties.map(() => new Animated.Value(0));
     } catch (error) {
       if (__DEV__ && error instanceof ApiError) {
         console.warn('[API] counties load failed:', error.message);
@@ -741,41 +719,10 @@ const CountiesScreen = () => {
       return;
     }
 
-    if (hasPlayedCountiesEntranceRef.current) {
-      listEntranceAnim.setValue(1);
-      cardFades.current.forEach(fade => fade.setValue(1));
-      cardSlides.current.forEach(slide => slide.setValue(0));
-      return;
-    }
-
+    listEntranceAnim.setValue(1);
+    cardFades.current.forEach(fade => fade.setValue(1));
+    cardSlides.current.forEach(slide => slide.setValue(0));
     hasPlayedCountiesEntranceRef.current = true;
-
-    Animated.sequence([
-      Animated.timing(listEntranceAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.stagger(
-        90,
-        cardFades.current.map((fade, i) =>
-          Animated.parallel([
-            Animated.spring(fade, {
-              toValue: 1,
-              friction: 7,
-              tension: 60,
-              useNativeDriver: true,
-            }),
-            Animated.spring(cardSlides.current[i], {
-              toValue: 0,
-              friction: 7,
-              tension: 60,
-              useNativeDriver: true,
-            }),
-          ]),
-        ),
-      ),
-    ]).start();
   }, [counties.length, listEntranceAnim]);
 
   const handleCountyPress = (county: County) => {
@@ -825,7 +772,12 @@ const CountiesScreen = () => {
     }
   };
 
+  const handleFeedAudioPreload = useCallback((item: FeedItem) => {
+    preloadFeedAudio(item.id, item.audioFilename, item.audioUrl);
+  }, []);
+
   const handleFeedPress = (item: FeedItem) => {
+    handleFeedAudioPreload(item);
     setSelectedFeedItem(item);
     if (token) {
       markAudioViewed(token, item.id).catch(() => undefined);
@@ -953,6 +905,7 @@ const CountiesScreen = () => {
           return [item, ...prev];
         });
         mergeCountyFromFeedItem(item);
+        preloadFeedAudio(item.id, item.audioFilename, item.audioUrl);
         setSelectedFeedItem(item);
       } catch (error) {
         if (!cancelled) {
@@ -1046,6 +999,7 @@ const CountiesScreen = () => {
       entranceAnim={getFeedItemAnim(item.id)}
       onToggleStar={handleToggleStar}
       onPress={handleFeedPress}
+      onPressIn={handleFeedAudioPreload}
       expandedPanel={expandedPanel}
       onToggleNotes={handleToggleNotes}
       onToggleMetadata={handleToggleMetadata}
@@ -1160,9 +1114,7 @@ const CountiesScreen = () => {
           windowSize={7}
           ListEmptyComponent={
             loadingFeed ? (
-              <View style={styles.feedLoading}>
-                <ActivityIndicator color={colors.primary} size="large" />
-              </View>
+              <FeedListSkeleton />
             ) : (
               <View style={styles.feedEmpty}>
                 <Text style={styles.feedEmptyText}>

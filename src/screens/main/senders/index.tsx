@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   TextInput,
   Pressable,
-  Alert,
   Animated,
   Image,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import {
   useFocusEffect,
   useIsFocused,
@@ -37,7 +37,9 @@ import {
   updateSender,
 } from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
+import {useAppDialog} from '../../../context';
 import SenderFormModal from './SenderFormModal';
+import SenderListSkeleton from './SenderListSkeleton';
 import type {SenderRecord, SenderStatus, StatusFilter} from './types';
 import {SENDERS_PAGE_SIZE, STATUS_FILTER_OPTIONS} from './types';
 
@@ -299,6 +301,7 @@ const SendersScreen = () => {
   const isFocused = useIsFocused();
   const openNotifications = useOpenNotifications();
   const {token, isAuthenticated} = useAuth();
+  const {alert, confirm, showError, showToast} = useAppDialog();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const premium = useMemo(() => createPremium(colors), [colors]);
@@ -317,11 +320,10 @@ const SendersScreen = () => {
 
   const listBottomInset = insets.bottom + TAB_BAR_HEIGHT + hp(2);
   const listRef = useRef<FlatList<SenderRecord>>(null);
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const searchAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useRef(new Animated.Value(1)).current;
+  const searchAnim = useRef(new Animated.Value(1)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
   const animatedIdsRef = useRef<Set<string>>(new Set());
-  const hasPlayedHeaderEntranceRef = useRef(false);
   const hasFocusedOnceRef = useRef(false);
 
   const stats = useMemo(
@@ -360,7 +362,7 @@ const SendersScreen = () => {
 
   const getItemAnim = (id: string) => {
     if (!itemAnimsRef.current[id]) {
-      itemAnimsRef.current[id] = new Animated.Value(0);
+      itemAnimsRef.current[id] = new Animated.Value(1);
     }
     return itemAnimsRef.current[id];
   };
@@ -371,53 +373,11 @@ const SendersScreen = () => {
       return;
     }
 
-    const anims = newItems.map(item => {
+    newItems.forEach(item => {
       animatedIdsRef.current.add(item.id);
-      const anim = getItemAnim(item.id);
-      anim.setValue(0);
-      return anim;
+      getItemAnim(item.id).setValue(1);
     });
-
-    Animated.stagger(
-      70,
-      anims.map(anim =>
-        Animated.spring(anim, {
-          toValue: 1,
-          friction: 7,
-          tension: 65,
-          useNativeDriver: true,
-        }),
-      ),
-    ).start();
   }, []);
-
-  useEffect(() => {
-    if (hasPlayedHeaderEntranceRef.current) {
-      headerAnim.setValue(1);
-      searchAnim.setValue(1);
-      return;
-    }
-
-    hasPlayedHeaderEntranceRef.current = true;
-
-    Animated.parallel([
-      Animated.spring(headerAnim, {
-        toValue: 1,
-        friction: 7,
-        tension: 55,
-        useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.delay(120),
-        Animated.spring(searchAnim, {
-          toValue: 1,
-          friction: 7,
-          tension: 55,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, [headerAnim, searchAnim]);
 
   useEffect(() => {
     animateNewSenderItems(visibleSenders);
@@ -511,74 +471,50 @@ const SendersScreen = () => {
       setEditingSender(fresh);
       setEditModalVisible(true);
     } catch (error) {
-      Alert.alert(
-        'Unable to load sender',
-        error instanceof ApiError
-          ? error.message
-          : 'Could not fetch sender details.',
-      );
+      showError('Unable to load sender', error);
     } finally {
       setEditLoadingId(null);
     }
   };
 
   const handleDelete = (sender: SenderRecord) => {
-    Alert.alert('Delete Sender', `Remove "${sender.name}"?`, [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          if (!isAuthenticated) {
-            return;
-          }
-          try {
-            await deleteSender(token, sender.id);
-            setSenders(prev => prev.filter(s => s.id !== sender.id));
-          } catch (error) {
-            Alert.alert(
-              'Delete failed',
-              error instanceof ApiError
-                ? error.message
-                : 'Unable to delete sender.',
-            );
-          }
-        },
+    confirm('Delete Sender', `Remove "${sender.name}"? This action cannot be undone.`, {
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        if (!isAuthenticated) {
+          return;
+        }
+        await deleteSender(token, sender.id);
+        setSenders(prev => prev.filter(s => s.id !== sender.id));
       },
-    ]);
+    });
   };
 
   const handleRegenerate = (sender: SenderRecord) => {
-    Alert.alert(
+    confirm(
       'Regenerate Token',
-      `Generate a new token for "${sender.name}"? The old token will stop working.`,
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Regenerate',
-          onPress: async () => {
-            if (!isAuthenticated) {
-              return;
-            }
-            try {
-              await regenerateSenderToken(token, sender.id);
-              await loadSenders({silent: true});
-            } catch (error) {
-              Alert.alert(
-                'Regenerate failed',
-                error instanceof ApiError
-                  ? error.message
-                  : 'Unable to regenerate token.',
-              );
-            }
-          },
+      `Generate a new token for "${sender.name}"? The current token will stop working immediately.`,
+      {
+        confirmLabel: 'Regenerate',
+        onConfirm: async () => {
+          if (!isAuthenticated) {
+            return;
+          }
+          await regenerateSenderToken(token, sender.id);
+          await loadSenders({silent: true});
         },
-      ],
+      },
     );
   };
 
-  const handleCopyToken = (token: string) => {
-    Alert.alert('Token', token, [{text: 'OK'}]);
+  const handleCopyToken = (senderToken: string) => {
+    try {
+      Clipboard.setString(senderToken);
+      showToast('Token copied to clipboard', {icon: 'copy'});
+    } catch {
+      alert('Copy failed', 'Unable to copy token to clipboard.');
+    }
   };
 
   const handleClearFilters = () => {
@@ -602,10 +538,7 @@ const SendersScreen = () => {
       await loadSenders({silent: true});
       listRef.current?.scrollToOffset({offset: 0, animated: true});
     } catch (error) {
-      Alert.alert(
-        'Create failed',
-        error instanceof ApiError ? error.message : 'Unable to create sender.',
-      );
+      showError('Create failed', error);
     }
   };
 
@@ -618,10 +551,7 @@ const SendersScreen = () => {
       closeEditModal();
       await loadSenders({silent: true});
     } catch (error) {
-      Alert.alert(
-        'Update failed',
-        error instanceof ApiError ? error.message : 'Unable to update sender.',
-      );
+      showError('Update failed', error);
     }
   };
 
@@ -828,10 +758,10 @@ const SendersScreen = () => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            {loading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
+          loading ? (
+            <SenderListSkeleton />
+          ) : (
+            <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
                 {loadError ??
                   (senders.length === 0 &&
@@ -840,8 +770,8 @@ const SendersScreen = () => {
                     ? 'No senders yet. Tap Add Sender to create one.'
                     : 'No senders match your search.')}
               </Text>
-            )}
-          </View>
+            </View>
+          )
         }
       />
 

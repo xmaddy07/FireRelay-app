@@ -1,5 +1,6 @@
 import {useEffect} from 'react';
 import {useAuth} from './useAuth';
+import {requestNotificationPermission} from '../services/permissions/notificationPermission';
 import {
   resetFcmTokenSyncState,
   subscribeFcmTokenRefresh,
@@ -15,8 +16,13 @@ export const useFcmTokenSync = () => {
       return;
     }
 
-    void syncFcmToken(token);
-    const unsubscribe = subscribeFcmTokenRefresh(token);
+    let unsubscribe = () => {};
+
+    void (async () => {
+      await requestNotificationPermission();
+      await syncFcmToken(token);
+      unsubscribe = subscribeFcmTokenRefresh(token);
+    })();
 
     return () => {
       unsubscribe();

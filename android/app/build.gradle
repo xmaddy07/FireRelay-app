@@ -15,10 +15,10 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.firerelay"
+    namespace "com.firerelay.app"
 
     defaultConfig {
-        applicationId "com.firerelay"
+        applicationId "com.firerelay.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

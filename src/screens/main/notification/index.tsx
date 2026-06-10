@@ -34,6 +34,7 @@ import {
   getNotificationDisplayTimestamp,
   sortNotificationsUnreadFirst,
 } from '../../../utils/notificationTime';
+import NotificationListSkeleton from './NotificationListSkeleton';
 
 const PAGE_SIZE = 20;
 
@@ -213,13 +214,13 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
     ensureTimestampsHydrated,
   } = useNotificationTimestamps(token);
 
-  const headerAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useRef(new Animated.Value(1)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
   const animatedIdsRef = useRef<Set<string>>(new Set());
 
   const getItemAnim = useCallback((id: string) => {
     if (!itemAnimsRef.current[id]) {
-      itemAnimsRef.current[id] = new Animated.Value(0);
+      itemAnimsRef.current[id] = new Animated.Value(1);
     }
     return itemAnimsRef.current[id];
   }, []);
@@ -231,24 +232,10 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
         return;
       }
 
-      const anims = newItems.map(item => {
+      newItems.forEach(item => {
         animatedIdsRef.current.add(item.id);
-        const anim = getItemAnim(item.id);
-        anim.setValue(0);
-        return anim;
+        getItemAnim(item.id).setValue(1);
       });
-
-      Animated.stagger(
-        70,
-        anims.map(anim =>
-          Animated.spring(anim, {
-            toValue: 1,
-            friction: 7,
-            tension: 60,
-            useNativeDriver: true,
-          }),
-        ),
-      ).start();
     },
     [getItemAnim],
   );
@@ -346,14 +333,6 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
       token,
     ],
   );
-
-  useEffect(() => {
-    Animated.timing(headerAnim, {
-      toValue: 1,
-      duration: 350,
-      useNativeDriver: true,
-    }).start();
-  }, [headerAnim]);
 
   useEffect(() => {
     void loadNotifications(1, false);
@@ -466,11 +445,7 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
 
   const renderEmpty = () => {
     if (loading) {
-      return (
-        <View style={styles.centeredState}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
-      );
+      return <NotificationListSkeleton />;
     }
 
     return (

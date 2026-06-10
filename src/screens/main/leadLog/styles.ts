@@ -248,6 +248,68 @@ export const createStyles = (colors: AppColors) => {
   listFooter: {
     width: '100%',
   },
+  userSkeletonList: {
+    gap: hp(1.2),
+    paddingTop: hp(0.2),
+  },
+  userSkeletonCard: {
+    backgroundColor: premium.surface,
+    borderRadius: wp(3.5),
+    borderWidth: 1,
+    borderColor: premium.border,
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(1.35),
+    gap: hp(0.75),
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.07,
+        shadowRadius: 8,
+      },
+      android: {elevation: 2},
+    }),
+  },
+  userSkeletonBlock: {
+    borderRadius: wp(5),
+    backgroundColor: colors.surfaceInset,
+  },
+  userSkeletonCircle: {
+    borderRadius: wp(5),
+  },
+  userSkeletonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: wp(2),
+  },
+  userSkeletonActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.2),
+    flexShrink: 0,
+  },
+  userSkeletonLines: {
+    gap: hp(0.45),
+  },
+  userSkeletonFooter: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: wp(3),
+  },
+  userSkeletonFooterLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.2),
+    minWidth: 0,
+  },
+  userSkeletonFooterRight: {
+    alignItems: 'flex-end',
+    gap: hp(0.25),
+    minWidth: wp(22),
+  },
   userCard: {
     flexDirection: 'row',
     backgroundColor: premium.surface,
@@ -650,6 +712,14 @@ export const createStyles = (colors: AppColors) => {
   },
   profileTabContent: {
     gap: hp(2),
+  },
+  skeletonBlock: {
+    borderRadius: wp(1.5),
+    backgroundColor: premium.profileBorder,
+  },
+  skeletonRow: {
+    gap: hp(0.55),
+    marginTop: hp(0.75),
   },
   profileLoadingOverlay: {
     ...StyleSheet.absoluteFill,

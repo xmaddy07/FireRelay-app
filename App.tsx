@@ -5,7 +5,7 @@ import {Provider} from 'react-redux';
 import {PersistGate} from 'redux-persist/integration/react';
 import {AppNavigator} from './src/navigation/AppNavigator';
 import {persistor, store} from './src/redux/store';
-import {ThemeProvider, useTheme} from './src/context';
+import {DialogProvider, ThemeProvider, useTheme} from './src/context';
 import {initializeFirebaseMessaging} from './src/services/notifications/firebaseMessaging';
 import {useSessionRevocation} from './src/hooks/useSessionRevocation';
 import {useFcmTokenSync} from './src/hooks/useFcmTokenSync';
@@ -44,7 +44,9 @@ const App = () => {
       <PersistGate loading={<PersistLoading />} persistor={persistor}>
         <ThemeProvider>
           <SafeAreaProvider>
-            <AppShell />
+            <DialogProvider>
+              <AppShell />
+            </DialogProvider>
           </SafeAreaProvider>
         </ThemeProvider>
       </PersistGate>

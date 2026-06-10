@@ -104,11 +104,62 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingBottom: hp(2),
     flexGrow: 1,
   },
-  feedLoading: {
-    flex: 1,
+  feedSkeletonList: {
+    gap: hp(0.55),
+    paddingTop: hp(0.2),
+  },
+  feedSkeletonCard: {
+    backgroundColor: colors.inputBackground,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(2.8),
+    paddingVertical: hp(1.1),
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
+  },
+  feedSkeletonBlock: {
+    borderRadius: wp(5),
+    backgroundColor: colors.surfaceInset,
+  },
+  feedSkeletonCircle: {
+    borderRadius: wp(5),
+  },
+  feedSkeletonHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(8),
+    marginBottom: hp(1),
+  },
+  feedSkeletonHeaderCounty: {
+    marginLeft: wp(1.2),
+    flex: 1,
+  },
+  feedSkeletonHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.2),
+    marginLeft: wp(1.5),
+  },
+  feedSkeletonHeaderTime: {
+    alignItems: 'flex-end',
+    marginLeft: wp(1.5),
+  },
+  feedSkeletonTimeSecond: {
+    marginTop: hp(0.25),
+  },
+  feedSkeletonLines: {
+    gap: hp(0.55),
+    marginBottom: hp(1),
+  },
+  feedSkeletonFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: wp(2),
+  },
+  feedSkeletonFooterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.2),
+    flex: 1,
   },
   feedEmpty: {
     paddingVertical: hp(6),

@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, TouchableOpacity, Image, Alert} from 'react-native';
+import {View, Text, TouchableOpacity, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {images} from '../../../config/constants';
@@ -11,6 +11,7 @@ import {createStyles} from './styles';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {ApiError, logout} from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
+import {useAppDialog} from '../../../context';
 import {forceLogout} from '../../../services/auth/forceLogout';
 import AnimatedToggle from './components/AnimatedToggle';
 import AnimatedMoonIcon from './components/AnimatedMoonIcon';
@@ -44,38 +45,28 @@ const SettingsMenu = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const {token} = useAuth();
+  const {confirm} = useAppDialog();
   const {colors, glass, isDark, toggleTheme} = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const [moonPulse, setMoonPulse] = useState(0);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout(token);
-            } catch (error) {
-              if (__DEV__ && error instanceof ApiError) {
-                console.warn('[API] logout failed:', error.message);
-              }
-            } finally {
-              forceLogout();
-            }
-          },
-        },
-      ],
-      {cancelable: true},
-    );
+    confirm('Log Out', 'Are you sure you want to log out?', {
+      variant: 'destructive',
+      confirmLabel: 'Log Out',
+      onConfirm: async () => {
+        try {
+          await logout(token);
+        } catch (error) {
+          if (__DEV__ && error instanceof ApiError) {
+            console.warn('[API] logout failed:', error.message);
+          }
+        } finally {
+          forceLogout();
+        }
+      },
+    });
   };
 
   const handleDarkModeToggle = (next: boolean) => {

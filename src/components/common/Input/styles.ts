@@ -34,6 +34,12 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   iconContainer: {
     marginRight: wp(3),
   },
+  rightIconContainer: {
+    marginLeft: wp(2),
+  },
+  inputWithRightIcon: {
+    paddingRight: wp(1),
+  },
   input: {
     flex: 1,
     color: colors.text,

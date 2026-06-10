@@ -5,17 +5,16 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import {
-  ApiError,
   createAudioNote,
   deleteAudioNote,
   listAudioNotes,
   updateAudioNote,
   type AudioNoteRecord,
 } from '../../../api';
+import {useAppDialog} from '../../../context';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {useAppSelector} from '../../../redux/hooks';
 import {responsiveHitSlop} from '../../../utils/responsive';
@@ -70,6 +69,7 @@ const FeedCardNotesPanel = ({
   isAdmin = false,
   onNotesCountChange,
 }: Props) => {
+  const {confirm, showError} = useAppDialog();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const currentUserName = useAppSelector(state => state.user.name);
@@ -90,12 +90,6 @@ const FeedCardNotesPanel = ({
       ),
     [currentUserId, isAdmin],
   );
-
-  const showError = (title: string, error: unknown) => {
-    const message =
-      error instanceof ApiError ? error.message : 'Something went wrong.';
-    Alert.alert(title, message);
-  };
 
   const refreshNotes = useCallback(async () => {
     if (!token || !expanded) {
@@ -184,26 +178,17 @@ const FeedCardNotesPanel = ({
       return;
     }
 
-    Alert.alert('Delete note', 'Remove this note for everyone?', [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            try {
-              await deleteAudioNote(token, note.id);
-              setNotes(prev => prev.filter(item => item.id !== note.id));
-              if (editingNoteId === note.id) {
-                handleCancelEdit();
-              }
-            } catch (error) {
-              showError('Could not delete note', error);
-            }
-          })();
-        },
+    confirm('Delete note', 'Remove this note for everyone?', {
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        await deleteAudioNote(token, note.id);
+        setNotes(prev => prev.filter(item => item.id !== note.id));
+        if (editingNoteId === note.id) {
+          handleCancelEdit();
+        }
       },
-    ]);
+    });
   };
 
   if (!expanded) {

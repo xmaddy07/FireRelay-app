@@ -2,12 +2,14 @@ import React, {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {useFormik} from 'formik';
 import * as Yup from 'yup';
-import {Text} from 'react-native';
+import {Pressable, Text} from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
 import {Input, Button} from '../../../components';
 import {ApiError, changePassword} from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
 import {createStyles} from './styles';
-import {useThemedStyles} from '../../../config/theme';
+import {useTheme, useThemedStyles} from '../../../config/theme';
+import {responsiveHitSlop} from '../../../utils/responsive';
 import SettingsScreenLayout from './SettingsScreenLayout';
 import SuccessPopup from './components/SuccessPopup';
 
@@ -23,10 +25,33 @@ const validationSchema = Yup.object().shape({
 
 const PasswordSettings = () => {
   const navigation = useNavigation();
+  const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const {token} = useAuth();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const renderPasswordToggle = (
+    visible: boolean,
+    onToggle: () => void,
+    label: string,
+  ) => (
+    <Pressable
+      onPress={onToggle}
+      hitSlop={responsiveHitSlop(2)}
+      accessibilityRole="button"
+      accessibilityLabel={visible ? `Hide ${label}` : `Show ${label}`}
+    >
+      <Feather
+        name={visible ? 'eye-off' : 'eye'}
+        size={18}
+        color={colors.textSecondary}
+      />
+    </Pressable>
+  );
 
   const formik = useFormik({
     initialValues: {
@@ -80,7 +105,12 @@ const PasswordSettings = () => {
             : undefined
         }
         placeholder="Enter current password"
-        secureTextEntry
+        secureTextEntry={!showCurrentPassword}
+        rightIcon={renderPasswordToggle(
+          showCurrentPassword,
+          () => setShowCurrentPassword(prev => !prev),
+          'current password',
+        )}
         style={styles.inputGap}
       />
 
@@ -95,7 +125,12 @@ const PasswordSettings = () => {
             : undefined
         }
         placeholder="Enter new password"
-        secureTextEntry
+        secureTextEntry={!showNewPassword}
+        rightIcon={renderPasswordToggle(
+          showNewPassword,
+          () => setShowNewPassword(prev => !prev),
+          'new password',
+        )}
         style={styles.inputGap}
       />
 
@@ -110,7 +145,12 @@ const PasswordSettings = () => {
             : undefined
         }
         placeholder="Enter confirm new password"
-        secureTextEntry
+        secureTextEntry={!showConfirmPassword}
+        rightIcon={renderPasswordToggle(
+          showConfirmPassword,
+          () => setShowConfirmPassword(prev => !prev),
+          'confirm password',
+        )}
         style={styles.inputGap}
       />
 

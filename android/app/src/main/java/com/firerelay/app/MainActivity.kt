@@ -1,4 +1,4 @@
-package com.firerelay
+package com.firerelay.app
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
