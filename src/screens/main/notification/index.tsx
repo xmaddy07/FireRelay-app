@@ -9,8 +9,9 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  StatusBar,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Header} from '../../../components';
 import {GlassView} from '../../../components/feed/LiquidGlass';
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
@@ -191,7 +192,7 @@ type Props = {
 };
 
 const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
-  const {glass, colors} = useTheme();
+  const {colors, isDark} = useTheme();
   const styles = useThemedStyles(createNotificationStyles);
   const {token} = useAuth();
   const openFeedAudio = useOpenFeedAudio();
@@ -469,13 +470,25 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
     );
   };
 
+  const insets = useSafeAreaInsets();
+  const screenBackground = isDark ? colors.black : colors.white;
+
   return (
-    <LinearGradient
-      colors={[...glass.screenGradient]}
-      start={{x: 0, y: 0}}
-      end={{x: 1, y: 1}}
-      style={styles.container}
+    <View
+      style={[
+        styles.screenRoot,
+        {
+          backgroundColor: screenBackground,
+          marginTop: -insets.top,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
     >
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={screenBackground}
+      />
       <Animated.View style={{opacity: headerAnim}}>
         <Header
           title="Notifications"
@@ -487,6 +500,7 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
       </Animated.View>
 
       <FlatList
+        style={{backgroundColor: screenBackground}}
         data={notifications}
         extraData={`${relativeTimeTick}:${audioTimestampsVersion}`}
         keyExtractor={item => item.id}
@@ -518,7 +532,7 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
           />
         )}
       />
-    </LinearGradient>
+    </View>
   );
 };
 
@@ -526,7 +540,7 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
 
 const createNotificationStyles = (colors: AppColors) =>
   StyleSheet.create({
-    container: {
+    screenRoot: {
       flex: 1,
     },
     listContent: {
