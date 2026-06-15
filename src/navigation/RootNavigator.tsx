@@ -43,7 +43,8 @@ const NotificationsModalScreen = () => {
 const RootNavigator = () => {
   const [showSplash, setShowSplash] = useState(!initialSplashComplete);
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
-  const {colors} = useTheme();
+  const {colors, isDark} = useTheme();
+  const notificationScreenBackground = isDark ? colors.black : colors.white;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -76,11 +77,11 @@ const RootNavigator = () => {
             name="Notifications"
             component={NotificationsModalScreen}
             options={{
-              presentation: Platform.OS === 'ios' ? 'modal' : 'transparentModal',
-              animation: Platform.OS === 'ios' ? 'slide_from_bottom' : 'fade',
+              presentation: 'modal',
+              animation: Platform.OS === 'ios' ? 'slide_from_bottom' : 'slide_from_right',
               headerShown: false,
               contentStyle: {
-                backgroundColor: colors.background,
+                backgroundColor: notificationScreenBackground,
               },
             }}
           />
