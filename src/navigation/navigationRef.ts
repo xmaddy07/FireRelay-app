@@ -15,7 +15,10 @@ export const openFeedAudioFromPush = (audioId?: string) => {
   const navigate = () => {
     navigationRef.navigate('Main', {
       screen: 'Feed',
-      params: {audioId: trimmed},
+      params: {
+        screen: 'FeedList',
+        params: {audioId: trimmed},
+      },
     });
   };
 

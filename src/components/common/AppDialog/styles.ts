@@ -5,11 +5,17 @@ import {hp, wp, responsiveSize} from '../../../utils/responsive';
 
 export const createAppDialogStyles = (colors: AppColors) =>
   StyleSheet.create({
-    overlay: {
+    root: {
       flex: 1,
-      backgroundColor: colors.overlay,
       justifyContent: 'center',
       paddingHorizontal: wp(5),
+    },
+    overlayFill: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.overlay,
+    },
+    overlayPress: {
+      flex: 1,
     },
     card: {
       backgroundColor: colors.surface,
@@ -30,9 +36,22 @@ export const createAppDialogStyles = (colors: AppColors) =>
     header: {
       alignItems: 'center',
       paddingHorizontal: wp(5),
-      paddingTop: hp(2.4),
-      paddingBottom: hp(1),
-      gap: hp(1.2),
+      paddingTop: hp(2.6),
+      paddingBottom: hp(0.4),
+      gap: hp(1.4),
+    },
+    iconStage: {
+      width: wp(16),
+      height: wp(16),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ring: {
+      position: 'absolute',
+      width: wp(16),
+      height: wp(16),
+      borderRadius: wp(8),
+      borderWidth: 1.5,
     },
     iconWrap: {
       width: wp(12),
@@ -58,6 +77,7 @@ export const createAppDialogStyles = (colors: AppColors) =>
       fontFamily: fonts.semibold,
       color: colors.text,
       textAlign: 'center',
+      marginBottom: hp(0.8),
     },
     message: {
       fontSize: responsiveSize(14),
@@ -65,8 +85,8 @@ export const createAppDialogStyles = (colors: AppColors) =>
       color: colors.textMuted,
       textAlign: 'center',
       lineHeight: responsiveSize(20),
-      paddingHorizontal: wp(5),
-      paddingBottom: hp(2.2),
+      paddingHorizontal: wp(1),
+      paddingBottom: hp(2),
     },
     footer: {
       flexDirection: 'row',

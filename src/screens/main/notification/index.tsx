@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {memo, useCallback, useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Header} from '../../../components';
-import {GlassView} from '../../../components/feed/LiquidGlass';
 import {hp, wp, responsiveSize} from '../../../utils/responsive';
 import {fonts, images} from '../../../config/constants';
 import type {AppColors} from '../../../config/theme/types';
@@ -67,19 +66,19 @@ const buildTitle = (item: NotificationRecord) => {
 type ItemProps = {
   item: NotificationRecord;
   entranceAnim: Animated.Value;
-  audioTimestamps: ReadonlyMap<string, string>;
-  resolvedAudioIds: ReadonlySet<string>;
+  displayTimestamp?: string;
+  relativeTimeTick: number;
   onPress: (id: string) => void;
 };
 
-const NotificationItem = ({
+const NotificationItem = memo(function NotificationItem({
   item,
   entranceAnim,
-  audioTimestamps,
-  resolvedAudioIds,
+  displayTimestamp,
+  relativeTimeTick,
   onPress,
-}: ItemProps) => {
-  const {glass, isDark} = useTheme();
+}: ItemProps) {
+  const {glass} = useTheme();
   const styles = useThemedStyles(createNotificationStyles);
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -112,6 +111,13 @@ const NotificationItem = ({
     ],
   };
 
+  const cardSurfaceStyle = item.read
+    ? glass.fallback.cardRead
+    : glass.fallback.cardUnread;
+
+  // Keeps relative labels fresh when the list re-renders on the 30s tick.
+  void relativeTimeTick;
+
   return (
     <Animated.View style={slideStyle}>
       <TouchableOpacity
@@ -120,18 +126,12 @@ const NotificationItem = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
-        <GlassView
-          interactive
-          effect="regular"
-          colorScheme={isDark ? 'dark' : 'light'}
-          tintColor={item.read ? glass.cardReadTint : glass.cardUnreadTint}
+        <View
           style={[
             styles.card,
             item.read ? styles.cardRead : styles.cardUnread,
+            cardSurfaceStyle,
           ]}
-          fallbackStyle={
-            item.read ? glass.fallback.cardRead : glass.fallback.cardUnread
-          }
         >
           <View style={styles.cardRow}>
             {!item.read && <View style={styles.unreadStrip} />}
@@ -159,13 +159,7 @@ const NotificationItem = ({
                     {`${getSeverityEmoji(item.severity)} ${buildTitle(item)}`}
                   </Text>
                   <Text style={styles.timeText}>
-                    {formatNotificationTime(
-                      getNotificationDisplayTimestamp(
-                        item,
-                        audioTimestamps,
-                        resolvedAudioIds,
-                      ),
-                    )}
+                    {formatNotificationTime(displayTimestamp)}
                   </Text>
                 </View>
 
@@ -178,11 +172,11 @@ const NotificationItem = ({
               </View>
             </View>
           </View>
-        </GlassView>
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
-};
+}); 
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
@@ -218,6 +212,8 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
   const headerAnim = useRef(new Animated.Value(1)).current;
   const itemAnimsRef = useRef<Record<string, Animated.Value>>({});
   const animatedIdsRef = useRef<Set<string>>(new Set());
+  const notificationsRef = useRef(notifications);
+  notificationsRef.current = notifications;
 
   const getItemAnim = useCallback((id: string) => {
     if (!itemAnimsRef.current[id]) {
@@ -280,8 +276,6 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
           animatedIdsRef.current.clear();
         }
 
-        await ensureTimestampsHydrated(result.items);
-
         setNotifications(prev => {
           const merged = append
             ? (() => {
@@ -307,6 +301,8 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
             resolvedAudioIds,
           );
         });
+
+        void ensureTimestampsHydrated(result.items);
         setPage(pageToLoad);
         setHasMore(result.hasMore);
         void fetchUnreadCount();
@@ -339,6 +335,16 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
     void loadNotifications(1, false);
   }, [loadNotifications]);
 
+  useEffect(() => {
+    if (audioTimestampsVersion === 0) {
+      return;
+    }
+
+    setNotifications(prev =>
+      sortNotificationsUnreadFirst(prev, audioTimestamps, resolvedAudioIds),
+    );
+  }, [audioTimestamps, audioTimestampsVersion, resolvedAudioIds]);
+
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     void loadNotifications(1, false, true);
@@ -353,7 +359,7 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
 
   const handlePress = useCallback(
     async (id: string) => {
-      const target = notifications.find(item => item.id === id);
+      const target = notificationsRef.current.find(item => item.id === id);
       if (!target || !token) {
         return;
       }
@@ -389,7 +395,35 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
 
       openFeedAudio(target.audioId);
     },
-    [notifications, openFeedAudio, token],
+    [openFeedAudio, token],
+  );
+
+  const getDisplayTimestamp = useCallback(
+    (item: NotificationRecord) =>
+      getNotificationDisplayTimestamp(
+        item,
+        audioTimestamps,
+        resolvedAudioIds,
+      ),
+    [audioTimestamps, resolvedAudioIds],
+  );
+
+  const renderNotificationItem = useCallback(
+    ({item}: {item: NotificationRecord}) => (
+      <NotificationItem
+        item={item}
+        entranceAnim={getItemAnim(item.id)}
+        displayTimestamp={getDisplayTimestamp(item)}
+        relativeTimeTick={relativeTimeTick}
+        onPress={handlePress}
+      />
+    ),
+    [
+      getDisplayTimestamp,
+      getItemAnim,
+      handlePress,
+      relativeTimeTick,
+    ],
   );
 
   const handleMarkAllRead = useCallback(async () => {
@@ -512,6 +546,10 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
           notifications.length === 0 && styles.listContentEmpty,
         ]}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={7}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -522,15 +560,7 @@ const NotificationsScreen = ({onOpenDrawer, onBack}: Props) => {
         }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.4}
-        renderItem={({item}) => (
-          <NotificationItem
-            item={item}
-            entranceAnim={getItemAnim(item.id)}
-            audioTimestamps={audioTimestamps}
-            resolvedAudioIds={resolvedAudioIds}
-            onPress={id => void handlePress(id)}
-          />
-        )}
+        renderItem={renderNotificationItem}
       />
     </View>
   );

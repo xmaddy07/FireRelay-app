@@ -518,6 +518,7 @@ const SendersScreen = () => {
   };
 
   const handleClearFilters = () => {
+    setLoading(true);
     animatedIdsRef.current.clear();
     setSearchQuery('');
     setStatusFilter('All Status');
@@ -677,7 +678,11 @@ const SendersScreen = () => {
             placeholder="Search senders by name or description..."
             placeholderTextColor={premium.textMuted}
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={text => {
+              setLoading(true);
+              animatedIdsRef.current.clear();
+              setSearchQuery(text);
+            }}
             autoCapitalize="none"
             autoCorrect={false}
           />
@@ -699,7 +704,11 @@ const SendersScreen = () => {
                     styles.statusChip,
                     isActive && styles.statusChipActive,
                   ]}
-                  onPress={() => setStatusFilter(option)}
+                  onPress={() => {
+                    setLoading(true);
+                    animatedIdsRef.current.clear();
+                    setStatusFilter(option);
+                  }}
                   activeOpacity={0.8}
                 >
                   <Text
@@ -745,7 +754,7 @@ const SendersScreen = () => {
       <FlatList
         ref={listRef}
         style={styles.list}
-        data={visibleSenders}
+        data={loading ? [] : visibleSenders}
         keyExtractor={item => item.id}
         renderItem={renderSenderCard}
         ListFooterComponent={listFooter}

@@ -1,16 +1,24 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import Sound from 'react-native-sound';
-import {getAudioFileUrl} from '../../../api';
-import {getFeedAudioUri} from '../../../assets/audio';
+import {useAppSelector} from '../../../redux/hooks';
 import {
-  discardPreloadedFeedAudio,
-  takePreloadedFeedAudio,
+  getCachedFeedAudio,
+  prefetchFeedAudio,
+  stopCachedFeedAudio,
+  waitForCachedFeedAudio,
 } from './feedAudioPreload';
 import type {PlaybackSpeed} from './PlaybackSpeedControl';
 
 Sound.setCategory('Playback');
 
-const POSITION_POLL_MS = 250;
+const POSITION_POLL_MS = 100;
+const DURATION_RESOLVE_MS = 100;
+const MAX_DURATION_RESOLVE_ATTEMPTS = 30;
+
+const readSoundDuration = (sound: Sound) => {
+  const duration = sound.getDuration();
+  return duration > 0 ? duration : 0;
+};
 
 export const useFeedAudioPlayer = (
   visible: boolean,
@@ -20,57 +28,130 @@ export const useFeedAudioPlayer = (
 ) => {
   const soundRef = useRef<Sound | null>(null);
   const loadSessionRef = useRef(0);
-  const activeItemIdRef = useRef<string | undefined>();
+  const activeItemIdRef = useRef<string | undefined>(undefined);
+  const durationResolveTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
+  const cachedDurationSec = useAppSelector(state =>
+    itemId ? state.audioCache.byId[itemId]?.durationSec : undefined,
+  );
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [positionSec, setPositionSec] = useState(0);
   const [durationSec, setDurationSec] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
+  const durationSecRef = useRef(0);
 
   const isSessionActive = useCallback(
     (session: number) => session === loadSessionRef.current,
     [],
   );
 
-  const releaseSound = useCallback(() => {
+  const clearDurationResolveTimer = useCallback(() => {
+    if (durationResolveTimerRef.current) {
+      clearInterval(durationResolveTimerRef.current);
+      durationResolveTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    durationSecRef.current = durationSec;
+  }, [durationSec]);
+
+  const syncPosition = useCallback(() => {
+    const sound = soundRef.current;
+    if (!sound?.isLoaded()) {
+      return;
+    }
+
+    sound.getCurrentTime((seconds, nativePlaying) => {
+      setPositionSec(seconds);
+
+      if (nativePlaying) {
+        setIsPlaying(true);
+      }
+
+      if (durationSecRef.current <= 0) {
+        const duration = readSoundDuration(sound);
+        if (duration > 0) {
+          setDurationSec(duration);
+        }
+      }
+    });
+  }, []);
+
+  const resolveDuration = useCallback(
+    (sound: Sound, session: number) => {
+      const duration = readSoundDuration(sound);
+      if (duration > 0) {
+        setDurationSec(duration);
+        return;
+      }
+
+      clearDurationResolveTimer();
+      let attempts = 0;
+
+      durationResolveTimerRef.current = setInterval(() => {
+        if (!isSessionActive(session) || soundRef.current !== sound) {
+          clearDurationResolveTimer();
+          return;
+        }
+
+        const nextDuration = readSoundDuration(sound);
+        if (nextDuration > 0) {
+          setDurationSec(nextDuration);
+          clearDurationResolveTimer();
+          return;
+        }
+
+        attempts += 1;
+        if (attempts >= MAX_DURATION_RESOLVE_ATTEMPTS) {
+          clearDurationResolveTimer();
+        }
+      }, DURATION_RESOLVE_MS);
+    },
+    [clearDurationResolveTimer, isSessionActive],
+  );
+
+  const detachSound = useCallback(() => {
+    clearDurationResolveTimer();
     if (soundRef.current) {
       soundRef.current.stop();
-      soundRef.current.release();
       soundRef.current = null;
     }
     setIsLoaded(false);
     setIsPlaying(false);
-  }, []);
+  }, [clearDurationResolveTimer]);
 
   const stopPlayback = useCallback(() => {
     loadSessionRef.current += 1;
     if (activeItemIdRef.current) {
-      discardPreloadedFeedAudio(activeItemIdRef.current);
+      stopCachedFeedAudio(activeItemIdRef.current);
       activeItemIdRef.current = undefined;
     }
-    releaseSound();
+    detachSound();
     setPositionSec(0);
     setDurationSec(0);
     setPlaybackSpeed(1);
-  }, [releaseSound]);
+  }, [detachSound]);
 
   const prepareAudio = useCallback(
     (sound: Sound, duration: number, session: number) => {
       if (!isSessionActive(session)) {
-        sound.stop();
-        sound.release();
         return;
       }
 
+      sound.stop();
       soundRef.current = sound;
-      setDurationSec(duration);
+      setDurationSec(duration > 0 ? duration : cachedDurationSec ?? 0);
       setIsLoaded(true);
       sound.setSpeed(1);
       sound.setCurrentTime(0);
       setPositionSec(0);
       setIsPlaying(false);
+      resolveDuration(sound, session);
     },
-    [isSessionActive],
+    [isSessionActive, resolveDuration, cachedDurationSec],
   );
 
   useEffect(() => {
@@ -82,43 +163,41 @@ export const useFeedAudioPlayer = (
     loadSessionRef.current += 1;
     const session = loadSessionRef.current;
     activeItemIdRef.current = itemId;
-    releaseSound();
+    detachSound();
     setPositionSec(0);
-    setDurationSec(0);
+    setDurationSec(cachedDurationSec ?? 0);
     setPlaybackSpeed(1);
 
-    const preloaded = takePreloadedFeedAudio(itemId);
-    if (preloaded) {
-      prepareAudio(preloaded.sound, preloaded.duration, session);
-      return () => {
-        if (activeItemIdRef.current === itemId) {
-          stopPlayback();
+    let disposed = false;
+
+    const attachCached = (cached: {sound: Sound; duration: number}) => {
+      if (disposed || !isSessionActive(session)) {
+        return;
+      }
+      prepareAudio(cached.sound, cached.duration, session);
+    };
+
+    const ensureCached = () => {
+      prefetchFeedAudio(itemId, audioFilename, audioUrl);
+      void waitForCachedFeedAudio(itemId).then(cached => {
+        if (disposed || !isSessionActive(session)) {
+          return;
         }
-      };
+        if (cached) {
+          attachCached(cached);
+        }
+      });
+    };
+
+    const immediate = getCachedFeedAudio(itemId);
+    if (immediate) {
+      attachCached(immediate);
+    } else {
+      ensureCached();
     }
-
-    const uri =
-      audioUrl ??
-      (audioFilename ? getAudioFileUrl(audioFilename) : getFeedAudioUri(itemId));
-    if (!uri) {
-      return;
-    }
-
-    const sound = new Sound(uri, '', error => {
-      if (!isSessionActive(session)) {
-        sound.release();
-        return;
-      }
-
-      if (error) {
-        return;
-      }
-
-      const duration = sound.getDuration();
-      prepareAudio(sound, duration > 0 ? duration : 0, session);
-    });
 
     return () => {
+      disposed = true;
       if (activeItemIdRef.current === itemId) {
         stopPlayback();
       }
@@ -128,25 +207,22 @@ export const useFeedAudioPlayer = (
     itemId,
     audioFilename,
     audioUrl,
-    releaseSound,
+    cachedDurationSec,
+    detachSound,
     stopPlayback,
     prepareAudio,
     isSessionActive,
   ]);
 
   useEffect(() => {
-    if (!visible || !isLoaded || !isPlaying) {
+    if (!visible || !isLoaded) {
       return;
     }
 
-    const intervalId = setInterval(() => {
-      soundRef.current?.getCurrentTime(seconds => {
-        setPositionSec(seconds);
-      });
-    }, POSITION_POLL_MS);
-
+    syncPosition();
+    const intervalId = setInterval(syncPosition, POSITION_POLL_MS);
     return () => clearInterval(intervalId);
-  }, [visible, isLoaded, isPlaying]);
+  }, [visible, isLoaded, syncPosition]);
 
   useEffect(() => {
     if (!soundRef.current?.isLoaded()) {
@@ -161,8 +237,14 @@ export const useFeedAudioPlayer = (
       return;
     }
 
+    const session = loadSessionRef.current;
+
     if (isPlaying) {
-      sound.pause(() => setIsPlaying(false));
+      sound.pause(() => {
+        if (isSessionActive(session)) {
+          setIsPlaying(false);
+        }
+      });
       return;
     }
 
@@ -172,13 +254,26 @@ export const useFeedAudioPlayer = (
     }
 
     sound.play(success => {
+      if (!isSessionActive(session)) {
+        return;
+      }
+      setIsPlaying(false);
       if (success) {
-        setIsPlaying(false);
-        setPositionSec(durationSec);
+        const finalDuration = readSoundDuration(sound) || durationSec;
+        setPositionSec(finalDuration > 0 ? finalDuration : 0);
       }
     });
     setIsPlaying(true);
-  }, [isPlaying, positionSec, durationSec]);
+    syncPosition();
+    resolveDuration(sound, session);
+  }, [
+    isPlaying,
+    positionSec,
+    durationSec,
+    syncPosition,
+    resolveDuration,
+    isSessionActive,
+  ]);
 
   const seekBy = useCallback(
     (delta: number) => {
@@ -186,7 +281,15 @@ export const useFeedAudioPlayer = (
       if (!sound?.isLoaded()) {
         return;
       }
-      const next = Math.max(0, Math.min(durationSec, positionSec + delta));
+      const maxDuration =
+        durationSec > 0 ? durationSec : readSoundDuration(sound);
+      const next = Math.max(
+        0,
+        Math.min(
+          maxDuration > 0 ? maxDuration : positionSec + Math.abs(delta),
+          positionSec + delta,
+        ),
+      );
       sound.setCurrentTime(next);
       setPositionSec(next);
     },

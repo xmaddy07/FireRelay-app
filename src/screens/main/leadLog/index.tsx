@@ -33,6 +33,7 @@ import {
   createUser,
   deleteUser,
   forcePasswordReset,
+  formatApiErrorMessage,
   getUserById,
   getUserCounties,
   getUserTalkgroupAccess,
@@ -271,22 +272,27 @@ const UserListItem = ({
         onPress={() => onOpenProfile(item)}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={styles.userCard}
+        style={[styles.userCard, isCurrentUser && styles.userCardYou]}
       >
         <View style={styles.userCardBody}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleBlock}>
               <View style={styles.emailRow}>
                 <Text
-                  style={styles.emailText}
+                  style={[
+                    styles.emailText,
+                    isCurrentUser && styles.emailTextWithYouBadge,
+                  ]}
                   numberOfLines={1}
                   ellipsizeMode="middle"
                 >
                   {item.email}
                 </Text>
                 {isCurrentUser ? (
-                  <View style={styles.youBadge}>
-                    <Text style={styles.youBadgeText}>YOU</Text>
+                  <View style={styles.youBadgeOverlay} pointerEvents="none">
+                    <View style={styles.youBadge}>
+                      <Text style={styles.youBadgeText}>YOU</Text>
+                    </View>
                   </View>
                 ) : null}
               </View>
@@ -629,7 +635,7 @@ const UserProfileModal = ({
   onClose: () => void;
   onUserUpdated?: (user: UserRecord) => void;
 }) => {
-  const {alert, showError} = useAppDialog();
+  const {showToast} = useAppDialog();
   const styles = useThemedStyles(createStyles);
   const {colors} = useTheme();
   const insets = useSafeAreaInsets();
@@ -641,6 +647,7 @@ const UserProfileModal = ({
     createInitialTabStatus,
   );
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [profileUser, setProfileUser] = useState<UserRecord | null>(null);
   const [sessions, setSessions] = useState<UserSessionRecord[]>([]);
   const [talkgroupAccess, setTalkgroupAccess] = useState<UserTalkgroupAccessRecord[]>([]);
@@ -819,6 +826,7 @@ const UserProfileModal = ({
     setEditingRole(false);
     setTabStatus(createInitialTabStatus());
     setError(null);
+    setActionError(null);
 
     void Promise.all([
       loadTabDataRef.current('Overview', true),
@@ -889,18 +897,25 @@ const UserProfileModal = ({
     );
   };
 
+  const reportActionError = (title: string, err: unknown) => {
+    const detail = formatApiErrorMessage(err);
+    setActionError(detail ? `${title}: ${detail}` : title);
+  };
+
   const handleSaveRole = async () => {
     if (!token || !userId) {
       return;
     }
     setSavingRole(true);
+    setActionError(null);
     try {
       const updated = await updateUser(token, userId, {role: draftRole});
       setProfileUser(updated);
       setEditingRole(false);
       onUserUpdatedRef.current?.(updated);
+      showToast('Role updated');
     } catch (saveErr) {
-      showError('Unable to update role', saveErr);
+      reportActionError('Unable to update role', saveErr);
     } finally {
       setSavingRole(false);
     }
@@ -911,6 +926,7 @@ const UserProfileModal = ({
       return;
     }
     setSavingCounties(true);
+    setActionError(null);
     try {
       await assignUserCounties(token, userId, selectedCountyIds);
       const counties = await getUserCounties(token, userId);
@@ -920,8 +936,9 @@ const UserProfileModal = ({
       setProfileUser(refreshed);
       setManagingCounties(false);
       onUserUpdatedRef.current?.(refreshed);
+      showToast('County access saved');
     } catch (saveErr) {
-      showError('Unable to save county access', saveErr);
+      reportActionError('Unable to save county access', saveErr);
     } finally {
       setSavingCounties(false);
     }
@@ -942,7 +959,7 @@ const UserProfileModal = ({
         ),
       );
     } catch (revokeErr) {
-      showError('Unable to revoke session', revokeErr);
+      reportActionError('Unable to revoke session', revokeErr);
     } finally {
       setSessionActionId(null);
     }
@@ -953,6 +970,7 @@ const UserProfileModal = ({
       return;
     }
     setSecurityLoading('reset');
+    setActionError(null);
     try {
       const updated = await forcePasswordReset(token, userId);
       const sessionList = sortSessionsByLastSeen(
@@ -965,13 +983,9 @@ const UserProfileModal = ({
         ...updated,
         ...summarizeUserSessions(sessionList),
       });
-      alert(
-        'Password reset sent',
-        'A new password was issued and all active sessions were revoked.',
-        {variant: 'success'},
-      );
+      showToast('Password reset sent — all sessions revoked');
     } catch (resetErr) {
-      showError('Unable to reset password', resetErr);
+      reportActionError('Unable to reset password', resetErr);
     } finally {
       setSecurityLoading(null);
     }
@@ -986,6 +1000,7 @@ const UserProfileModal = ({
       return;
     }
     setSecurityLoading('revokeAll');
+    setActionError(null);
     try {
       await Promise.all(ids.map(id => revokeUserSession(token, userId, id)));
       const sessionList = sortSessionsByLastSeen(
@@ -997,11 +1012,9 @@ const UserProfileModal = ({
         ...displayUser,
         ...summarizeUserSessions(sessionList),
       });
-      alert('Sessions revoked', 'All active sessions were revoked.', {
-        variant: 'success',
-      });
+      showToast('All active sessions were revoked');
     } catch (revokeErr) {
-      showError('Unable to revoke all sessions', revokeErr);
+      reportActionError('Unable to revoke all sessions', revokeErr);
     } finally {
       setSecurityLoading(null);
     }
@@ -1045,13 +1058,13 @@ const UserProfileModal = ({
       return;
     }
     if (severityMode === 'restricted' && allowedSeverities.length === 0) {
-      alert(
-        'Select severities',
+      setActionError(
         'Choose at least one of HIGH, MEDIUM, or LOW, or switch to all severities.',
       );
       return;
     }
     setSavingSeverityAccess(true);
+    setActionError(null);
     try {
       const updated = await updateUser(token, userId, {
         allowedSeverities:
@@ -1064,11 +1077,9 @@ const UserProfileModal = ({
         setAllowedSeverities,
       );
       onUserUpdatedRef.current?.(updated);
-      alert('Access saved', 'Feed severity access has been updated.', {
-        variant: 'success',
-      });
+      showToast('Feed severity access updated');
     } catch (saveErr) {
-      showError('Unable to save severity access', saveErr);
+      reportActionError('Unable to save severity access', saveErr);
     } finally {
       setSavingSeverityAccess(false);
     }
@@ -1090,17 +1101,16 @@ const UserProfileModal = ({
         talkgroup: access.talkgroup.trim() || undefined,
       }));
     setSavingAccess(true);
+    setActionError(null);
     try {
       const saved = await assignUserTalkgroupAccess(token, userId, {
         access: payloadAccess,
       });
       setTalkgroupAccess(saved);
       setTabsStatus(['Permissions'], 'loaded');
-      alert('Access saved', 'Talkgroup access list has been updated.', {
-        variant: 'success',
-      });
+      showToast('Talkgroup access updated');
     } catch (saveErr) {
-      showError('Unable to save talkgroup access', saveErr);
+      reportActionError('Unable to save talkgroup access', saveErr);
     } finally {
       setSavingAccess(false);
     }
@@ -1864,6 +1874,14 @@ const UserProfileModal = ({
                 </Text>
               </View>
             </View>
+            <TouchableOpacity
+              style={styles.profileCloseButton}
+              onPress={onClose}
+              activeOpacity={0.85}
+              hitSlop={responsiveHitSlop(1.5)}
+            >
+              <Icon name="x" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={[styles.profileBadgesRow, headerAnimatedStyle]}>
@@ -1930,6 +1948,9 @@ const UserProfileModal = ({
             contentContainerStyle={styles.profileContentContainer}
             showsVerticalScrollIndicator={false}
           >
+            {actionError ? (
+              <Text style={styles.profileErrorText}>{actionError}</Text>
+            ) : null}
             <View style={styles.profileTabContentWrap}>
               <Animated.View style={[styles.profileTabContent, tabContentAnimatedStyle]}>
                 {activeTabStatus === 'error' ? (
@@ -1955,9 +1976,6 @@ const UserProfileModal = ({
             {error && activeTabStatus !== 'error' ? (
               <Text style={styles.profileErrorText}>{error}</Text>
             ) : null}
-            <TouchableOpacity style={styles.closeProfileButton} onPress={onClose} activeOpacity={0.85}>
-              <Text style={styles.closeProfileButtonText}>Close</Text>
-            </TouchableOpacity>
           </ScrollView>
         </Animated.View>
       </View>
@@ -2132,39 +2150,42 @@ const LeadLogScreen = () => {
 
   const handleSaveUser = async (
     updated: UserRecord,
-    countyIds: string[],
+    countyIds: string[] | null,
   ) => {
     if (!token) {
-      return;
+      throw new Error('Not authenticated');
     }
 
-    try {
-      const saved = await updateUser(token, updated.id, {
-        email: updated.email,
-        role: updated.role,
-      });
+    // Email is read-only in the edit modal — only role (and optional counties) update.
+    const saved = await updateUser(token, updated.id, {
+      role: updated.role,
+    });
+
+    let nextCountyNames = updated.counties;
+    if (countyIds !== null) {
       await assignUserCounties(token, updated.id, countyIds);
-      const mergeSavedUser = (u: UserRecord) => {
-        if (u.id !== updated.id) {
-          return u;
-        }
-        return {
-          ...saved,
-          counties: countyIds
-            .map(id => countyOptions.find(c => c.id === id)?.name)
-            .filter((name): name is string => Boolean(name)),
-          lastSeenAt: u.lastSeenAt,
-          activeSessionCount: u.activeSessionCount,
-          presenceStatus: u.presenceStatus,
-          allowedSeverities: u.allowedSeverities,
-        };
-      };
-      setUsers(prev => prev.map(mergeSavedUser));
-      setUserStatsSource(prev => prev.map(mergeSavedUser));
-      closeEditModal();
-    } catch (error) {
-      showError('Update failed', error);
+      nextCountyNames = countyIds
+        .map(id => countyOptions.find(c => c.id === id)?.name)
+        .filter((name): name is string => Boolean(name));
     }
+
+    const mergeSavedUser = (u: UserRecord) => {
+      if (u.id !== updated.id) {
+        return u;
+      }
+      return {
+        ...saved,
+        email: u.email,
+        counties: nextCountyNames,
+        lastSeenAt: u.lastSeenAt,
+        activeSessionCount: u.activeSessionCount,
+        presenceStatus: u.presenceStatus,
+        allowedSeverities: u.allowedSeverities,
+      };
+    };
+    setUsers(prev => prev.map(mergeSavedUser));
+    setUserStatsSource(prev => prev.map(mergeSavedUser));
+    closeEditModal();
   };
 
   const handleCreateUser = async (user: UserRecord) => {

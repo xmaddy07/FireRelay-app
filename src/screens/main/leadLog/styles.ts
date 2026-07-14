@@ -311,6 +311,7 @@ export const createStyles = (colors: AppColors) => {
     minWidth: wp(22),
   },
   userCard: {
+    position: 'relative',
     flexDirection: 'row',
     backgroundColor: premium.surface,
     borderRadius: wp(3.5),
@@ -345,10 +346,11 @@ export const createStyles = (colors: AppColors) => {
     minWidth: 0,
     gap: hp(0.35),
   },
+  userCardYou: {
+    borderColor: 'rgba(255, 77, 77, 0.28)',
+  },
   emailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(1.5),
+    position: 'relative',
     minWidth: 0,
   },
   cardActions: {
@@ -375,19 +377,31 @@ export const createStyles = (colors: AppColors) => {
     opacity: 0.35,
   },
   emailText: {
+    flex: 1,
+    minWidth: 0,
     fontSize: responsiveSize(15),
     fontFamily: fonts.bold,
     color: colors.text,
     letterSpacing: responsiveSize(0.05),
   },
+  emailTextWithYouBadge: {
+    paddingRight: wp(11),
+  },
+  youBadgeOverlay: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    zIndex: 2,
+  },
   youBadge: {
-    backgroundColor: premium.accentSoft,
+    backgroundColor: 'rgba(255, 77, 77, 0.14)',
     borderRadius: wp(1.5),
     borderWidth: 1,
     borderColor: 'rgba(255, 77, 77, 0.35)',
     paddingHorizontal: wp(1.8),
     paddingVertical: hp(0.25),
-    flexShrink: 0,
   },
   youBadgeText: {
     fontSize: responsiveSize(9),
@@ -608,6 +622,17 @@ export const createStyles = (colors: AppColors) => {
   profileHeaderTextWrap: {
     flex: 1,
     minWidth: 0,
+  },
+  profileCloseButton: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(2.2),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: premium.profileCardSoft,
+    borderWidth: 1,
+    borderColor: premium.profileBorderStrong,
+    flexShrink: 0,
   },
   profileNameText: {
     fontFamily: fonts.bold,
@@ -1340,31 +1365,19 @@ export const createStyles = (colors: AppColors) => {
     color: premium.profileTabActive,
     fontFamily: fonts.semibold,
   },
-  closeProfileButton: {
-    borderRadius: wp(3),
-    borderWidth: 1,
-    borderColor: premium.profileBorderStrong,
-    backgroundColor: premium.profileCard,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(1.3),
-  },
-  closeProfileButtonText: {
-    color: premium.profileText,
-    fontFamily: fonts.semibold,
-    fontSize: responsiveSize(14),
-  },
   profileLoadingWrap: {
     paddingVertical: hp(8),
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileErrorText: {
-    marginTop: hp(1),
+    marginTop: hp(0.5),
+    marginBottom: hp(1),
+    marginHorizontal: wp(1),
     color: premium.profileErrorText,
     fontFamily: fonts.medium,
     fontSize: responsiveSize(12),
-    textAlign: 'center',
+    textAlign: 'left',
   },
   });
 };

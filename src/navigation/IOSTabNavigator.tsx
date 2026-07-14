@@ -5,7 +5,7 @@ import KeywordsScreen from '../screens/main/keyword';
 import SendersScreen from '../screens/main/senders';
 import {fonts, useTheme} from '../config/theme';
 import SettingsStackNavigator from './SettingsStackNavigator';
-import CountiesScreen from '../screens/main/feeds';
+import FeedStackNavigator from './FeedStackNavigator';
 import {
   getMainTabIosSymbols,
   getMainTabLabels,
@@ -69,7 +69,7 @@ const IOSTabNavigator = ({isAdmin}: Props) => {
     >
       <Tab.Screen
         name="Feed"
-        component={CountiesScreen}
+        component={FeedStackNavigator}
         options={optionsFor('Feed')}
       />
       {isAdmin ? (

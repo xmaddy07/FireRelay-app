@@ -12,7 +12,7 @@ import {useRole} from '../hooks/useRole';
 import AndroidTabBar from './AndroidTabBar';
 import IOSTabNavigator from './IOSTabNavigator';
 import SettingsStackNavigator from './SettingsStackNavigator';
-import CountiesScreen from '../screens/main/feeds';
+import FeedStackNavigator from './FeedStackNavigator';
 import {getMainTabConfig} from './tabConfig';
 
 const AndroidTab = createBottomTabNavigator();
@@ -33,7 +33,7 @@ const AndroidTabNavigator = ({isAdmin}: {isAdmin: boolean}) => {
       }}
       tabBar={renderTabBar}
     >
-      <AndroidTab.Screen name="Feed" component={CountiesScreen} />
+      <AndroidTab.Screen name="Feed" component={FeedStackNavigator} />
       {isAdmin ? (
         <>
           <AndroidTab.Screen name="LeadLog" component={LeadLogScreen} />

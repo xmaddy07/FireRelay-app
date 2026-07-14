@@ -1,7 +1,12 @@
 import {StyleSheet, Platform} from 'react-native';
 import {fonts} from '../../../config/constants';
 import type { AppColors } from "../../../config/theme/types";
-import {hp, wp, responsiveSize} from '../../../utils/responsive';
+import {
+  COUNTY_FEED_CARD_WIDTH,
+  hp,
+  wp,
+  responsiveSize,
+} from '../../../utils/responsive';
 
 export const TOOLBAR_BUTTON_SIZE = wp(10.5);
 
@@ -161,6 +166,50 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     gap: wp(1.2),
     flex: 1,
   },
+  countySkeletonCard: {
+    width: COUNTY_FEED_CARD_WIDTH,
+    minHeight: hp(10.2),
+    backgroundColor: colors.inputBackground,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(2.8),
+    paddingVertical: hp(1),
+    marginRight: wp(2.2),
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
+    justifyContent: 'space-between',
+  },
+  countySkeletonBlock: {
+    borderRadius: wp(2),
+    backgroundColor: colors.surfaceInset,
+  },
+  countySkeletonShield: {
+    borderRadius: wp(2),
+    marginRight: wp(1.8),
+  },
+  countySkeletonHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: hp(0.55),
+  },
+  countySkeletonTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+    gap: hp(0.35),
+    paddingRight: wp(1),
+  },
+  countySkeletonDot: {
+    borderRadius: wp(999),
+    marginTop: hp(0.35),
+  },
+  countySkeletonMetaRow: {
+    marginBottom: hp(0.45),
+  },
+  countySkeletonFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: hp(0.2),
+  },
   feedEmpty: {
     paddingVertical: hp(6),
     alignItems: 'center',
@@ -170,6 +219,17 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     fontFamily: fonts.regular,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  feedLoadMoreFooter: {
+    paddingVertical: hp(1.8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: hp(0.6),
+  },
+  feedLoadMoreText: {
+    fontSize: responsiveSize(12),
+    fontFamily: fonts.medium,
+    color: colors.textMuted,
   },
   statusCard: {
     backgroundColor: colors.surface,
@@ -358,13 +418,12 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   // Top Counties Horizontal Scroll Section Styles
   countiesHorizontalContainer: {
     marginBottom: hp(0.8),
-    minHeight: hp(6.5),
-    maxHeight: hp(6.5),
+    flexGrow: 0,
   },
   horizontalScrollContent: {
     paddingHorizontal: wp(4),
     paddingBottom: hp(0.4),
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   horizontalCard: {
     width: wp(38),
@@ -397,6 +456,159 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   horizontalCardCompactSelected: {
     borderColor: colors.selectedTintBorder,
     backgroundColor: colors.selectedTintBg,
+  },
+  countyFeedCard: {
+    width: COUNTY_FEED_CARD_WIDTH,
+    minHeight: hp(10.2),
+    backgroundColor: colors.inputBackground,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(2.8),
+    paddingVertical: hp(1),
+    marginRight: wp(2.2),
+    borderWidth: 1,
+    borderColor: colors.menuItemBorder,
+    justifyContent: 'space-between',
+    elevation: 2,
+    shadowColor: colors.shadow,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  countyFeedCardSelected: {
+    borderColor: colors.selectedTintBorder,
+    backgroundColor: colors.selectedTintBg,
+  },
+  countyFeedCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: hp(0.55),
+  },
+  countyFeedCardShield: {
+    width: wp(7.2),
+    height: wp(7.2),
+    borderRadius: wp(2),
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: wp(1.8),
+  },
+  countyFeedCardShieldText: {
+    fontSize: responsiveSize(10),
+    fontFamily: fonts.bold,
+    letterSpacing: responsiveSize(0.2),
+  },
+  countyFeedCardTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: wp(1),
+  },
+  countyFeedCardTitle: {
+    fontSize: responsiveSize(12.5),
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+  countyFeedCardSubtitle: {
+    marginTop: hp(0.1),
+    fontSize: responsiveSize(9),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+  countyFeedCardStatusDotWrap: {
+    paddingTop: hp(0.35),
+    paddingLeft: wp(0.5),
+    flexShrink: 0,
+  },
+  countyFeedCardStatusDot: {
+    width: wp(2.4),
+    height: wp(2.4),
+    borderRadius: wp(999),
+    borderWidth: 1.5,
+    borderColor: colors.surface,
+  },
+  countyFeedCardStatusDotOnline: {
+    backgroundColor: colors.live,
+  },
+  countyFeedCardStatusDotOffline: {
+    backgroundColor: colors.primary,
+  },
+  countyFeedCardStatusBadge: {
+    borderRadius: wp(999),
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.2),
+    borderWidth: 1,
+  },
+  countyFeedCardStatusLive: {
+    backgroundColor: colors.live + '22',
+    borderColor: colors.live + '55',
+  },
+  countyFeedCardStatusActive: {
+    backgroundColor: colors.warning + '22',
+    borderColor: colors.warning + '55',
+  },
+  countyFeedCardStatusOffline: {
+    backgroundColor: colors.surfaceInset,
+    borderColor: colors.menuItemBorder,
+  },
+  countyFeedCardStatusText: {
+    fontSize: responsiveSize(8),
+    fontFamily: fonts.semibold,
+    letterSpacing: responsiveSize(0.2),
+  },
+  countyFeedCardStatusTextLive: {
+    color: colors.live,
+  },
+  countyFeedCardStatusTextActive: {
+    color: colors.warning,
+  },
+  countyFeedCardStatusTextOffline: {
+    color: colors.textMuted,
+  },
+  countyFeedCardLastActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.2),
+    marginBottom: hp(0.45),
+  },
+  countyFeedCardLastActiveText: {
+    fontSize: responsiveSize(9.5),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+    flex: 1,
+  },
+  countyFeedCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: wp(2),
+    minWidth: 0,
+  },
+  countyFeedCardUsersRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.2),
+    minWidth: 0,
+    flexShrink: 1,
+  },
+  countyFeedCardUsersText: {
+    flex: 1,
+    fontSize: responsiveSize(9.5),
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+  countyFeedCardViewLinkWrap: {
+    flexShrink: 0,
+    marginLeft: wp(1),
+  },
+  countyFeedCardViewLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(0.6),
+  },
+  countyFeedCardViewLink: {
+    fontSize: responsiveSize(9.5),
+    fontFamily: fonts.semibold,
+    color: colors.primary,
   },
   horizontalCardIconWrapperCompact: {
     width: wp(7),
@@ -510,6 +722,12 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   feedItemCardAlertBorder: {
     borderWidth: 1,
+    overflow: 'hidden',
+  },
+  feedItemCardAlertPulse: {
+    ...StyleSheet.absoluteFill,
+    borderWidth: 1,
+    borderRadius: wp(3),
   },
   feedItemHeader: {
     flexDirection: 'row',
@@ -521,13 +739,15 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: wp(1.2),
-    marginRight: wp(1.5),
+    marginRight: wp(1),
+    minWidth: 0,
   },
   feedBadge: {
     borderRadius: wp(2),
     paddingVertical: hp(0.15),
     paddingHorizontal: wp(1.6),
-    marginRight: wp(1.4),
+    marginRight: wp(1.2),
+    flexShrink: 0,
   },
   feedBadgeText: {
     fontSize: responsiveSize(8),
@@ -548,6 +768,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   feedCountyText: {
     flex: 1,
+    minWidth: 0,
     fontSize: responsiveSize(10),
     color: colors.secure,
     fontFamily: fonts.bold,
@@ -555,6 +776,8 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   },
   feedTimeColumn: {
     alignItems: 'flex-end',
+    flexShrink: 0,
+    marginLeft: wp(0.5),
   },
   feedTimeText: {
     fontSize: responsiveSize(10),
@@ -590,6 +813,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     paddingVertical: hp(0.28),
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   feedSeverityPillText: {
     fontSize: responsiveSize(9),
@@ -620,6 +844,7 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
     padding: 0,
     width: wp(4.5),
     alignItems: 'center',
+    flexShrink: 0,
   },
   feedStarIcon: {
     fontSize: responsiveSize(13),
@@ -684,7 +909,8 @@ export const createStyles = (colors: AppColors) => StyleSheet.create({
   feedCardHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: wp(1),
+    marginRight: wp(0.5),
+    flexShrink: 0,
   },
   feedCardBodyPressable: {
     width: '100%',

@@ -109,6 +109,17 @@ export const createEditModalStyles = (colors: AppColors) => {
       marginBottom: hp(2),
       backgroundColor: premium.searchBg,
     },
+    textInputDisabled: {
+      opacity: 0.7,
+      backgroundColor: colors.menuItemBorder,
+      marginBottom: hp(0.6),
+    },
+    fieldHint: {
+      fontSize: responsiveSize(12),
+      fontFamily: fonts.regular,
+      color: premium.textMuted,
+      marginBottom: hp(2),
+    },
     roleSelect: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -255,15 +266,39 @@ export const createEditModalStyles = (colors: AppColors) => {
       paddingVertical: hp(2),
     },
     footer: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      gap: wp(2.5),
       paddingHorizontal: wp(5),
       paddingVertical: hp(2),
       borderTopWidth: 1,
       borderTopColor: premium.border,
       backgroundColor: premium.surfaceRaised,
+      gap: hp(1.2),
+    },
+    formErrorText: {
+      fontSize: responsiveSize(12),
+      fontFamily: fonts.medium,
+      color: '#EF4444',
+      textAlign: 'left',
+    },
+    formErrorBanner: {
+      borderWidth: 1,
+      borderColor: 'rgba(239, 68, 68, 0.35)',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      borderRadius: wp(2.2),
+      paddingHorizontal: wp(3),
+      paddingVertical: hp(1.1),
+      marginBottom: hp(0.4),
+    },
+    formErrorBannerText: {
+      fontSize: responsiveSize(13),
+      fontFamily: fonts.medium,
+      color: '#EF4444',
+      lineHeight: responsiveSize(18),
+    },
+    footerActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: wp(2.5),
     },
     cancelButton: {
       borderWidth: 1,
@@ -292,6 +327,9 @@ export const createEditModalStyles = (colors: AppColors) => {
         },
         android: {elevation: 4},
       }),
+    },
+    updateButtonDisabled: {
+      opacity: 0.6,
     },
     updateButtonText: {
       fontSize: responsiveSize(14),

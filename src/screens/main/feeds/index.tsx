@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
+import React, { memo, useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  ActivityIndicator,
+  type ViewToken,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 
@@ -26,9 +28,15 @@ if (
 import { createStyles } from './styles';
 import { useTheme, useThemedStyles } from '../../../config/theme';
 import {useRoute, useNavigation, type RouteProp} from '@react-navigation/native';
-import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useOpenNotifications} from '../../../navigation/hooks';
-import type {MainTabParamList} from '../../../navigation/types';
+import type {FeedStackParamList} from '../../../navigation/types';
+import type {CountyListItem} from '../../../api/types/county';
+import {
+  countyShieldColor,
+  countyShieldInitials,
+  isCountyOnline,
+} from '../../../utils/countyActivity';
 import AdvancedFiltersBottomSheet, {
   FilterState as SheetFilterState,
 } from '../../../components/feed/AdvancedFiltersBottomSheet';
@@ -40,12 +48,12 @@ import {
   ApiError,
   getAudioById,
   listAudioNotesByAudioIds,
-  listCounties,
   markAudioViewed,
   removeAudioFavorite,
-  searchAudio,
+  searchAudioWithPagination,
 } from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
+import {useCounties} from '../../../hooks/useCounties';
 import {useFeedSocket} from '../../../hooks/useFeedSocket';
 import {useAppSelector} from '../../../redux/hooks';
 import {
@@ -54,12 +62,17 @@ import {
 } from '../../../services/storage/feedFiltersStorage';
 import FeedDetailModal from './FeedDetailModal';
 import FeedListSkeleton from './FeedListSkeleton';
-import {preloadFeedAudio} from './feedAudioPreload';
+import CountyStripSkeleton from './CountyStripSkeleton';
+import {prefetchFeedAudio, prefetchFeedAudioBatch} from './feedAudioPreload';
 import FeedCardNotesPanel from './FeedCardNotesPanel';
 import FeedCardMetadataPanel from './FeedCardMetadataPanel';
 import FeedSnippetText from './FeedSnippetText';
 import {buildFeedDetail, type FeedItem} from './feedTypes';
 import {filterDisplayDateToApi} from '../../../utils/filterDate';
+
+const FEED_PAGE_SIZE = 20;
+const FEED_AUDIO_PREFETCH_INITIAL = 3;
+const FEED_NOTES_BATCH_SIZE = 12;
 
 const ALERT_BORDER_CONFIG = {
   critical: {
@@ -82,41 +95,6 @@ type AdvancedFeedFilters = {
   toDate: string;
   alertStatus: 'All' | 'Flagged';
 };
-
-type County = { id?: string; name: string; code: string; est: string };
-
-const abbreviateCountyLabel = (name: string) => {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) {
-    return '—';
-  }
-  if (words.length === 1) {
-    return words[0].slice(0, 4).toUpperCase();
-  }
-  return words
-    .map(word => word[0])
-    .join('')
-    .slice(0, 4)
-    .toUpperCase();
-};
-
-const deriveCountiesFromFeed = (items: FeedItem[]): County[] => {
-  const map = new Map<string, County>();
-  items.forEach(item => {
-    const key = item.countyId ?? item.county;
-    if (!key || map.has(key)) {
-      return;
-    }
-    map.set(key, {
-      id: item.countyId,
-      name: item.county,
-      code: abbreviateCountyLabel(item.county),
-      est: '',
-    });
-  });
-  return Array.from(map.values());
-};
-
 
 const DEFAULT_ADVANCED_FILTERS: AdvancedFeedFilters = {
   counties: [],
@@ -172,25 +150,37 @@ const advancedFiltersToSheet = (
   };
 };
 
-const CountyCard = ({
-  county,
-  fadeAnim,
-  slideAnim,
-  isSelected,
-  onPress,
-}: {
-  county: County;
+type CountyCardProps = {
+  county: CountyListItem;
   fadeAnim: Animated.Value;
   slideAnim: Animated.Value;
   isSelected: boolean;
   onPress: () => void;
-}) => {
+  onViewPress: () => void;
+};
+
+const CountyCard = memo(
+  ({
+    county,
+    fadeAnim,
+    slideAnim,
+    isSelected,
+    onPress,
+    onViewPress,
+  }: CountyCardProps) => {
+  const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const shieldColor = countyShieldColor(county.name);
+  const shieldInitials = countyShieldInitials(county.name, county.code);
+  const {activity} = county;
+  const isOnline = isCountyOnline(activity.status);
+  const userLabel =
+    county.userCount === 1 ? '1 User' : `${county.userCount} Users`;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.94,
+      toValue: 0.96,
       friction: 6,
       tension: 300,
       useNativeDriver: true,
@@ -216,36 +206,84 @@ const CountyCard = ({
         ],
       }}
     >
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+      <View
+        style={[
+          styles.countyFeedCard,
+          isSelected && styles.countyFeedCardSelected,
+        ]}
       >
-        <View
-          style={[
-            styles.horizontalCardCompact,
-            isSelected && styles.horizontalCardCompactSelected,
-          ]}
+        <Pressable
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
         >
-          <View style={styles.horizontalCardIconWrapperCompact}>
-            <Image source={images.map} style={styles.horizontalCardIconImage as any} />
-          </View>
-          <View style={styles.horizontalCardTextCompact}>
-            <Text style={styles.horizontalCardTitleCompact} numberOfLines={1}>
-              {county.name}
-            </Text>
-            <View style={styles.horizontalCardMetaRow}>
-              <Text style={styles.horizontalCardMetaCompact} numberOfLines={1}>
-                {county.code}
+          <View style={styles.countyFeedCardHeader}>
+            <View
+              style={[
+                styles.countyFeedCardShield,
+                {borderColor: shieldColor, backgroundColor: `${shieldColor}18`},
+              ]}
+            >
+              <Text style={[styles.countyFeedCardShieldText, {color: shieldColor}]}>
+                {shieldInitials}
               </Text>
-              <View style={styles.dotCompact} />
+            </View>
+            <View style={styles.countyFeedCardTitleBlock}>
+              <Text style={styles.countyFeedCardTitle} numberOfLines={1}>
+                {county.name}
+              </Text>
+              <Text style={styles.countyFeedCardSubtitle} numberOfLines={1}>
+                {county.locationLabel}
+              </Text>
+            </View>
+            <View style={styles.countyFeedCardStatusDotWrap}>
+              <View
+                style={[
+                  styles.countyFeedCardStatusDot,
+                  isOnline
+                    ? styles.countyFeedCardStatusDotOnline
+                    : styles.countyFeedCardStatusDotOffline,
+                ]}
+              />
             </View>
           </View>
+
+          <View style={styles.countyFeedCardLastActiveRow}>
+            <Icon name="clock" size={11} color={colors.textMuted} />
+            <Text style={styles.countyFeedCardLastActiveText}>
+              {activity.lastActiveLabel}
+            </Text>
+          </View>
+        </Pressable>
+
+        <View style={styles.countyFeedCardFooter}>
+          <Pressable
+            onPress={onPress}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            style={styles.countyFeedCardUsersRow}
+          >
+            <Icon name="users" size={11} color={colors.textMuted} />
+            <Text style={styles.countyFeedCardUsersText} numberOfLines={1}>
+              {userLabel}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={onViewPress}
+            hitSlop={responsiveHitSlop(2)}
+            style={styles.countyFeedCardViewLinkWrap}
+          >
+            <View style={styles.countyFeedCardViewLinkRow}>
+              <Text style={styles.countyFeedCardViewLink}>View</Text>
+              <Icon name="chevron-right" size={12} color={colors.primary} />
+            </View>
+          </Pressable>
         </View>
-      </Pressable>
+      </View>
     </Animated.View>
   );
-};
+  },
+);
 
 const FEED_SNIPPET_MAX_LINES = 2;
 
@@ -272,13 +310,13 @@ const AnimatedAlertFeedCard = ({
           toValue: 1,
           duration: config.duration,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 0,
           duration: config.duration,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
       ]),
     );
@@ -286,39 +324,35 @@ const AnimatedAlertFeedCard = ({
     return () => loop.stop();
   }, [pulseAnim, config.duration]);
 
-  const borderColor = pulseAnim.interpolate({
+  const overlayOpacity = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [config.dim, config.bright],
+    outputRange: [0.2, 0.85],
   });
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.feedItemCard,
         styles.feedItemCardAlertBorder,
-        { borderColor },
+        {borderColor: config.dim},
       ]}
     >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.feedItemCardAlertPulse,
+          {
+            borderColor: config.bright,
+            opacity: overlayOpacity,
+          },
+        ]}
+      />
       {children}
-    </Animated.View>
+    </View>
   );
 };
 
-const FeedListItem = ({
-  item,
-  entranceAnim,
-  onToggleStar,
-  onPress,
-  onPressIn,
-  expandedPanel,
-  onToggleNotes,
-  onToggleMetadata,
-  onNotesCountChange,
-  notesCount = 0,
-  token,
-  currentUserId,
-  isAdmin,
-}: {
+type FeedListItemProps = {
   item: FeedItem;
   entranceAnim: Animated.Value;
   onToggleStar: (id: string) => void;
@@ -332,7 +366,24 @@ const FeedListItem = ({
   token?: string;
   currentUserId?: string;
   isAdmin?: boolean;
-}) => {
+};
+
+const FeedListItem = memo(
+  ({
+    item,
+    entranceAnim,
+    onToggleStar,
+    onPress,
+    onPressIn,
+    expandedPanel,
+    onToggleNotes,
+    onToggleMetadata,
+    onNotesCountChange,
+    notesCount = 0,
+    token,
+    currentUserId,
+    isAdmin,
+  }: FeedListItemProps) => {
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -496,16 +547,20 @@ const FeedListItem = ({
         />
       </Pressable>
 
-      <FeedCardMetadataPanel item={item} expanded={metadataExpanded} />
+      {metadataExpanded ? (
+        <FeedCardMetadataPanel item={item} expanded />
+      ) : null}
 
-      <FeedCardNotesPanel
-        audioId={item.id}
-        expanded={notesExpanded}
-        token={token}
-        currentUserId={currentUserId}
-        isAdmin={isAdmin}
-        onNotesCountChange={count => onNotesCountChange(item.id, count)}
-      />
+      {notesExpanded ? (
+        <FeedCardNotesPanel
+          audioId={item.id}
+          expanded
+          token={token}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          onNotesCountChange={count => onNotesCountChange(item.id, count)}
+        />
+      ) : null}
     </>
   );
 
@@ -529,13 +584,14 @@ const FeedListItem = ({
       {cardShell}
     </Animated.View>
   );
-};
+  },
+);
 
 const CountiesScreen = () => {
   const openNotifications = useOpenNotifications();
-  const route = useRoute<RouteProp<MainTabParamList, 'Feed'>>();
+  const route = useRoute<RouteProp<FeedStackParamList, 'FeedList'>>();
   const navigation =
-    useNavigation<BottomTabNavigationProp<MainTabParamList, 'Feed'>>();
+    useNavigation<NativeStackNavigationProp<FeedStackParamList>>();
   const {token} = useAuth();
   const userKey =
     useAppSelector(state => state.user.id ?? state.user.email) ?? '';
@@ -543,9 +599,11 @@ const CountiesScreen = () => {
   const isAdmin = useAppSelector(state => state.user.role) === 'admin';
   const {colors, glass} = useTheme();
   const styles = useThemedStyles(createStyles);
-  const [counties, setCounties] = useState<County[]>([]);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
+  const [loadingMoreFeed, setLoadingMoreFeed] = useState(false);
+  const [feedPage, setFeedPage] = useState(1);
+  const [feedHasMore, setFeedHasMore] = useState(true);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -557,6 +615,16 @@ const CountiesScreen = () => {
   const [feedNotesCounts, setFeedNotesCounts] = useState<Record<string, number>>(
     {},
   );
+  const [notesCountsRevision, setNotesCountsRevision] = useState(0);
+  const notesFetchedRef = useRef(new Set<string>());
+  const notesFetchInflightRef = useRef(new Set<string>());
+  const feedItemsRef = useRef(feedItems);
+  feedItemsRef.current = feedItems;
+  const feedLoadGenerationRef = useRef(0);
+  const {counties, loading: loadingCounties, error: countiesError} = useCounties({
+    enabled: Boolean(token),
+    feedItems,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -597,7 +665,13 @@ const CountiesScreen = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery.trim());
+      const trimmed = searchQuery.trim();
+      setDebouncedSearchQuery(prev => {
+        if (trimmed !== prev) {
+          setLoadingFeed(true);
+        }
+        return trimmed;
+      });
     }, 350);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -622,41 +696,27 @@ const CountiesScreen = () => {
     hasPlayedFeedEntranceRef.current = true;
   }, [getFeedItemAnim]);
 
-  const loadCounties = useCallback(async () => {
+  const loadFeed = useCallback(async (pageToLoad = 1, append = false) => {
     if (!token) {
-      return;
-    }
-
-    try {
-      const countyResults = await listCounties(token);
-      const mappedCounties: County[] = countyResults.map(county => ({
-        id: county.id,
-        name: county.name,
-        code: county.code?.trim() || abbreviateCountyLabel(county.name),
-        est: county.established || '',
-      }));
-      setCounties(mappedCounties);
-      cardFades.current = mappedCounties.map(() => new Animated.Value(1));
-      cardSlides.current = mappedCounties.map(() => new Animated.Value(0));
-    } catch (error) {
-      if (__DEV__ && error instanceof ApiError) {
-        console.warn('[API] counties load failed:', error.message);
-      }
-    }
-  }, [token]);
-
-  const loadFeed = useCallback(async () => {
-    if (!token) {
+      feedLoadGenerationRef.current += 1;
       setLoadingFeed(false);
+      setLoadingMoreFeed(false);
+      setFeedHasMore(false);
       return;
     }
 
-    setLoadingFeed(true);
+    const generation = ++feedLoadGenerationRef.current;
+    if (append) {
+      setLoadingMoreFeed(true);
+    } else {
+      setLoadingFeed(true);
+    }
     setFeedError(null);
     try {
       const alertStatus = advancedFilters?.alertStatus ?? 'All';
-      const audioResults = await searchAudio(token, {
-        limit: 100,
+      const audioResult = await searchAudioWithPagination(token, {
+        page: pageToLoad,
+        limit: FEED_PAGE_SIZE,
         counties: advancedFilters?.counties.length
           ? advancedFilters.counties.join(',')
           : undefined,
@@ -672,48 +732,72 @@ const CountiesScreen = () => {
         flagged: alertStatus === 'Flagged' ? true : undefined,
       });
 
+      if (generation !== feedLoadGenerationRef.current) {
+        return;
+      }
+
       const filteredResults =
         alertStatus === 'Flagged'
-          ? audioResults.filter(item => item.hasWarning)
-          : audioResults;
+          ? audioResult.items.filter(item => item.hasWarning)
+          : audioResult.items;
 
-      setFeedItems(filteredResults);
-      setCounties(prev => {
-        const fromFeed = deriveCountiesFromFeed(filteredResults);
-        if (fromFeed.length === 0) {
-          return prev;
+      setFeedItems(prev => {
+        if (!append) {
+          return filteredResults;
         }
-        const map = new Map<string, County>();
-        [...prev, ...fromFeed].forEach(county => {
-          const key = county.id ?? county.name;
-          map.set(key, county);
-        });
-        const merged = Array.from(map.values());
-        cardFades.current = merged.map(() => new Animated.Value(1));
-        cardSlides.current = merged.map(() => new Animated.Value(0));
-        return merged;
+        const existingIds = new Set(prev.map(item => item.id));
+        return [
+          ...prev,
+          ...filteredResults.filter(item => !existingIds.has(item.id)),
+        ];
       });
+      setFeedPage(pageToLoad);
+      setFeedHasMore(audioResult.hasMore);
+
+      if (!append) {
+        notesFetchedRef.current.clear();
+        setFeedNotesCounts({});
+      }
       settleFeedItemAnims(filteredResults);
+      prefetchFeedAudioBatch(
+        filteredResults.slice(0, FEED_AUDIO_PREFETCH_INITIAL).map(item => ({
+          id: item.id,
+          audioFilename: item.audioFilename,
+          audioUrl: item.audioUrl,
+        })),
+      );
     } catch (error) {
+      if (generation !== feedLoadGenerationRef.current) {
+        return;
+      }
+      if (!append) {
+        setFeedItems([]);
+        setFeedHasMore(false);
+      }
       setFeedError(
         error instanceof ApiError ? error.message : 'Unable to load feed.',
       );
     } finally {
-      setLoadingFeed(false);
+      if (generation === feedLoadGenerationRef.current) {
+        setLoadingFeed(false);
+        setLoadingMoreFeed(false);
+      }
     }
   }, [advancedFilters, token, debouncedSearchQuery, settleFeedItemAnims]);
-
-  useEffect(() => {
-    loadCounties();
-  }, [loadCounties]);
 
   useEffect(() => {
     if (!filtersReady) {
       return;
     }
-    loadFeed();
+    void loadFeed(1, false);
   }, [loadFeed, filtersReady]);
 
+  const handleLoadMoreFeed = useCallback(() => {
+    if (loadingFeed || loadingMoreFeed || !feedHasMore) {
+      return;
+    }
+    void loadFeed(feedPage + 1, true);
+  }, [feedHasMore, feedPage, loadFeed, loadingFeed, loadingMoreFeed]);
   useEffect(() => {
     if (counties.length === 0) {
       return;
@@ -725,7 +809,16 @@ const CountiesScreen = () => {
     hasPlayedCountiesEntranceRef.current = true;
   }, [counties.length, listEntranceAnim]);
 
-  const handleCountyPress = (county: County) => {
+  useEffect(() => {
+    cardFades.current = counties.map(
+      (_, index) => cardFades.current[index] ?? new Animated.Value(1),
+    );
+    cardSlides.current = counties.map(
+      (_, index) => cardSlides.current[index] ?? new Animated.Value(0),
+    );
+  }, [counties.length]);
+
+  const handleCountyPress = (county: CountyListItem) => {
     setAdvancedFilters(prev => {
       const current = prev ?? { ...DEFAULT_ADVANCED_FILTERS };
       const isSelected = current.counties.includes(county.name);
@@ -737,12 +830,20 @@ const CountiesScreen = () => {
     });
   };
 
-  const handleToggleStar = async (itemId: string) => {
+  const handleCountyView = (county: CountyListItem) => {
+    navigation.navigate('CountyDetail', {
+      countyId: county.id,
+      countyName: county.name,
+      countySeed: county,
+    });
+  };
+
+  const handleToggleStar = useCallback(async (itemId: string) => {
     if (!token) {
       return;
     }
 
-    const target = feedItems.find(item => item.id === itemId);
+    const target = feedItemsRef.current.find(item => item.id === itemId);
     if (!target) {
       return;
     }
@@ -770,19 +871,104 @@ const CountiesScreen = () => {
         console.warn('[API] favorite toggle failed:', error.message);
       }
     }
-  };
+  }, [token]);
 
   const handleFeedAudioPreload = useCallback((item: FeedItem) => {
-    preloadFeedAudio(item.id, item.audioFilename, item.audioUrl);
+    prefetchFeedAudio(item.id, item.audioFilename, item.audioUrl);
   }, []);
 
-  const handleFeedPress = (item: FeedItem) => {
+  const handleFeedPress = useCallback((item: FeedItem) => {
     handleFeedAudioPreload(item);
     setSelectedFeedItem(item);
     if (token) {
       markAudioViewed(token, item.id).catch(() => undefined);
     }
-  };
+  }, [handleFeedAudioPreload, token]);
+
+  const feedViewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 20,
+  }).current;
+
+  const fetchNotesCountsForIds = useCallback(
+    async (ids: string[]) => {
+      if (!token) {
+        return;
+      }
+
+      const pending = ids.filter(id => {
+        if (notesFetchInflightRef.current.has(id)) {
+          return false;
+        }
+        if (notesFetchedRef.current.has(id)) {
+          return false;
+        }
+        return true;
+      });
+
+      if (pending.length === 0) {
+        return;
+      }
+
+      pending.forEach(id => notesFetchInflightRef.current.add(id));
+
+      try {
+        for (let index = 0; index < pending.length; index += FEED_NOTES_BATCH_SIZE) {
+          const batch = pending.slice(index, index + FEED_NOTES_BATCH_SIZE);
+          const grouped = await listAudioNotesByAudioIds(token, batch);
+          batch.forEach(id => notesFetchedRef.current.add(id));
+          setFeedNotesCounts(prev => {
+            const next = {...prev};
+            batch.forEach(id => {
+              next[id] = grouped[id]?.length ?? 0;
+            });
+            return next;
+          });
+          setNotesCountsRevision(revision => revision + 1);
+        }
+      } catch (error) {
+        if (__DEV__ && error instanceof ApiError) {
+          console.warn('[API] feed notes counts failed:', error.message);
+        }
+      } finally {
+        pending.forEach(id => notesFetchInflightRef.current.delete(id));
+      }
+    },
+    [token],
+  );
+
+  const handleFeedViewableItemsChanged = useCallback(
+    ({viewableItems}: {viewableItems: ViewToken[]}) => {
+      const indices = new Set<number>();
+      const visibleIds: string[] = [];
+
+      viewableItems.forEach(token => {
+        if (!token.isViewable || token.index == null) {
+          return;
+        }
+        indices.add(token.index);
+        indices.add(token.index + 1);
+
+        const feedItem = feedItemsRef.current[token.index];
+        if (feedItem) {
+          visibleIds.push(feedItem.id);
+        }
+      });
+
+      indices.forEach(index => {
+        const feedItem = feedItemsRef.current[index];
+        if (feedItem) {
+          prefetchFeedAudio(
+            feedItem.id,
+            feedItem.audioFilename,
+            feedItem.audioUrl,
+          );
+        }
+      });
+
+      void fetchNotesCountsForIds(visibleIds);
+    },
+    [fetchNotesCountsForIds],
+  );
 
   const hasAdvancedFilters =
     advancedFilters !== null && !isFeedFiltersEmpty(advancedFilters);
@@ -791,47 +977,10 @@ const CountiesScreen = () => {
 
   const sheetAppliedFilters = advancedFiltersToSheet(advancedFilters);
 
-  const feedListKey = `${feedItems.map(item => item.id).join(',')}:${expandedPanel?.id ?? ''}:${expandedPanel?.type ?? ''}`;
-
-  const feedItemIdsKey = useMemo(
-    () => feedItems.map(item => item.id).join(','),
-    [feedItems],
-  );
-
-  useEffect(() => {
-    if (!token || !feedItemIdsKey) {
-      setFeedNotesCounts({});
-      return;
-    }
-
-    const audioIds = feedItemIdsKey.split(',');
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const grouped = await listAudioNotesByAudioIds(token, audioIds);
-        if (cancelled) {
-          return;
-        }
-
-        const counts: Record<string, number> = {};
-        audioIds.forEach(id => {
-          counts[id] = grouped[id]?.length ?? 0;
-        });
-        setFeedNotesCounts(counts);
-      } catch (error) {
-        if (__DEV__ && error instanceof ApiError) {
-          console.warn('[API] feed notes counts failed:', error.message);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [feedItemIdsKey, token]);
+  const feedListExtraData = `${expandedPanel?.id ?? ''}:${expandedPanel?.type ?? ''}:${notesCountsRevision}`;
 
   const handleNotesCountChange = useCallback((audioId: string, count: number) => {
+    notesFetchedRef.current.add(audioId);
     setFeedNotesCounts(prev => {
       if ((prev[audioId] ?? 0) === count) {
         return prev;
@@ -861,28 +1010,6 @@ const CountiesScreen = () => {
     [selectedFeedItem],
   );
 
-  const mergeCountyFromFeedItem = useCallback((item: FeedItem) => {
-    setCounties(prev => {
-      const fromFeed = deriveCountiesFromFeed([item]);
-      if (fromFeed.length === 0) {
-        return prev;
-      }
-      const map = new Map<string, County>();
-      [...prev, ...fromFeed].forEach(county => {
-        const key = county.id ?? county.name;
-        map.set(key, county);
-      });
-      const merged = Array.from(map.values());
-      cardFades.current = merged.map(
-        (_, index) => cardFades.current[index] ?? new Animated.Value(1),
-      );
-      cardSlides.current = merged.map(
-        (_, index) => cardSlides.current[index] ?? new Animated.Value(0),
-      );
-      return merged;
-    });
-  }, []);
-
   useEffect(() => {
     const audioId = route.params?.audioId;
     if (!audioId || !token) {
@@ -904,8 +1031,7 @@ const CountiesScreen = () => {
           }
           return [item, ...prev];
         });
-        mergeCountyFromFeedItem(item);
-        preloadFeedAudio(item.id, item.audioFilename, item.audioUrl);
+        prefetchFeedAudio(item.id, item.audioFilename, item.audioUrl);
         setSelectedFeedItem(item);
       } catch (error) {
         if (!cancelled) {
@@ -925,7 +1051,7 @@ const CountiesScreen = () => {
     return () => {
       cancelled = true;
     };
-  }, [mergeCountyFromFeedItem, navigation, route.params?.audioId, token]);
+  }, [navigation, route.params?.audioId, token]);
 
   const animateLiveFeedItem = useCallback(
     (id: string) => {
@@ -949,10 +1075,10 @@ const CountiesScreen = () => {
         }
         return [item, ...prev];
       });
-      mergeCountyFromFeedItem(item);
+      prefetchFeedAudio(item.id, item.audioFilename, item.audioUrl);
       animateLiveFeedItem(item.id);
     },
-    [animateLiveFeedItem, mergeCountyFromFeedItem],
+    [animateLiveFeedItem],
   );
 
   const handleLiveAudioUpdated = useCallback((item: FeedItem) => {
@@ -965,8 +1091,7 @@ const CountiesScreen = () => {
       next[index] = {...next[index], ...item};
       return next;
     });
-    mergeCountyFromFeedItem(item);
-  }, [mergeCountyFromFeedItem]);
+  }, []);
 
   const handleLiveAudioDeleted = useCallback(
     ({id}: {id: string}) => {
@@ -993,25 +1118,60 @@ const CountiesScreen = () => {
     onAudioDeleted: handleLiveAudioDeleted,
   });
 
-  const renderFeedItem = ({ item }: { item: FeedItem }) => (
-    <FeedListItem
-      item={item}
-      entranceAnim={getFeedItemAnim(item.id)}
-      onToggleStar={handleToggleStar}
-      onPress={handleFeedPress}
-      onPressIn={handleFeedAudioPreload}
-      expandedPanel={expandedPanel}
-      onToggleNotes={handleToggleNotes}
-      onToggleMetadata={handleToggleMetadata}
-      onNotesCountChange={handleNotesCountChange}
-      notesCount={feedNotesCounts[item.id] ?? 0}
-      token={token}
-      currentUserId={currentUserId}
-      isAdmin={isAdmin}
-    />
+  const renderFeedItem = useCallback(
+    ({item}: {item: FeedItem}) => (
+      <FeedListItem
+        item={item}
+        entranceAnim={getFeedItemAnim(item.id)}
+        onToggleStar={handleToggleStar}
+        onPress={handleFeedPress}
+        onPressIn={handleFeedAudioPreload}
+        expandedPanel={expandedPanel}
+        onToggleNotes={handleToggleNotes}
+        onToggleMetadata={handleToggleMetadata}
+        onNotesCountChange={handleNotesCountChange}
+        notesCount={feedNotesCounts[item.id] ?? 0}
+        token={token}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+      />
+    ),
+    [
+      currentUserId,
+      expandedPanel,
+      feedNotesCounts,
+      getFeedItemAnim,
+      handleFeedAudioPreload,
+      handleNotesCountChange,
+      handleToggleMetadata,
+      handleToggleNotes,
+      handleFeedPress,
+      handleToggleStar,
+      isAdmin,
+      token,
+    ],
   );
 
-  const renderCountiesStrip = () => (
+  const renderCountiesStrip = () => {
+    if (loadingCounties && counties.length === 0) {
+      return (
+        <Animated.View style={{opacity: listEntranceAnim}}>
+          <CountyStripSkeleton />
+        </Animated.View>
+      );
+    }
+
+    if (countiesError && counties.length === 0) {
+      return (
+        <Animated.View style={{opacity: listEntranceAnim}}>
+          <View style={styles.feedEmpty}>
+            <Text style={styles.feedEmptyText}>{countiesError}</Text>
+          </View>
+        </Animated.View>
+      );
+    }
+
+    return (
     <Animated.View style={{ opacity: listEntranceAnim }}>
       {/* <View style={styles.sectionHeaderCompact}>
         <Text style={styles.sectionTitleCompact}>Counties</Text>
@@ -1033,11 +1193,13 @@ const CountiesScreen = () => {
             slideAnim={cardSlides.current[index] ?? new Animated.Value(0)}
             isSelected={selectedCountyNames.includes(county.name)}
             onPress={() => handleCountyPress(county)}
+            onViewPress={() => handleCountyView(county)}
           />
         ))}
       </ScrollView>
     </Animated.View>
-  );
+    );
+  };
 
   return (
     <LinearGradient
@@ -1105,13 +1267,32 @@ const CountiesScreen = () => {
           data={feedItems}
           renderItem={renderFeedItem}
           keyExtractor={item => item.id}
-          extraData={feedListKey}
+          extraData={feedListExtraData}
           contentContainerStyle={styles.feedListContent}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews
           initialNumToRender={8}
           maxToRenderPerBatch={6}
           windowSize={7}
+          onViewableItemsChanged={handleFeedViewableItemsChanged}
+          viewabilityConfig={feedViewabilityConfig}
+          onEndReached={handleLoadMoreFeed}
+          onEndReachedThreshold={0.6}
+          ListHeaderComponent={
+            feedError && feedItems.length > 0 ? (
+              <View style={styles.feedEmpty}>
+                <Text style={styles.feedEmptyText}>{feedError}</Text>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            loadingMoreFeed ? (
+              <View style={styles.feedLoadMoreFooter}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.feedLoadMoreText}>Loading more…</Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             loadingFeed ? (
               <FeedListSkeleton />

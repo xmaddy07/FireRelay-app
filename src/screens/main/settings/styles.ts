@@ -150,7 +150,7 @@ export const createStyles = (colors: AppColors) => {
     ...cardShadow,
   },
   logoutIconVector: {
-    marginRight: wp(2.5),
+    marginLeft: wp(2.5),
   },
   subtitle: {
     fontSize: responsiveSize(15),

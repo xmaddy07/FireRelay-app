@@ -167,6 +167,7 @@ const PasswordSettings = () => {
         visible={showSuccess}
         title="Password updated"
         message="Your password has been changed successfully."
+        animation="slide"
         onDismiss={() => setShowSuccess(false)}
       />
     </SettingsScreenLayout>

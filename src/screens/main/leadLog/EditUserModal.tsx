@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import {getUserCounties, type CountyOption} from '../../../api';
+import {formatApiErrorMessage, getUserCounties, type CountyOption} from '../../../api';
 import {ALL_COUNTIES, EditUserTab, ROLE_OPTIONS, UserRecord, UserRole} from './types';
 import {useTheme, useThemedStyles} from '../../../config/theme';
 import {createPremium} from './styles';
@@ -23,7 +23,10 @@ type Props = {
   token?: string;
   countyOptions?: CountyOption[];
   onClose: () => void;
-  onSave: (user: UserRecord, countyIds: string[]) => void;
+  onSave: (
+    user: UserRecord,
+    countyIds: string[] | null,
+  ) => void | Promise<void>;
 };
 
 const resolveCountyIds = (
@@ -59,8 +62,11 @@ const EditUserModal = ({
   const [role, setRole] = useState<UserRole>('admin');
   const [roleOpen, setRoleOpen] = useState(false);
   const [selectedCountyIds, setSelectedCountyIds] = useState<string[]>([]);
+  const [initialCountyIds, setInitialCountyIds] = useState<string[]>([]);
   const [countySearch, setCountySearch] = useState('');
   const [loadingCounties, setLoadingCounties] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const availableCounties = useMemo(
     () =>
@@ -76,6 +82,8 @@ const EditUserModal = ({
     [countyOptions],
   );
 
+  const canPersistCounties = countyOptions.length > 0;
+
   useEffect(() => {
     if (!user) {
       return;
@@ -85,6 +93,8 @@ const EditUserModal = ({
     setActiveTab('details');
     setRoleOpen(false);
     setCountySearch('');
+    setFormError(null);
+    setSaving(false);
   }, [user]);
 
   useEffect(() => {
@@ -97,6 +107,7 @@ const EditUserModal = ({
     const applyCountyIds = (ids: string[]) => {
       if (!cancelled) {
         setSelectedCountyIds(ids);
+        setInitialCountyIds(ids);
       }
     };
 
@@ -166,21 +177,46 @@ const EditUserModal = ({
     }
   };
 
-  const handleUpdate = () => {
-    if (!user || !email.trim()) {
+  const handleUpdate = async () => {
+    if (!user || saving) {
       return;
     }
-    onSave(
-      {
-        ...user,
-        email: email.trim(),
-        role,
-        counties: selectedCountyIds
-          .map(id => availableCounties.find(c => c.id === id)?.name)
-          .filter((name): name is string => Boolean(name)),
-      },
-      selectedCountyIds,
-    );
+
+    const countiesChanged =
+      selectedCountyIds.length !== initialCountyIds.length ||
+      selectedCountyIds.some(id => !initialCountyIds.includes(id)) ||
+      initialCountyIds.some(id => !selectedCountyIds.includes(id));
+
+    if (countiesChanged && !canPersistCounties) {
+      setFormError(
+        'County list is not loaded yet. Wait for counties to load, or revert county changes before saving.',
+      );
+      return;
+    }
+
+    setSaving(true);
+    setFormError(null);
+    try {
+      await Promise.resolve(
+        onSave(
+          {
+            ...user,
+            email: user.email,
+            role,
+            counties: selectedCountyIds
+              .map(id => availableCounties.find(c => c.id === id)?.name)
+              .filter((name): name is string => Boolean(name)),
+          },
+          countiesChanged ? selectedCountyIds : null,
+        ),
+      );
+    } catch (error) {
+      // Keep this modal open and show the error here. Opening AppDialog on top of
+      // another RN Modal freezes the UI.
+      setFormError(formatApiErrorMessage(error, 'Update failed. Please try again.'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!user) {
@@ -249,19 +285,19 @@ const EditUserModal = ({
             >
               {activeTab === 'details' ? (
                 <>
-                  <Text style={s.fieldLabel}>
-                    Email <Text style={s.required}>*</Text>
-                  </Text>
+                  <Text style={s.fieldLabel}>Email</Text>
                   <TextInput
-                    style={s.textInput}
+                    style={[s.textInput, s.textInputDisabled]}
                     value={email}
-                    onChangeText={setEmail}
+                    editable={false}
+                    selectTextOnFocus={false}
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
                     placeholder="alerts@firerelay.com"
                     placeholderTextColor={premium.textMuted}
                   />
+                  <Text style={s.fieldHint}>Email cannot be changed here.</Text>
 
                   <Text style={s.fieldLabel}>
                     Role <Text style={s.required}>*</Text>
@@ -315,6 +351,12 @@ const EditUserModal = ({
                   <Text style={s.sectionSubtitle}>
                     Select which counties this user can access
                   </Text>
+                  {!canPersistCounties ? (
+                    <Text style={s.formErrorText}>
+                      Live county list unavailable. County changes cannot be saved
+                      until counties load from the server.
+                    </Text>
+                  ) : null}
 
                   <View style={s.countyToolbar}>
                     <TextInput
@@ -385,20 +427,31 @@ const EditUserModal = ({
             </ScrollView>
 
             <View style={s.footer}>
-              <TouchableOpacity
-                style={s.cancelButton}
-                onPress={onClose}
-                activeOpacity={0.8}
-              >
-                <Text style={s.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.updateButton}
-                onPress={handleUpdate}
-                activeOpacity={0.85}
-              >
-                <Text style={s.updateButtonText}>Update User</Text>
-              </TouchableOpacity>
+              {formError ? (
+                <View style={s.formErrorBanner}>
+                  <Text style={s.formErrorBannerText}>{formError}</Text>
+                </View>
+              ) : null}
+              <View style={s.footerActions}>
+                <TouchableOpacity
+                  style={s.cancelButton}
+                  onPress={onClose}
+                  activeOpacity={0.8}
+                  disabled={saving}
+                >
+                  <Text style={s.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.updateButton, saving && s.updateButtonDisabled]}
+                  onPress={handleUpdate}
+                  activeOpacity={0.85}
+                  disabled={saving}
+                >
+                  <Text style={s.updateButtonText}>
+                    {saving ? 'Saving...' : 'Update User'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </Pressable>
         </Pressable>

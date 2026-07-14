@@ -393,7 +393,19 @@ const KeywordsScreen = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery.trim());
+      const trimmed = searchQuery.trim();
+      setDebouncedSearch(prev => {
+        if (trimmed !== prev) {
+          if (trimmed.length > 0) {
+            setSearchLoading(true);
+            setSearchResults([]);
+          } else {
+            setLoading(true);
+            setKeywords([]);
+          }
+        }
+        return trimmed;
+      });
     }, 350);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -685,6 +697,13 @@ const KeywordsScreen = () => {
         ? {...filters, severity: 'All'}
         : filters;
 
+    if (isSearching) {
+      setSearchLoading(true);
+      setSearchResults([]);
+    } else {
+      setLoading(true);
+      setKeywords([]);
+    }
     setAppliedFilters(nextFilters);
     setLoadError(null);
     animatedIdsRef.current.clear();
@@ -917,7 +936,7 @@ const KeywordsScreen = () => {
 
       <FlatList
         style={styles.list}
-        data={displayKeywords}
+        data={isListLoading ? [] : displayKeywords}
         keyExtractor={item => item.id}
         renderItem={renderKeywordCard}
         contentContainerStyle={[

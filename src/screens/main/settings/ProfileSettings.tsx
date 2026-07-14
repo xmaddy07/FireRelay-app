@@ -7,10 +7,9 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {SettingsStackParamList} from '../../../navigation/types';
 import {Input, Button} from '../../../components';
 import {ApiError, changeEmail, getProfile} from '../../../api';
-import type {AuthUser} from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
-import {useAppDispatch, useAppSelector} from '../../../redux/hooks';
-import {userActions} from '../../../redux/slices/userSlice';
+import {useAppSelector} from '../../../redux/hooks';
+import {syncProfileOrLogoutOnRoleChange} from '../../../services/auth/roleChange';
 import {createStyles} from './styles';
 import {useThemedStyles} from '../../../config/theme';
 import {hp} from '../../../utils/responsive';
@@ -22,23 +21,10 @@ const validationSchema = Yup.object().shape({
     .required('New email address is required'),
 });
 
-const mapProfileToUserState = (profile: AuthUser) => ({
-  id: typeof profile.id === 'string' ? profile.id : undefined,
-  name:
-    typeof profile.name === 'string'
-      ? profile.name
-      : typeof profile.email === 'string'
-        ? profile.email.split('@')[0]
-        : undefined,
-  email: typeof profile.email === 'string' ? profile.email : undefined,
-  role: profile.role === 'admin' ? ('admin' as const) : ('user' as const),
-});
-
 const ProfileSettings = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const styles = useThemedStyles(createStyles);
-  const dispatch = useAppDispatch();
   const {token} = useAuth();
   const storedEmail = useAppSelector(state => state.user.email);
   const storedRole = useAppSelector(state => state.user.role);
@@ -58,8 +44,10 @@ const ProfileSettings = () => {
     setLoadingProfile(true);
     try {
       const profile = await getProfile(token);
-      const mapped = mapProfileToUserState(profile);
-      dispatch(userActions.setUser(mapped));
+      const mapped = syncProfileOrLogoutOnRoleChange(profile);
+      if (!mapped) {
+        return;
+      }
       if (mapped.email) {
         setProfileEmail(mapped.email);
       }
@@ -73,7 +61,7 @@ const ProfileSettings = () => {
     } finally {
       setLoadingProfile(false);
     }
-  }, [dispatch, token]);
+  }, [token]);
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {

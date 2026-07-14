@@ -33,6 +33,7 @@ export type ApiErrorBody = {
   message?: string | string[];
   error?: string;
   statusCode?: number;
+  errors?: unknown;
 };
 
 export type ChangePasswordRequest = {
