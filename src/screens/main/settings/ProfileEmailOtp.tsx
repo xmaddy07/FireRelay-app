@@ -10,10 +10,8 @@ import {
   confirmEmailChange,
   getProfile,
 } from '../../../api';
-import type {AuthUser} from '../../../api';
 import {useAuth} from '../../../hooks/useAuth';
-import {useAppDispatch} from '../../../redux/hooks';
-import {userActions} from '../../../redux/slices/userSlice';
+import {syncProfileOrLogoutOnRoleChange} from '../../../services/auth/roleChange';
 import type {SettingsStackParamList} from '../../../navigation/types';
 import {createStyles} from './styles';
 import {useTheme, useThemedStyles} from '../../../config/theme';
@@ -21,25 +19,12 @@ import SettingsScreenLayout from './SettingsScreenLayout';
 import OtpCodeInput, {OTP_CODE_LENGTH} from './components/OtpCodeInput';
 import SuccessPopup from './components/SuccessPopup';
 
-const mapProfileToUserState = (profile: AuthUser) => ({
-  id: typeof profile.id === 'string' ? profile.id : undefined,
-  name:
-    typeof profile.name === 'string'
-      ? profile.name
-      : typeof profile.email === 'string'
-        ? profile.email.split('@')[0]
-        : undefined,
-  email: typeof profile.email === 'string' ? profile.email : undefined,
-  role: profile.role === 'admin' ? ('admin' as const) : ('user' as const),
-});
-
 const ProfileEmailOtp = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const route = useRoute<RouteProp<SettingsStackParamList, 'ProfileEmailOtp'>>();
   const {colors} = useTheme();
   const styles = useThemedStyles(createStyles);
-  const dispatch = useAppDispatch();
   const {token} = useAuth();
   const {currentEmail, newEmail} = route.params;
 
@@ -67,7 +52,10 @@ const ProfileEmailOtp = () => {
     try {
       await confirmEmailChange(token, code);
       const profile = await getProfile(token);
-      dispatch(userActions.setUser(mapProfileToUserState(profile)));
+      const mapped = syncProfileOrLogoutOnRoleChange(profile);
+      if (!mapped) {
+        return;
+      }
       setShowSuccess(true);
     } catch (error) {
       setSubmitError(
@@ -78,7 +66,7 @@ const ProfileEmailOtp = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [code, dispatch, token]);
+  }, [code, token]);
 
   const handleResend = useCallback(async () => {
     if (!token) {

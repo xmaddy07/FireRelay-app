@@ -73,24 +73,39 @@ export type AudioSearchResult = {
   totalFromApi: boolean;
 };
 
+const resolveFavoriteIds = (
+  token: string,
+  favoriteIds?: Set<string>,
+): Promise<Set<string>> =>
+  favoriteIds
+    ? Promise.resolve(favoriteIds)
+    : getFavoriteAudioIds(token).catch(() => new Set<string>());
+
 const fetchAudioSearchPaginated = async (
   token: string,
   params: AudioSearchParams,
+  favoriteIds?: Set<string>,
 ): Promise<AudioSearchResult> => {
-  const favoriteIds = await getFavoriteAudioIds(token).catch(() => new Set<string>());
   const query = buildAudioSearchQuery(params);
-  const payload = await authorizedRequest<unknown>(
-    token,
-    `${endpoints.audio.searchPaginated}${query}`,
-  );
-
   const page = params.page ?? 1;
   const limit = params.limit ?? 10;
+
+  // Favorites + search in parallel — favorites must never block the page fetch.
+  const [resolvedFavorites, payload] = await Promise.all([
+    resolveFavoriteIds(token, favoriteIds),
+    authorizedRequest<unknown>(
+      token,
+      `${endpoints.audio.searchPaginated}${query}`,
+    ),
+  ]);
+
   const paginated = unwrapPaginated<ApiAudio>(payload, page, limit);
 
   return {
     ...paginated,
-    items: paginated.items.map(item => mapAudioToFeedItem(item, favoriteIds)),
+    items: paginated.items.map(item =>
+      mapAudioToFeedItem(item, resolvedFavorites),
+    ),
   };
 };
 
@@ -99,77 +114,77 @@ export async function searchAudioWithPagination(
   params: AudioSearchParams = {},
 ): Promise<AudioSearchResult> {
   const countyNames = parseCountyFilter(params);
+  const singleParams =
+    countyNames.length === 1
+      ? paramsForSingleCounty(params, countyNames[0])
+      : params;
 
-  if (countyNames.length <= 1) {
-    const singleParams =
-      countyNames.length === 1
-        ? paramsForSingleCounty(params, countyNames[0])
-        : params;
-    return fetchAudioSearchPaginated(token, singleParams);
-  }
-
-  const page = params.page ?? 1;
-  const limit = params.limit ?? 10;
-  const pages = await Promise.all(
-    countyNames.map(countyName =>
-      fetchAudioSearchPaginated(
-        token,
-        paramsForSingleCounty({...params, page: 1, limit: 1}, countyName),
-      ),
-    ),
-  );
-  const total = pages.reduce((sum, pageResult) => sum + pageResult.total, 0);
-
-  return {
-    items: [],
-    total,
-    page,
-    limit,
-    totalPages: Math.max(1, Math.ceil(total / limit)),
-    hasMore: total > limit,
-    totalFromApi: true,
-  };
+  // One paginated request (comma-joined counties when multiple are selected).
+  return fetchAudioSearchPaginated(token, singleParams);
 }
 
 export async function searchAudio(
   token: string,
   params: AudioSearchParams = {},
 ): Promise<FeedItem[]> {
-  const countyNames = parseCountyFilter(params);
-
-  if (countyNames.length <= 1) {
-    const singleParams =
-      countyNames.length === 1
-        ? paramsForSingleCounty(params, countyNames[0])
-        : params;
-    const result = await fetchAudioSearchPaginated(token, singleParams);
-    return result.items;
-  }
-
-  const batches = await Promise.all(
-    countyNames.map(countyName =>
-      fetchAudioSearchPaginated(
-        token,
-        paramsForSingleCounty(params, countyName),
-      ).then(result => result.items),
-    ),
-  );
-
-  return mergeFeedItems(batches);
+  const result = await searchAudioWithPagination(token, params);
+  return result.items;
 }
 
 export async function getAudioById(
   token: string,
   id: string,
 ): Promise<FeedItem> {
-  const favoriteIds = await getFavoriteAudioIds(token).catch(() => new Set<string>());
-  const audio = await authorizedRequest<ApiAudio>(
-    token,
-    endpoints.audio.byId(id),
-  );
+  const [favoriteIds, audio] = await Promise.all([
+    getFavoriteAudioIds(token).catch(() => new Set<string>()),
+    authorizedRequest<ApiAudio>(token, endpoints.audio.byId(id)),
+  ]);
   return mapAudioToFeedItem(audio, favoriteIds);
 }
 
 export async function getAudioContext(token: string, id: string) {
   return authorizedRequest<unknown>(token, endpoints.audio.context(id));
+}
+
+export async function getLatestAudioTimestampForCountyId(
+  token: string,
+  countyId: string,
+): Promise<string | null> {
+  const query = buildQuery({page: 1, limit: 1});
+  const payload = await authorizedRequest<unknown>(
+    token,
+    `${endpoints.audio.byCountyIdPaginated(countyId)}${query}`,
+  );
+  const paginated = unwrapPaginated<ApiAudio>(payload, 1, 1);
+  const latest = paginated.items[0];
+  if (!latest) {
+    return null;
+  }
+  const record = latest as Record<string, unknown>;
+  const timestamp =
+    (typeof record.timestamp === 'string' && record.timestamp) ||
+    (typeof record.createdAt === 'string' && record.createdAt) ||
+    (typeof record.recordedAt === 'string' && record.recordedAt) ||
+    null;
+  return timestamp;
+}
+
+export async function getLatestAudioForCountyId(
+  token: string,
+  countyId: string,
+): Promise<FeedItem | null> {
+  const favoriteIds = await getFavoriteAudioIds(token).catch(
+    () => new Set<string>(),
+  );
+  const query = buildQuery({page: 1, limit: 1});
+  const payload = await authorizedRequest<unknown>(
+    token,
+    `${endpoints.audio.byCountyIdPaginated(countyId)}${query}`,
+  );
+  const paginated = unwrapPaginated<ApiAudio>(payload, 1, 1);
+  const latest = paginated.items[0];
+  if (!latest) {
+    return null;
+  }
+  return mapAudioToFeedItem(latest, favoriteIds);
 }

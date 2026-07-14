@@ -107,7 +107,7 @@ const FeedCardNotesPanel = ({
     } finally {
       setLoading(false);
     }
-  }, [audioId, expanded, token]);
+  }, [audioId, expanded, showError, token]);
 
   useEffect(() => {
     if (!expanded) {

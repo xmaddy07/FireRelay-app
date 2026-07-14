@@ -1,6 +1,6 @@
 export {API_BASE_URL} from '../config/env';
 export {endpoints} from './endpoints';
-export {ApiError, apiRequest, apiRequestWithAuth} from './client';
+export {ApiError, apiRequest, apiRequestWithAuth, formatApiErrorMessage} from './client';
 export * from './types/auth';
 export * from './types/common';
 export * from './types/severity';
@@ -22,6 +22,8 @@ export {
   getAudioById,
   getAudioContext,
   searchAudioWithPagination,
+  getLatestAudioForCountyId,
+  getLatestAudioTimestampForCountyId,
   type AudioSearchResult,
 } from './services/audioService';
 export {
@@ -58,8 +60,23 @@ export {
   regenerateSenderToken,
 } from './services/senderService';
 
-export {listCounties, searchCounties} from './services/countyService';
+export {
+  listCounties,
+  searchCounties,
+  getCountyById,
+  getCountyConnectedUsers,
+  listCountiesWithConnections,
+  getCountyListItem,
+  getCountyDetail,
+  refreshCountyListItem,
+} from './services/countyService';
 export type {CountyOption} from './services/countyService';
+export type {
+  CountyRecord,
+  CountyListItem,
+  CountyActivityStatus,
+  CountyConnectedUser,
+} from './types/county';
 
 export {
   searchUsers,
@@ -68,6 +85,7 @@ export {
   updateUser,
   deleteUser,
   getUserCounties,
+  getUsersByCounty,
   assignUserCounties,
   listUserSessions,
   enrichUsersWithSessionSummaries,

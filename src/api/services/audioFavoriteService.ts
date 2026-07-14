@@ -29,17 +29,69 @@ const extractAudioId = (entry: unknown): string | undefined => {
   return undefined;
 };
 
-export async function getFavoriteAudioIds(token: string): Promise<Set<string>> {
-  const payload = await authorizedRequest<unknown>(
-    token,
-    endpoints.audioFavorites.me,
-  );
-  const items = unwrapList<unknown>(payload);
-  const ids = items
-    .map(extractAudioId)
-    .filter((id): id is string => Boolean(id));
+type FavoritesCache = {
+  token: string;
+  ids: Set<string>;
+  fetchedAt: number;
+  inflight: Promise<Set<string>> | null;
+};
 
-  return new Set(ids);
+const FAVORITES_TTL_MS = 60_000;
+let favoritesCache: FavoritesCache | null = null;
+
+const invalidateFavoriteIdsCache = () => {
+  favoritesCache = null;
+};
+
+export async function getFavoriteAudioIds(token: string): Promise<Set<string>> {
+  const now = Date.now();
+  if (
+    favoritesCache &&
+    favoritesCache.token === token &&
+    now - favoritesCache.fetchedAt < FAVORITES_TTL_MS
+  ) {
+    return favoritesCache.ids;
+  }
+
+  if (favoritesCache?.token === token && favoritesCache.inflight) {
+    return favoritesCache.inflight;
+  }
+
+  const inflight = (async () => {
+    const payload = await authorizedRequest<unknown>(
+      token,
+      endpoints.audioFavorites.me,
+    );
+    const items = unwrapList<unknown>(payload);
+    const ids = new Set(
+      items
+        .map(extractAudioId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    favoritesCache = {
+      token,
+      ids,
+      fetchedAt: Date.now(),
+      inflight: null,
+    };
+    return ids;
+  })();
+
+  favoritesCache = {
+    token,
+    ids: favoritesCache?.token === token ? favoritesCache.ids : new Set(),
+    fetchedAt: favoritesCache?.token === token ? favoritesCache.fetchedAt : 0,
+    inflight,
+  };
+
+  try {
+    return await inflight;
+  } catch (error) {
+    if (favoritesCache?.inflight === inflight) {
+      favoritesCache.inflight = null;
+    }
+    throw error;
+  }
 }
 
 export async function addAudioFavorite(
@@ -49,6 +101,12 @@ export async function addAudioFavorite(
   await authorizedRequest(token, endpoints.audioFavorites.favorite(audioId), {
     method: 'POST',
   });
+  if (favoritesCache?.token === token) {
+    favoritesCache.ids.add(audioId);
+    favoritesCache.fetchedAt = Date.now();
+  } else {
+    invalidateFavoriteIdsCache();
+  }
 }
 
 export async function removeAudioFavorite(
@@ -58,4 +116,10 @@ export async function removeAudioFavorite(
   await authorizedRequest(token, endpoints.audioFavorites.favorite(audioId), {
     method: 'DELETE',
   });
+  if (favoritesCache?.token === token) {
+    favoritesCache.ids.delete(audioId);
+    favoritesCache.fetchedAt = Date.now();
+  } else {
+    invalidateFavoriteIdsCache();
+  }
 }

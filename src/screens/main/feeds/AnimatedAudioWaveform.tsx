@@ -1,8 +1,8 @@
 import React, {useEffect, useMemo} from 'react';
 import {View, StyleSheet} from 'react-native';
 import Animated, {
-  Easing,
   cancelAnimation,
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -10,7 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import {wp} from '../../../utils/responsive';
 
-const DEFAULT_BAR_COUNT = 48;
+const DEFAULT_BAR_COUNT = 24;
+const PULSE_CYCLE_MS = 1400;
 
 const hashSeed = (value: string) => {
   let hash = 0;
@@ -30,6 +31,55 @@ const buildBaseHeights = (seed: string, barCount: number) => {
   });
 };
 
+type BarProps = {
+  index: number;
+  baseHeight: number;
+  maxBarHeight: number;
+  phase: Animated.SharedValue<number>;
+  playing: Animated.SharedValue<boolean>;
+  isPlayed: boolean;
+  barColor: string;
+  barColorDim: string;
+};
+
+const WaveformBar = React.memo(function WaveformBar({
+  index,
+  baseHeight,
+  maxBarHeight,
+  phase,
+  playing,
+  isPlayed,
+  barColor,
+  barColorDim,
+}: BarProps) {
+  const barHeight = Math.max(4, baseHeight * maxBarHeight);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const scaleY = playing.value
+      ? 0.72 +
+        0.28 *
+          Math.sin(phase.value * Math.PI * 2 + index * 0.42 + baseHeight * 4)
+      : 1;
+    return {transform: [{scaleY}]};
+  }, [index, baseHeight]);
+
+  return (
+    <View style={[styles.barSlot, {height: maxBarHeight}]}>
+      <Animated.View
+        style={[
+          styles.bar,
+          {
+            height: barHeight,
+            backgroundColor: isPlayed ? barColor : barColorDim,
+            opacity: isPlayed ? 1 : 0.92,
+          },
+          animatedStyle,
+        ]}
+      />
+    </View>
+  );
+});
+
 type Props = {
   seed: string;
   progress: number;
@@ -40,57 +90,20 @@ type Props = {
   trackHeight?: number;
 };
 
-const WaveformBar = ({
-  index,
-  baseHeight,
-  phase,
-  isPlaying,
-  isPlayed,
-  barColor,
-  barColorDim,
-  maxHeight,
-}: {
-  index: number;
-  baseHeight: number;
-  phase: {value: number};
-  isPlaying: boolean;
-  isPlayed: boolean;
-  barColor: string;
-  barColorDim: string;
-  maxHeight: number;
-}) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    const pulse = isPlaying
-      ? 0.72 +
-        0.28 *
-          Math.sin(phase.value * Math.PI * 2 + index * 0.42 + baseHeight * 4)
-      : 1;
-    const height = Math.max(4, baseHeight * maxHeight * pulse);
-
-    return {
-      height,
-      backgroundColor: isPlayed ? barColor : barColorDim,
-      opacity: isPlayed ? 1 : 0.55,
-    };
-  }, [isPlaying, isPlayed, baseHeight, maxHeight, barColor, barColorDim]);
-
-  return <Animated.View style={[styles.bar, animatedStyle]} />;
-};
-
 const AnimatedAudioWaveform = ({
   seed,
   progress,
   isPlaying,
   barCount = DEFAULT_BAR_COUNT,
   barColor = 'rgba(255, 132, 128, 0.95)',
-  barColorDim = 'rgba(255, 132, 128, 0.42)',
+  barColorDim = 'rgba(255, 132, 128, 0.65)',
   trackHeight,
 }: Props) => {
   const phase = useSharedValue(0);
+  const playing = useSharedValue(isPlaying);
   const maxBarHeight = trackHeight ?? wp(10);
-  const playedBarCount = Math.floor(
-    Math.min(1, Math.max(0, progress)) * barCount,
-  );
+  const clampedProgress = Math.min(1, Math.max(0, progress));
+  const playedBarCount = Math.floor(clampedProgress * barCount);
 
   const baseHeights = useMemo(
     () => buildBaseHeights(seed, barCount),
@@ -98,33 +111,38 @@ const AnimatedAudioWaveform = ({
   );
 
   useEffect(() => {
+    playing.value = isPlaying;
+  }, [isPlaying, playing]);
+
+  useEffect(() => {
+    cancelAnimation(phase);
+
     if (isPlaying) {
-      phase.value = 0;
       phase.value = withRepeat(
-        withTiming(1, {duration: 1400, easing: Easing.linear}),
+        withTiming(1, {duration: PULSE_CYCLE_MS, easing: Easing.linear}),
         -1,
         false,
       );
-    } else {
-      cancelAnimation(phase);
-      phase.value = withTiming(0, {duration: 200});
+      return;
     }
+
+    phase.value = 0;
   }, [isPlaying, phase]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} collapsable={false}>
       <View style={[styles.waveformRow, {height: maxBarHeight}]}>
         {baseHeights.map((baseHeight, index) => (
           <WaveformBar
             key={`wave-${index}`}
             index={index}
             baseHeight={baseHeight}
+            maxBarHeight={maxBarHeight}
             phase={phase}
-            isPlaying={isPlaying}
+            playing={playing}
             isPlayed={index < playedBarCount}
             barColor={barColor}
             barColorDim={barColorDim}
-            maxHeight={maxBarHeight}
           />
         ))}
       </View>
@@ -133,7 +151,7 @@ const AnimatedAudioWaveform = ({
           style={[
             styles.progressFill,
             {
-              width: `${Math.min(100, Math.max(0, progress * 100))}%`,
+              width: `${clampedProgress * 100}%`,
               backgroundColor: barColor,
             },
           ]}
@@ -155,10 +173,14 @@ const styles = StyleSheet.create({
     gap: 2,
     marginBottom: wp(1.2),
   },
-  bar: {
+  barSlot: {
     flex: 1,
-    borderRadius: 2,
+    justifyContent: 'center',
     minWidth: 2,
+  },
+  bar: {
+    width: '100%',
+    borderRadius: 2,
   },
   progressTrack: {
     height: 2,

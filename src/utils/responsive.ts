@@ -18,3 +18,9 @@ export const responsiveHitSlop = (size = 2) => ({
   left: wp(size),
   right: wp(size),
 });
+
+/** County strip card width — scales with screen, clamped for small/large devices. */
+export const COUNTY_FEED_CARD_WIDTH = Math.min(
+  wp(48),
+  Math.max(wp(40), width * 0.42),
+);

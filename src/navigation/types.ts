@@ -1,4 +1,5 @@
 import type {NavigatorScreenParams} from '@react-navigation/native';
+import type {CountyListItem} from '../api/types/county';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -6,8 +7,18 @@ export type RootStackParamList = {
   Notifications: undefined;
 };
 
+export type FeedStackParamList = {
+  FeedList: {audioId?: string} | undefined;
+  CountyDetail: {
+    countyId: string;
+    countyName?: string;
+    /** Snapshot from the counties strip so detail can paint before network. */
+    countySeed?: CountyListItem;
+  };
+};
+
 export type MainTabParamList = {
-  Feed: {audioId?: string} | undefined;
+  Feed: NavigatorScreenParams<FeedStackParamList> | undefined;
   Keywords: undefined;
   LeadLog: undefined;
   Senders: undefined;

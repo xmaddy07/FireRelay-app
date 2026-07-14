@@ -15,6 +15,7 @@ import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import themeReducer from './slices/themeSlice';
 import feedReducer from './slices/feedSlice';
+import audioCacheReducer from './slices/audioCacheSlice';
 import messageReducer from './slices/messageSlice';
 
 const persistConfig = {
@@ -28,6 +29,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   theme: themeReducer,
   feed: feedReducer,
+  audioCache: audioCacheReducer,
   messages: messageReducer,
 });
 

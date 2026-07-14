@@ -214,6 +214,23 @@ export function seedNotificationAudioTimestamps(
   return added;
 }
 
+const HYDRATE_CONCURRENCY = 4;
+
+const settleInBatches = async <T>(
+  ids: string[],
+  fetchOne: (id: string) => Promise<T>,
+): Promise<PromiseSettledResult<T>[]> => {
+  const results: PromiseSettledResult<T>[] = [];
+
+  for (let index = 0; index < ids.length; index += HYDRATE_CONCURRENCY) {
+    const batch = ids.slice(index, index + HYDRATE_CONCURRENCY);
+    const batchResults = await Promise.allSettled(batch.map(fetchOne));
+    results.push(...batchResults);
+  }
+
+  return results;
+};
+
 export async function hydrateNotificationAudioTimestamps(
   token: string,
   notifications: NotificationRecord[],
@@ -231,9 +248,7 @@ export async function hydrateNotificationAudioTimestamps(
     return {added: false, resolvedIds: []};
   }
 
-  const results = await Promise.allSettled(
-    missingIds.map(id => getAudioById(token, id)),
-  );
+  const results = await settleInBatches(missingIds, id => getAudioById(token, id));
 
   let added = false;
   results.forEach((result, index) => {

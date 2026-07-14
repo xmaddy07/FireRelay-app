@@ -1,0 +1,15 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "feature/role-change-session-management",
+    "main"
+  ],
+  "parent": {
+    "feature/role-change-session-management": "main",
+    "main": null
+  },
+  "order": [
+    "main",
+    "feature/role-change-session-management"
+  ]
+}

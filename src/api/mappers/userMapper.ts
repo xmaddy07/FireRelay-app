@@ -6,6 +6,8 @@ import type {
 import type {ApiCounty, ApiUser, FeedSeverityLevel} from '../types/user';
 import {pickBoolean, pickNumber, pickString} from '../utils';
 
+export {mapCountyOption} from './countyMapper';
+
 export const normalizeFeedSeverityLevel = (
   value: string,
 ): FeedSeverityLevel | null => {
@@ -128,13 +130,3 @@ export const mapUserToRecord = (user: ApiUser): UserRecord => {
     allowedSeverities: parseAllowedSeverities(record),
   };
 };
-
-export const mapCountyOption = (county: ApiCounty) => ({
-  id: county.id,
-  name: pickString(county as Record<string, unknown>, ['name']) ?? county.id,
-  code: pickString(county as Record<string, unknown>, ['code']) ?? '',
-  state: pickString(county as Record<string, unknown>, ['state']) ?? 'Texas',
-  established:
-    pickString(county as Record<string, unknown>, ['established', 'est']) ??
-    '',
-});

@@ -1,22 +1,26 @@
 import {endpoints} from '../endpoints';
-import {
-  derivePresenceStatus,
-  mapCountyOption,
-  mapUserToRecord,
-} from '../mappers/userMapper';
+import {mapCountyOption} from '../mappers/countyMapper';
+import {derivePresenceStatus, mapUserToRecord} from '../mappers/userMapper';
+import type {CountyConnectedUser} from '../types/county';
 import type {UserRecord} from '../../screens/main/leadLog/types';
 import type {
   ApiCounty,
+  ApiUser,
   ApiUserSession,
   ApiUserTalkgroupAccess,
-  ApiUser,
-  AssignTalkgroupAccessRequest,
   AssignCountiesPayload,
+  AssignTalkgroupAccessRequest,
   CreateUserPayload,
   UpdateUserPayload,
   UserSearchParams,
 } from '../types/user';
-import {authorizedRequest, buildQuery, unwrapEntity, unwrapList} from '../utils';
+import {
+  authorizedRequest,
+  buildQuery,
+  pickString,
+  unwrapEntity,
+  unwrapList,
+} from '../utils';
 
 export async function searchUsers(
   token: string,
@@ -82,6 +86,24 @@ export async function getUserCounties(token: string, userId: string) {
     endpoints.users.counties(userId),
   );
   return unwrapList<ApiCounty>(payload).map(mapCountyOption);
+}
+
+export async function getUsersByCounty(
+  token: string,
+  countyId: string,
+): Promise<CountyConnectedUser[]> {
+  const payload = await authorizedRequest<unknown>(
+    token,
+    endpoints.users.byCounty(countyId),
+  );
+
+  return unwrapList<ApiUser>(payload).map(user => {
+    const record = user as Record<string, unknown>;
+    return {
+      id: user.id,
+      email: pickString(record, ['email']) ?? 'unknown',
+    };
+  });
 }
 
 export async function assignUserCounties(

@@ -6,11 +6,12 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {ApiError} from '../api';
+import {formatApiErrorMessage} from '../api';
 import AppDialog from '../components/common/AppDialog';
 import type {AppDialogVariant} from '../components/common/AppDialog';
 import AppToast from '../components/common/AppToast';
 import {registerDialogHandlers} from '../services/dialogs/dialogService';
+import {InteractionManager} from 'react-native';
 
 type DialogMode = 'confirm' | 'alert';
 
@@ -109,9 +110,14 @@ export const DialogProvider = ({children}: {children: React.ReactNode}) => {
 
   const showError = useCallback(
     (title: string, error: unknown) => {
-      const message =
-        error instanceof ApiError ? error.message : 'Please try again.';
-      alert(title, message);
+      const message = formatApiErrorMessage(error);
+      // Defer so we never present AppDialog while another Modal is mid-transition
+      // (nested RN Modals freeze the UI on iOS/Android).
+      InteractionManager.runAfterInteractions(() => {
+        setTimeout(() => {
+          alert(title, message);
+        }, 320);
+      });
     },
     [alert],
   );

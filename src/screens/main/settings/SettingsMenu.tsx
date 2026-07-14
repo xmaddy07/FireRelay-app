@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -16,7 +16,9 @@ import {forceLogout} from '../../../services/auth/forceLogout';
 import AnimatedToggle from './components/AnimatedToggle';
 import AnimatedMoonIcon from './components/AnimatedMoonIcon';
 import AccountNavRow from './components/AccountNavRow';
-import AnimatedLogoutButton from './components/AnimatedLogoutButton';
+import AnimatedLogoutButton, {
+  type AnimatedLogoutButtonRef,
+} from './components/AnimatedLogoutButton';
 import SettingsScreenLayout from './SettingsScreenLayout';
 
 type SettingsMenuRoute = Exclude<
@@ -50,11 +52,15 @@ const SettingsMenu = () => {
   const styles = useThemedStyles(createStyles);
 
   const [moonPulse, setMoonPulse] = useState(0);
+  const logoutButtonRef = useRef<AnimatedLogoutButtonRef>(null);
 
   const handleLogout = () => {
     confirm('Log Out', 'Are you sure you want to log out?', {
       variant: 'destructive',
       confirmLabel: 'Log Out',
+      onCancel: () => {
+        logoutButtonRef.current?.resetAnimation();
+      },
       onConfirm: async () => {
         try {
           await logout(token);
@@ -162,6 +168,7 @@ const SettingsMenu = () => {
       </GlassView>
 
       <AnimatedLogoutButton
+        ref={logoutButtonRef}
         onPress={handleLogout}
         label="Log Out"
         iconColor={colors.primary}

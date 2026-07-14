@@ -11,7 +11,7 @@ type SplashAnimatedScreenProps = {
 };
 
 function SplashAnimatedScreen({onFinish}: SplashAnimatedScreenProps) {
-  const {colors} = useTheme();
+  const {colors, isDark} = useTheme();
   const styles = createStyles(colors);
   const hasFinishedRef = useRef(false);
 
@@ -32,7 +32,11 @@ function SplashAnimatedScreen({onFinish}: SplashAnimatedScreenProps) {
     <View style={styles.container}>
       <StatusBar backgroundColor={colors.background} barStyle="light-content" />
       <LottieView
-        source={require('../../../assets/animations/FireRelay Logo.json')}
+        source={
+          isDark
+            ? require('../../../assets/animations/FireRelay Logo.json')
+            : require('../../../assets/animations/FireRelay-black.json')
+        }
         autoPlay
         loop={false}
         style={styles.animation}

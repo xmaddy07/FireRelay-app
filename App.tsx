@@ -8,11 +8,13 @@ import {persistor, store} from './src/redux/store';
 import {DialogProvider, ThemeProvider, useTheme} from './src/context';
 import {initializeFirebaseMessaging} from './src/services/notifications/firebaseMessaging';
 import {useSessionRevocation} from './src/hooks/useSessionRevocation';
+import {useRoleChangeWatch} from './src/hooks/useRoleChangeWatch';
 import {useFcmTokenSync} from './src/hooks/useFcmTokenSync';
 
 const AppShell = () => {
   const {colors, isDark} = useTheme();
   useSessionRevocation();
+  useRoleChangeWatch();
   useFcmTokenSync();
 
   return (

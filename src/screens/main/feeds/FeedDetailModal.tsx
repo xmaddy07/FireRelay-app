@@ -14,6 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import LinearGradient from 'react-native-linear-gradient';
 import {useTheme, useThemedStyles} from '../../../config/theme';
+import {useAppSelector} from '../../../redux/hooks';
 import {wp, responsiveHitSlop} from '../../../utils/responsive';
 import {createFeedDetailModalStyles} from './feedDetailModal.styles';
 import type {FeedDetailData, FeedItem} from './feedTypes';
@@ -76,6 +77,12 @@ const FeedDetailModal = ({
     item?.audioUrl,
   );
 
+  const cachedDurationSec = useAppSelector(state =>
+    item?.id ? state.audioCache.byId[item.id]?.durationSec : undefined,
+  );
+  const displayDurationSec =
+    durationSec > 0 ? durationSec : cachedDurationSec ?? 0;
+
   const handleClose = () => {
     stopPlayback();
     onClose();
@@ -83,13 +90,21 @@ const FeedDetailModal = ({
 
   const compact = screenWidth < COMPACT_BREAKPOINT;
   const waveformBarCount = useMemo(
-    () => Math.max(28, Math.min(48, Math.floor(screenWidth / 7))),
+    () => Math.max(20, Math.min(24, Math.floor(screenWidth / 10))),
     [screenWidth],
   );
   const playButtonSize = compact ? wp(13) : wp(15);
   const skipButtonSize = compact ? wp(10) : wp(11);
 
-  const progress = durationSec > 0 ? positionSec / durationSec : 0;
+  const progress = useMemo(() => {
+    if (displayDurationSec > 0) {
+      return Math.min(1, positionSec / displayDurationSec);
+    }
+    if (positionSec > 0) {
+      return Math.min(0.92, positionSec / Math.max(positionSec * 1.4, 45));
+    }
+    return 0;
+  }, [displayDurationSec, positionSec]);
 
   useEffect(() => {
     if (!visible) {
@@ -230,7 +245,7 @@ const FeedDetailModal = ({
                   isPlaying={isPlaying}
                   barCount={waveformBarCount}
                   barColor={colors.primary}
-                  barColorDim={colors.primaryDark}
+                  barColorDim={colors.metaValue}
                   trackHeight={wp(9.5)}
                 />
 
@@ -240,7 +255,7 @@ const FeedDetailModal = ({
                   </Text>
                   <View style={styles.trackerRight}>
                     <Text style={styles.trackerTimeRight}>
-                      {formatTime(durationSec)}
+                      {formatTime(displayDurationSec)}
                     </Text>
                     <PlaybackSpeedControl
                       value={playbackSpeed}
